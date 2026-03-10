@@ -1841,9 +1841,51 @@
       const prev=arr[i+1]; const diff=prev?(w.kg-prev.kg).toFixed(1):null;
       const diffStr=diff?`<span style="font-size:10px;color:${diff>0?'var(--accent2)':'var(--accent)'};margin-left:8px">${diff>0?'+':''}${diff}</span>`:'';
       const dateStr=new Date(w.date).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
-      return `<div class="weight-hist-row"><div class="weight-hist-date">${dateStr}</div><div style="display:flex;align-items:center"><div class="weight-hist-val">${w.kg} kg</div>${diffStr}</div><button class="weight-hist-del" onclick="delWeight('${w.date}')">✕</button></div>`;
+      return `<div>
+        <div class="weight-hist-row">
+          <div class="weight-hist-date">${dateStr}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="weight-hist-val">${w.kg} kg</div>${diffStr}
+            <button onclick="toggleEditWeight('${w.date}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 4px;" title="Modifier">✏️</button>
+            <button class="weight-hist-del" onclick="delWeight('${w.date}')">✕</button>
+          </div>
+        </div>
+        <div id="editWeightRow-${w.date}" style="display:none;padding:8px 16px 12px;border-bottom:1px solid var(--border);background:var(--warm)">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="editWeightInp-${w.date}" type="number" step="0.1" value="${w.kg}" class="weight-inp" style="max-width:100px"/>
+            <button class="weight-save" onclick="saveEditWeight('${w.date}')">Sauvegarder</button>
+            <button onclick="toggleEditWeight('${w.date}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;">Annuler</button>
+          </div>
+        </div>
+      </div>`;
     }).join('');
   }
+  function toggleEditWeight(date) {
+    const row = document.getElementById('editWeightRow-' + date);
+    if (!row) return;
+    const isOpen = row.style.display !== 'none';
+    // Close all other open edit rows first
+    document.querySelectorAll('[id^="editWeightRow-"]').forEach(r => r.style.display = 'none');
+    row.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+      setTimeout(() => document.getElementById('editWeightInp-' + date)?.focus(), 50);
+    }
+  }
+
+  async function saveEditWeight(date) {
+    const inp = document.getElementById('editWeightInp-' + date);
+    const newKg = parseFloat(inp?.value);
+    if (!newKg || newKg < 20 || newKg > 300) { showToast('Poids invalide'); return; }
+    const entry = bodyWeights.find(w => w.date === date);
+    if (!entry) return;
+    entry.kg = newKg;
+    showSyncBadge('Sauvegarde...');
+    await sbSave('body_weights', [entry]);
+    showSyncBadge('✓ Sync', true);
+    showToast('Poids modifié ✓');
+    renderWeightTab();
+  }
+
   async function delWeight(date) {
     const entry=bodyWeights.find(w=>w.date===date); bodyWeights=bodyWeights.filter(w=>w.date!==date);
     if(entry){showSyncBadge('Suppression...');await sbDelete('body_weights',entry.id);showSyncBadge('✓ Sync',true);}
