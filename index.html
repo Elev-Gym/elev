@@ -415,9 +415,15 @@
 </style>
 
 <!-- ══ LOGIN SCREEN ══ -->
-<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;justify-content:space-between;padding:48px 32px 40px;overflow:hidden;">
+<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+  <div style="width:100%;max-width:340px;padding:48px 32px 40px;display:flex;flex-direction:column;justify-content:space-between;min-height:100vh;max-height:100vh;">
   <div>
-    <div style="font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:32px;">Élev — Suivi de musculation</div>
+    <div style="text-align:center;margin-bottom:28px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="160" height="46">
+        <text x="140" y="62" font-family="'Cormorant Garamond','Georgia',serif" font-size="56" font-weight="300" fill="#1a1a1a" text-anchor="middle" letter-spacing="18">ÉLEV</text>
+        <line x1="50" y1="71" x2="230" y2="71" stroke="#1a1a1a" stroke-width="0.6" opacity="0.3"/>
+      </svg>
+    </div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:var(--text);line-height:1.05;margin-bottom:8px;">Bienvenue.</div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:var(--muted);line-height:1.7;margin-bottom:44px;">Chaque séance est une promesse<br>tenue à toi-même.</div>
 
@@ -446,6 +452,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="70" height="20">
       <text x="280" y="62" font-family="'Cormorant Garamond','Georgia',serif" font-size="56" font-weight="300" fill="#b5b2ae" text-anchor="end" letter-spacing="14">ÉLEV</text>
     </svg>
+  </div>
   </div>
 </div>
 
