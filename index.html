@@ -357,17 +357,15 @@
 
 <div class="app">
   <header>
-    <div class="logo" style="margin-bottom:2px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="52" height="15" style="display:block">
         <defs><style>@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&amp;display=swap');</style></defs>
         <text x="140" y="58" font-family="'Cormorant Garamond','Georgia',serif" font-size="56" font-weight="300" fill="#1a1a1a" text-anchor="middle" letter-spacing="18">ÉLEV</text>
         <line x1="50" y1="68" x2="230" y2="68" stroke="#1a1a1a" stroke-width="0.6" opacity="0.4"/>
       </svg>
+      <button onclick="signOut()" style="background:none;border:1px solid var(--border2);border-radius:2px;padding:4px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;" title="Déconnexion">Déconnexion</button>
     </div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-      <div class="header-title" id="headerTitle">Bonne séance</div>
-      <button onclick="signOut()" style="background:none;border:1px solid var(--border2);border-radius:2px;padding:4px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;margin-top:4px;" title="Déconnexion">Déconnexion</button>
-    </div>
+    <div class="header-title" id="headerTitle">Bonne session</div>
     <div class="header-date" id="headerDate"></div>
     <div class="header-date" id="headerTime" style="margin-top:2px"></div>
   </header>
@@ -394,7 +392,7 @@
     </div>
 
     <!-- Séance libre -->
-    <button id="freeSessionToggleBtn" class="btn-add" style="width:100%;margin-bottom:16px" onclick="toggleFreeSessionBlock()">⚡ Démarrer une séance libre</button>
+    <button id="freeSessionToggleBtn" class="btn-add" style="width:100%;margin-bottom:16px" onclick="toggleFreeSessionBlock()">Démarrer une séance libre</button>
     <div id="freeSessionBlock" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div class="label" style="margin:0">Séance en cours</div>
@@ -1131,7 +1129,7 @@
     if (isOpen) {
       if (exercises.length && !confirm('Annuler la séance en cours ?')) return;
       block.style.display = 'none';
-      btn.textContent = '⚡ Démarrer une séance libre';
+      btn.textContent = 'Démarrer une séance libre';
       exercises = []; loadedRoutineId = null; resetTimer(); skipRest(); clearDraft();
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
       if (document.getElementById('sessionNotes')) document.getElementById('sessionNotes').value = '';
@@ -1349,7 +1347,7 @@
     const block = document.getElementById('freeSessionBlock');
     const btn = document.getElementById('freeSessionToggleBtn');
     if (block) block.style.display = 'none';
-    if (btn) btn.textContent = '⚡ Démarrer une séance libre';
+    if (btn) btn.textContent = 'Démarrer une séance libre';
     showToast('Séance sauvegardée ✓');
   }
 
@@ -1368,7 +1366,7 @@
     const block = document.getElementById('freeSessionBlock');
     const btn = document.getElementById('freeSessionToggleBtn');
     if (block) block.style.display = 'none';
-    if (btn) btn.textContent = '⚡ Démarrer une séance libre';
+    if (btn) btn.textContent = 'Démarrer une séance libre';
     renderRoutinesList(); renderRoutinePicker();
   }
 
@@ -1991,7 +1989,7 @@
   // ── Stats ──
   function renderStats() {
     const grid=document.getElementById('statsGrid'),topEl=document.getElementById('topEx'),prEl=document.getElementById('prList');
-    if(!sessions.length){grid.innerHTML='';prEl.innerHTML='<div style="padding:12px 0;font-size:11px;color:var(--muted2)">Aucun record encore.</div>';topEl.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Pas encore de données</div><div class="empty-sub">Tes statistiques apparaîtront après ta première séance.</div></div>`;document.getElementById('progSelector').innerHTML='';return;}
+    if(!sessions.length){grid.innerHTML='';prEl.innerHTML='<div style="padding:12px 0;font-size:11px;color:var(--muted2)">Aucun record encore.</div>';topEl.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Pas encore de données</div><div class="empty-sub">Tes statistiques apparaîtront après ta première séance.</div></div>`;renderProgSelector();return;}
     const n=sessions.length,totalSets=sessions.reduce((a,s)=>a+s.exercises.reduce((b,e)=>b+e.sets.length,0),0),avgDur=Math.round(sessions.reduce((a,s)=>a+s.duration,0)/n);
     const allMuscles=sessions.flatMap(s=>s.muscles||[]),topMuscle=allMuscles.length?[...allMuscles.reduce((m,v)=>m.set(v,(m.get(v)||0)+1),new Map())].sort((a,b)=>b[1]-a[1])[0][0]:'—';
     grid.innerHTML=`<div class="stat-box"><div class="stat-val">${n}</div><div class="stat-lbl">Séances</div></div><div class="stat-box"><div class="stat-val">${totalSets}</div><div class="stat-lbl">Séries</div></div><div class="stat-box"><div class="stat-val">${fmt(avgDur)}</div><div class="stat-lbl">Durée moy.</div></div><div class="stat-box"><div class="stat-val" style="font-size:18px;padding-top:10px">${topMuscle}</div><div class="stat-lbl">Muscle favori</div></div>`;
