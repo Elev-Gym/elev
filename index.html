@@ -291,6 +291,7 @@
       <button onclick="signOut()" style="background:none;border:1px solid var(--border2);border-radius:2px;padding:4px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;margin-top:4px;" title="Déconnexion">Quitter</button>
     </div>
     <div class="header-date" id="headerDate"></div>
+    <div class="header-date" id="headerTime" style="margin-top:2px"></div>
   </header>
 
   <nav class="nav">
@@ -408,9 +409,8 @@
         <div class="weight-unit">kg</div>
         <div class="weight-delta" id="weightDelta" style="display:none"></div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <input type="date" id="weightDate" class="inp" style="flex:1;margin-right:10px;"/>
-        <div id="weightTime" style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap;"></div>
+      <div style="margin-bottom:12px;">
+        <input type="date" id="weightDate" class="inp" style="width:100%;"/>
       </div>
       <div class="weight-input-row">
         <input class="weight-inp" id="weightInput" type="number" step="0.1" placeholder="Ex: 78.5"/>
@@ -888,7 +888,7 @@
   }
 
   function updateWeightClock() {
-    const el = document.getElementById('weightTime');
+    const el = document.getElementById('headerTime');
     if (!el) return;
     const now = new Date();
     const h = String(now.getHours()).padStart(2,'0');
@@ -896,6 +896,7 @@
     el.textContent = h + ':' + m;
   }
   setInterval(updateWeightClock, 10000);
+  updateWeightClock();
 
   function renderWeightTab() {
     // Set default date to today
