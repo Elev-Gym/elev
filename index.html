@@ -425,7 +425,7 @@
     </div>
 
     <!-- Séance libre -->
-    <button id="freeSessionToggleBtn" class="btn-add" style="width:100%;margin-bottom:16px" onclick="toggleFreeSessionBlock()">Démarrer une séance libre</button>
+    <button id="freeSessionToggleBtn" class="btn-add" style="width:100%;margin-bottom:16px" onclick="event.stopPropagation();toggleFreeSessionBlock()">Démarrer une séance libre</button>
     <div id="freeSessionBlock" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div class="label" style="margin:0">Séance en cours</div>
@@ -1107,7 +1107,7 @@
     el.innerHTML = routines.map(r => {
       const muscles = [...new Set(r.exercises.map(e => e.muscle).filter(Boolean))];
       const isLoaded = loadedRoutineId === r.id;
-      return `<div class="routine-pick-card ${isLoaded?'loaded':''}" onclick="loadRoutine(${r.id})">
+      return `<div class="routine-pick-card ${isLoaded?'loaded':''}" onclick="event.stopPropagation();loadRoutine(${r.id})">
         <div><div class="rpc-name">${r.name}</div><div class="rpc-exs">${r.exercises.length} exercice${r.exercises.length>1?'s':''}</div>
         ${muscles.length?`<div class="rpc-muscles">${muscles.map(m=>`<span class="rpc-chip">${m}</span>`).join('')}</div>`:''}</div>
         <div class="rpc-arrow">${isLoaded?'✓':'→'}</div></div>`;
@@ -1158,12 +1158,15 @@
 
   function closeRoutineConfirm() {
     document.getElementById('routineConfirmModal').style.display = 'none';
-    // Cancel — never open the free session block
-    // (block state is unchanged)
+    // Block toggleFreeSessionBlock for 600ms to prevent ghost click on mobile
+    _ignoreToggleUntil = Date.now() + 600;
   }
 
   // ── Exercises ──
+  let _ignoreToggleUntil = 0;
   function toggleFreeSessionBlock() {
+    // Guard against ghost clicks after modal close
+    if (Date.now() < _ignoreToggleUntil) return;
     const block = document.getElementById('freeSessionBlock');
     const btn = document.getElementById('freeSessionToggleBtn');
     const isOpen = block.style.display !== 'none';
