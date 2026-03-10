@@ -395,7 +395,10 @@
     </div>
     <div class="label">Ressenti & notes</div>
     <textarea class="notes-area" id="sessionNotes" placeholder="Comment tu te sens aujourd'hui ?"></textarea>
-    <button class="save-btn" onclick="saveSession()">Sauvegarder la séance</button>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="save-btn" onclick="saveSession()">Sauvegarder la séance</button>
+      <button onclick="abandonSession()" style="background:none;border:1px solid #ddd;border-radius:4px;padding:10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;width:100%;">Supprimer la séance</button>
+    </div>
   </div>
 
   <!-- ══ EXERCISE REPLACE MODAL ══ -->
@@ -721,6 +724,8 @@
     document.getElementById('headerTitle').textContent = h < 12 ? 'Bonne séance' : h < 18 ? 'À toi de jouer' : 'Session du soir';
     renderRoutinePicker();
     renderWeightTab();
+    // Restore any in-progress session
+    restoreDraft();
   }
 
   // ── Tabs ──
@@ -776,11 +781,92 @@
         document.getElementById('restOverlay').classList.remove('show');
         showToast("C'est reparti ! 💪");
         if (navigator.vibrate) navigator.vibrate([200,100,200]);
+        playBeep();
       }
     }, 1000);
   }
   function skipRest() { clearInterval(restInterval); document.getElementById('restOverlay').classList.remove('show'); }
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const beep = (freq, start, dur) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq;
+        o.type = 'sine';
+        g.gain.setValueAtTime(0.4, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        o.start(ctx.currentTime + start);
+        o.stop(ctx.currentTime + start + dur + 0.05);
+      };
+      beep(880, 0, 0.15);
+      beep(880, 0.2, 0.15);
+      beep(1100, 0.4, 0.25);
+    } catch(e) {}
+  }
   function updateRestDisplay() { const m = String(Math.floor(restRemaining/60)).padStart(2,'0'), s = String(restRemaining%60).padStart(2,'0'); document.getElementById('restDisplay').textContent = `${m}:${s}`; }
+
+  // ── Draft session autosave ──
+  function autosaveDraft() {
+    if (!exercises.length) return;
+    const routine = loadedRoutineId ? routines.find(r=>r.id===loadedRoutineId) : null;
+    const draft = {
+      exercises: JSON.parse(JSON.stringify(exercises)),
+      muscles: getSelectedMuscles(),
+      notes: document.getElementById('sessionNotes')?.value || '',
+      timerSec,
+      loadedRoutineId,
+      routineName: routine?.name || null,
+      savedAt: Date.now()
+    };
+    localStorage.setItem('seance_draft', JSON.stringify(draft));
+  }
+
+  function abandonSession() {
+    if (!exercises.length) return;
+    if (!confirm('Supprimer la séance en cours ?')) return;
+    exercises = []; loadedRoutineId = null; resetTimer(); skipRest();
+    clearDraft();
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    document.getElementById('sessionNotes').value = '';
+    renderExercises(); renderRoutinePicker();
+    showToast('Séance supprimée');
+  }
+
+  function clearDraft() {
+    localStorage.removeItem('seance_draft');
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem('seance_draft');
+      if (!raw) return false;
+      const draft = JSON.parse(raw);
+      if (!draft.exercises?.length) return false;
+      exercises = draft.exercises;
+      loadedRoutineId = draft.loadedRoutineId || null;
+      timerSec = draft.timerSec || 0;
+      updateTimer();
+      // Restore muscles
+      if (draft.muscles?.length) {
+        document.querySelectorAll('.chip').forEach(c => {
+          if (draft.muscles.includes(c.textContent)) c.classList.add('on');
+        });
+      }
+      // Restore notes
+      if (draft.notes) document.getElementById('sessionNotes').value = draft.notes;
+      renderExercises();
+      renderRoutinePicker();
+      const ago = Math.round((Date.now() - draft.savedAt) / 60000);
+      showToast(`Session restaurée (il y a ${ago < 1 ? 'moins d'1 min' : ago + ' min'})`);
+      return true;
+    } catch(e) { return false; }
+  }
+
+  // Autosave every 15 seconds if session active
+  setInterval(() => { if (exercises.length) autosaveDraft(); }, 15000);
 
   // ── PR helpers ──
   function getLastSessionData(exName) {
@@ -929,13 +1015,14 @@
     showToast(`Exercice remplacé par "${newName}"`);
   }
 
-  function delEx(ei) { exercises.splice(ei,1); renderExercises(); }
-  function addSet(ei) { exercises[ei].sets.push({w:'',r:'',done:false}); renderExercises(); }
+  function delEx(ei) { exercises.splice(ei,1); renderExercises(); autosaveDraft(); }
+  function addSet(ei) { exercises[ei].sets.push({w:'',r:'',done:false}); renderExercises(); autosaveDraft(); }
   function upd(ei,si,f,v) {
     exercises[ei].sets[si][f]=v;
+    autosaveDraft();
     if (f==='w'&&v) { const w=parseFloat(v); if(w>0&&checkNewPR(exercises[ei].name,w)){const card=document.getElementById(`excard-${ei}`);if(card)card.classList.add('pr-flash');setTimeout(()=>card&&card.classList.remove('pr-flash'),1500);showToast(`🏆 Nouveau PR sur ${exercises[ei].name} !`);} }
   }
-  function tick(ei,si) { exercises[ei].sets[si].done=!exercises[ei].sets[si].done; if(exercises[ei].sets[si].done){ const exRest = exercises[ei].restTime; startRest(exRest !== undefined ? exRest : restDur); } renderExercises(); }
+  function tick(ei,si) { exercises[ei].sets[si].done=!exercises[ei].sets[si].done; if(exercises[ei].sets[si].done){ const exRest = exercises[ei].restTime; startRest(exRest !== undefined ? exRest : restDur); } renderExercises(); autosaveDraft(); }
   function getSelectedMuscles() { return [...document.querySelectorAll('.chip.on')].map(c=>c.textContent); }
 
   // ── Save session ──
@@ -948,6 +1035,7 @@
     await sbSave('sessions', [newSession]);
     showSyncBadge('✓ Sync', true);
     exercises=[]; loadedRoutineId=null; resetTimer(); skipRest();
+    clearDraft();
     document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
     document.getElementById('sessionNotes').value='';
     renderExercises(); renderRoutinePicker(); showToast('Séance sauvegardée ✓');
