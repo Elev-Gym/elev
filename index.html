@@ -1113,7 +1113,9 @@
         <div class="rpc-arrow">${isLoaded?'✓':'→'}</div></div>`;
     }).join('');
   }
+  let _lastLoadRoutineTime = 0;
   function loadRoutine(id) {
+    _lastLoadRoutineTime = Date.now();
     const routine = routines.find(r => r.id === id);
     if (!routine) return;
     // Deselect if already loaded
@@ -1165,8 +1167,9 @@
   // ── Exercises ──
   let _ignoreToggleUntil = 0;
   function toggleFreeSessionBlock() {
-    // Guard against ghost clicks after modal close
+    // Guard against ghost clicks after modal close OR after loadRoutine call
     if (Date.now() < _ignoreToggleUntil) return;
+    if (Date.now() - _lastLoadRoutineTime < 800) return;
     const block = document.getElementById('freeSessionBlock');
     const btn = document.getElementById('freeSessionToggleBtn');
     const isOpen = block.style.display !== 'none';
