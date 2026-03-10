@@ -262,7 +262,17 @@
 
   /* History */
   .h-list { display: flex; flex-direction: column; gap: 12px; }
-  .h-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 16px 18px; transition: border-color 0.2s; animation: fadeUp 0.2s ease; }
+  .h-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 16px 18px; transition: border-color 0.2s; animation: fadeUp 0.2s ease; cursor: pointer; }
+  .h-card:hover { border-color: var(--border2); }
+  .h-detail { display: none; border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+  .h-detail.open { display: block; }
+  .h-detail-ex { margin-bottom: 12px; }
+  .h-detail-ex-name { font-family: 'Cormorant Garamond', serif; font-size: 16px; margin-bottom: 4px; }
+  .h-detail-set { font-size: 11px; color: var(--muted); font-family: 'Geist Mono', monospace; padding: 2px 0; }
+  .h-detail-set.done { color: var(--accent); }
+  .pr-search-wrap { position: relative; margin-bottom: 10px; }
+  .pr-search-inp { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; box-sizing: border-box; outline: none; background: var(--warm); }
+  .pr-search-inp:focus { border-color: var(--accent); }
   .h-card:hover { border-color: var(--border2); }
   .h-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
   .h-date { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 400; text-transform: capitalize; }
@@ -372,31 +382,33 @@
     <div class="label">Exercices</div>
     <div class="exercise-list" id="exerciseList"></div>
     <div class="add-form">
-      <div class="label">Ajouter un exercice</div>
-      <div class="form-row">
-        <div style="position:relative;flex:1">
-          <input class="inp" id="exName" placeholder="Nom de l'exercice" type="text" oninput="filterAddSuggestions()" autocomplete="off" style="width:100%;box-sizing:border-box"/>
-          <div class="ex-suggestions ex-add-suggestions" id="exAddSuggestions"></div>
+      <button id="addExToggleBtn" class="btn-add" style="width:100%;margin-bottom:0" onclick="toggleAddExForm()">+ Ajouter un exercice</button>
+      <div id="addExForm" style="display:none;margin-top:12px">
+        <div class="form-row">
+          <div style="position:relative;flex:1">
+            <input class="inp" id="exName" placeholder="Nom de l'exercice" type="text" oninput="filterAddSuggestions()" autocomplete="off" style="width:100%;box-sizing:border-box"/>
+            <div class="ex-suggestions ex-add-suggestions" id="exAddSuggestions"></div>
+          </div>
+          <select class="inp" id="exMuscle">
+            <option value="">Muscle</option>
+            <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
+            <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+            <option>Abdos</option><option>Fessiers</option><option>Autre</option>
+          </select>
         </div>
-        <select class="inp" id="exMuscle">
-          <option value="">Muscle</option>
-          <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-          <option>Biceps</option><option>Triceps</option><option>Jambes</option>
-          <option>Abdos</option><option>Fessiers</option><option>Autre</option>
-        </select>
+        <div class="form-row" style="margin-top:8px">
+          <select class="inp" id="exRest" onchange="document.getElementById('exRestCustom').style.display=this.value==='custom'?'block':'none'">
+            <option value="60">Repos 1 min</option>
+            <option value="90" selected>Repos 1 min 30</option>
+            <option value="120">Repos 2 min</option>
+            <option value="180">Repos 3 min</option>
+            <option value="0">Sans repos</option>
+            <option value="custom">Personnalisé...</option>
+          </select>
+          <input class="inp" id="exRestCustom" type="number" placeholder="Sec." style="max-width:80px;display:none;" min="5" max="600"/>
+        </div>
+        <button class="btn-add" style="width:100%;margin-top:8px" onclick="addExercise()">+ Ajouter</button>
       </div>
-      <div class="form-row" style="margin-top:8px">
-        <select class="inp" id="exRest" onchange="document.getElementById('exRestCustom').style.display=this.value==='custom'?'block':'none'">
-          <option value="60">Repos 1 min</option>
-          <option value="90" selected>Repos 1 min 30</option>
-          <option value="120">Repos 2 min</option>
-          <option value="180">Repos 3 min</option>
-          <option value="0">Sans repos</option>
-          <option value="custom">Personnalisé...</option>
-        </select>
-        <input class="inp" id="exRestCustom" type="number" placeholder="Sec." style="max-width:80px;display:none;" min="5" max="600"/>
-      </div>
-      <button class="btn-add" onclick="addExercise()">+ Ajouter</button>
     </div>
     <div class="label">Ressenti & notes</div>
     <textarea class="notes-area" id="sessionNotes" placeholder="Comment tu te sens aujourd'hui ?"></textarea>
@@ -539,13 +551,18 @@
     <!-- Progression par exercice -->
     <div class="label" style="margin-top:4px">Progression par exercice</div>
     <div class="chart-wrap" style="margin-bottom:22px">
-      <div class="prog-selector" id="progSelector"></div>
+      <div class="pr-search-wrap">
+        <input class="pr-search-inp" id="progExSearch" placeholder="Rechercher un exercice…" oninput="filterProgEx(this.value)" autocomplete="off"/>
+      </div>
       <canvas id="progChart" height="140"></canvas>
       <div id="progEmpty" style="display:none;text-align:center;padding:20px 0;font-size:11px;color:var(--muted2)">Aucune donnée pour cet exercice.</div>
     </div>
 
     <div class="label">Records personnels</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 16px;margin-bottom:24px">
+      <div class="pr-search-wrap" style="padding-top:8px">
+        <input class="pr-search-inp" id="prSearch" placeholder="Rechercher un exercice…" oninput="renderStats()" autocomplete="off"/>
+      </div>
       <div class="pr-list" id="prList"></div>
     </div>
 
@@ -1015,6 +1032,15 @@
   }
 
   // ── Exercises ──
+  function toggleAddExForm() {
+    const form = document.getElementById('addExForm');
+    const btn = document.getElementById('addExToggleBtn');
+    const isOpen = form.style.display !== 'none';
+    form.style.display = isOpen ? 'none' : 'block';
+    btn.textContent = isOpen ? '+ Ajouter un exercice' : '✕ Fermer';
+    if (!isOpen) setTimeout(() => document.getElementById('exName').focus(), 50);
+  }
+
   function addExercise() {
     const name = document.getElementById('exName').value.trim();
     if (!name) { showToast("Entre un nom d'exercice"); return; }
@@ -1028,6 +1054,8 @@
     restSel.value = '90';
     document.getElementById('exRestCustom').style.display = 'none';
     document.getElementById('exRestCustom').value = '';
+    document.getElementById('addExForm').style.display = 'none';
+    document.getElementById('addExToggleBtn').textContent = '+ Ajouter un exercice';
     renderExercises();
     autosaveDraft();
   }
@@ -1659,15 +1687,35 @@
   function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
 
   // ── History ──
+  let openHistoryIds = new Set();
+
+  function toggleHistory(id) {
+    if (openHistoryIds.has(id)) openHistoryIds.delete(id);
+    else openHistoryIds.add(id);
+    renderHistory();
+  }
+
   function renderHistory() {
     const el=document.getElementById('historyList');
     if(!sessions.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Aucune séance</div><div class="empty-sub">Commence et sauvegarde ta première séance.</div></div>`;return;}
     el.innerHTML=sessions.map(s=>{
       const d=new Date(s.date),dateStr=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}),dur=s.duration>0?fmt(s.duration):'—';
-      return `<div class="h-card"><div class="h-top"><div class="h-date">${dateStr}</div><div class="h-dur">${dur}</div></div>
+      const isOpen = openHistoryIds.has(s.id);
+      const detail = isOpen ? `<div class="h-detail open">
+        ${s.exercises.map(ex => `<div class="h-detail-ex">
+          <div class="h-detail-ex-name">${ex.name}${ex.muscle?` <span style="font-size:11px;color:var(--muted)">${ex.muscle}</span>`:''}</div>
+          ${ex.sets.map((set,i) => {
+            const w = set.w||set.weight||'—'; const r = set.r||set.reps||'—';
+            return `<div class="h-detail-set ${set.done?'done':''}">Série ${i+1} · ${w}kg × ${r} reps${set.done?' ✓':''}</div>`;
+          }).join('')}
+        </div>`).join('')}
+        ${s.notes?`<div class="h-note" style="margin-top:8px">${s.notes}</div>`:''}
+      </div>` : '';
+      return `<div class="h-card" onclick="toggleHistory(${s.id})">
+        <div class="h-top"><div class="h-date">${dateStr}</div><div style="display:flex;align-items:center;gap:8px"><div class="h-dur">${dur}</div><span style="font-size:11px;color:var(--muted)">${isOpen?'▲':'▼'}</span></div></div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:${s.muscles?.length||s.routineName?'8px':'0'}">${s.routineName?`<span class="h-routine-tag">📌 ${s.routineName}</span>`:''}${s.muscles?.map(m=>`<span class="h-chip">${m}</span>`).join('')||''}</div>
         <div class="h-exs">${s.exercises.map(e=>e.name).join(' · ')||'—'}</div>
-        ${s.notes?`<div class="h-note">${s.notes}</div>`:''}
+        ${detail}
       </div>`;
     }).join('');
   }
@@ -1682,8 +1730,10 @@
     const allMuscles=sessions.flatMap(s=>s.muscles||[]),topMuscle=allMuscles.length?[...allMuscles.reduce((m,v)=>m.set(v,(m.get(v)||0)+1),new Map())].sort((a,b)=>b[1]-a[1])[0][0]:'—';
     grid.innerHTML=`<div class="stat-box"><div class="stat-val">${n}</div><div class="stat-lbl">Séances</div></div><div class="stat-box"><div class="stat-val">${totalSets}</div><div class="stat-lbl">Séries</div></div><div class="stat-box"><div class="stat-val">${fmt(avgDur)}</div><div class="stat-lbl">Durée moy.</div></div><div class="stat-box"><div class="stat-val" style="font-size:18px;padding-top:10px">${topMuscle}</div><div class="stat-lbl">Muscle favori</div></div>`;
     const exNames=[...new Set(sessions.flatMap(s=>s.exercises.map(e=>e.name)))];
-    const prs=exNames.map(name=>{let maxW=0,maxDate=null;sessions.forEach(s=>{const ex=s.exercises.find(e=>e.name===name);if(ex)ex.sets.forEach(set=>{const w=parseFloat(set.w||set.weight||0);if(w>maxW){maxW=w;maxDate=s.date;}});});return{name,weight:maxW,date:maxDate};}).filter(p=>p.weight>0).sort((a,b)=>b.weight-a.weight).slice(0,8);
-    prEl.innerHTML=prs.length?prs.map(p=>`<div class="pr-row"><div><div class="pr-ex">${p.name}</div><div class="pr-date">${new Date(p.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div></div><div class="pr-val">🏆 ${p.weight} kg</div></div>`).join(''):'<div style="padding:12px 0;font-size:11px;color:var(--muted2)">Aucun record encore.</div>';
+    const prQuery = (document.getElementById('prSearch')?.value||'').trim().toLowerCase();
+    const allPrs=exNames.map(name=>{let maxW=0,maxDate=null;sessions.forEach(s=>{const ex=s.exercises.find(e=>e.name===name);if(ex)ex.sets.forEach(set=>{const w=parseFloat(set.w||set.weight||0);if(w>maxW){maxW=w;maxDate=s.date;}});});return{name,weight:maxW,date:maxDate};}).filter(p=>p.weight>0).sort((a,b)=>b.weight-a.weight);
+    const prs = prQuery ? allPrs.filter(p=>p.name.toLowerCase().includes(prQuery)) : allPrs.slice(0,3);
+    prEl.innerHTML=prs.length?prs.map(p=>`<div class="pr-row"><div><div class="pr-ex">${p.name}</div><div class="pr-date">${new Date(p.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div></div><div class="pr-val">🏆 ${p.weight} kg</div></div>`).join(''):'<div style="padding:12px 0;font-size:11px;color:var(--muted2)">Aucun résultat.</div>';
     renderProgSelector();
     const exCount={};sessions.forEach(s=>s.exercises.forEach(e=>{exCount[e.name]=(exCount[e.name]||0)+1;}));
     const sorted=Object.entries(exCount).sort((a,b)=>b[1]-a[1]).slice(0,6),max=sorted[0]?.[1]||1;
