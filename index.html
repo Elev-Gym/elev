@@ -1113,6 +1113,7 @@
         <div class="rpc-arrow">${isLoaded?'✓':'→'}</div></div>`;
     }).join('');
   }
+  let _blockWasOpenBeforeConfirm = false;
   function loadRoutine(id) {
     const routine = routines.find(r => r.id === id);
     if (!routine) return;
@@ -1121,6 +1122,9 @@
       loadedRoutineId = null; exercises = [];
       renderExercises(); renderRoutinePicker(); showToast('Routine retirée'); return;
     }
+    // Remember block state before showing modal
+    const block = document.getElementById('freeSessionBlock');
+    _blockWasOpenBeforeConfirm = block && block.style.display !== 'none';
     // Show confirm modal
     document.getElementById('routineConfirmName').textContent = routine.name;
     document.getElementById('routineConfirmExs').textContent = routine.exercises.length + ' exercice' + (routine.exercises.length > 1 ? 's' : '') + ' · ' + [...new Set(routine.exercises.map(e=>e.muscle).filter(Boolean))].join(', ');
@@ -1157,6 +1161,13 @@
 
   function closeRoutineConfirm() {
     document.getElementById('routineConfirmModal').style.display = 'none';
+    // Restore block to its state before modal was opened
+    const block = document.getElementById('freeSessionBlock');
+    const btn = document.getElementById('freeSessionToggleBtn');
+    if (block && !_blockWasOpenBeforeConfirm) {
+      block.style.display = 'none';
+      if (btn) btn.textContent = 'Démarrer une séance libre';
+    }
   }
 
   // ── Exercises ──
@@ -2262,6 +2273,17 @@
   // ── Drag & drop exercises in session ──
   let exDragSrc = null;
   // ── Drag desktop exercises ──
+  function enableExDrag(ei) {
+    const card = document.getElementById('excard-' + ei);
+    if (card) {
+      card.setAttribute('draggable', 'true');
+      card.ondragstart = function(e) { onExDragStart(e, ei); };
+    }
+  }
+  function disableExDrag(ei) {
+    const card = document.getElementById('excard-' + ei);
+    if (card) { card.setAttribute('draggable', 'false'); card.ondragstart = null; }
+  }
   function onExDragStart(e, ei) {
     exDragSrc = ei;
     e.currentTarget.classList.add('ex-dragging');
