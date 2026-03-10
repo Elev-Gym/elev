@@ -535,6 +535,7 @@
   }
 
   db.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth event:', event, session?.user?.email);
     if (session?.user) {
       currentUser = session.user;
       document.getElementById('loginScreen').style.display = 'none';
@@ -542,6 +543,18 @@
       initApp();
     } else {
       currentUser = null;
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
+  });
+
+  // Also check session on load
+  db.auth.getSession().then(({ data: { session } }) => {
+    console.log('Initial session:', session?.user?.email);
+    if (session?.user && !currentUser) {
+      currentUser = session.user;
+      document.getElementById('loginScreen').style.display = 'none';
+      loadAllData().then(() => initApp());
+    } else if (!session) {
       document.getElementById('loginScreen').style.display = 'flex';
     }
   });
@@ -815,6 +828,7 @@
 
   // ── Body Weight ──
   async function logWeight() {
+    if (!currentUser) { showToast('Non connecté — recharge la page'); return; }
     const val = parseFloat(document.getElementById('weightInput').value);
     if (!val||val<20||val>300) { showToast('Poids invalide'); return; }
     const today = new Date().toISOString().split('T')[0];
