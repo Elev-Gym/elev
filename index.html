@@ -401,6 +401,20 @@
     </div>
   </div>
 
+  <!-- ══ ROUTINE CONFIRM MODAL ══ -->
+  <div class="ex-replace-modal" id="routineConfirmModal" style="display:none" onclick="if(event.target===this)closeRoutineConfirm()">
+    <div class="ex-replace-sheet">
+      <div class="ex-replace-title">Lancer la routine</div>
+      <div style="margin-bottom:6px;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--ink)" id="routineConfirmName"></div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px;" id="routineConfirmExs"></div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Le chrono démarrera automatiquement.</div>
+      <div class="ex-replace-actions">
+        <button class="ex-replace-cancel" onclick="closeRoutineConfirm()">Annuler</button>
+        <button class="ex-replace-confirm" onclick="confirmLoadRoutine()">C'est parti 💪</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ EXERCISE REPLACE MODAL ══ -->
   <div class="ex-replace-modal" id="exReplaceModal" style="display:none" onclick="if(event.target===this)closeReplaceModal()">
     <div class="ex-replace-sheet">
@@ -846,6 +860,8 @@
       notes: document.getElementById('sessionNotes')?.value || '',
       timerSec,
       timerWasRunning: timerRunning,
+      restRemaining: restRemaining || 0,
+      restWasActive: restRemaining > 0 && !restPaused,
       loadedRoutineId,
       routineName: routine?.name || null,
       savedAt: Date.now()
@@ -897,6 +913,14 @@
       if (draft.notes) document.getElementById('sessionNotes').value = draft.notes;
       renderExercises();
       renderRoutinePicker();
+      // Restore rest timer if it was active
+      if (draft.restWasActive && draft.restRemaining > 0) {
+        const elapsed = Math.floor((Date.now() - draft.savedAt) / 1000);
+        const remaining = draft.restRemaining - elapsed;
+        if (remaining > 0) {
+          startRest(remaining);
+        }
+      }
       const ago = Math.round((Date.now() - draft.savedAt) / 60000);
       showToast(`Session restaurée (il y a ${ago < 1 ? "moins d'1 min" : ago + " min"})`);
       return true;
@@ -934,13 +958,42 @@
   function loadRoutine(id) {
     const routine = routines.find(r => r.id === id);
     if (!routine) return;
-    if (loadedRoutineId === id) { loadedRoutineId = null; exercises = []; renderExercises(); renderRoutinePicker(); showToast('Routine retirée'); return; }
+    // Deselect if already loaded
+    if (loadedRoutineId === id) {
+      loadedRoutineId = null; exercises = [];
+      renderExercises(); renderRoutinePicker(); showToast('Routine retirée'); return;
+    }
+    // Show confirm modal
+    document.getElementById('routineConfirmName').textContent = routine.name;
+    document.getElementById('routineConfirmExs').textContent = routine.exercises.length + ' exercice' + (routine.exercises.length > 1 ? 's' : '') + ' · ' + [...new Set(routine.exercises.map(e=>e.muscle).filter(Boolean))].join(', ');
+    document.getElementById('routineConfirmModal').style.display = 'flex';
+    document.getElementById('routineConfirmModal').dataset.pendingId = id;
+  }
+
+  function confirmLoadRoutine() {
+    const id = parseInt(document.getElementById('routineConfirmModal').dataset.pendingId);
+    const routine = routines.find(r => r.id === id);
+    if (!routine) return;
+    closeRoutineConfirm();
     loadedRoutineId = id;
     exercises = routine.exercises.map(ex => ({ id: Date.now()+Math.random(), name: ex.name, muscle: ex.muscle, restTime: ex.restTime ?? 90, sets: Array.from({length:ex.sets||3},()=>({w:'',r:'',done:false})) }));
     const muscles = [...new Set(routine.exercises.map(e => e.muscle).filter(Boolean))];
     document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', muscles.includes(c.textContent)));
-    renderExercises(); renderRoutinePicker(); showToast(`"${routine.name}" chargée`);
-    setTimeout(() => document.getElementById('exerciseList').scrollIntoView({behavior:'smooth',block:'start'}), 100);
+    // Auto-start timer
+    if (!timerRunning) {
+      timerInterval = setInterval(() => { timerSec++; updateTimer(); }, 1000);
+      timerRunning = true;
+      const btn = document.getElementById('timerBtn');
+      if (btn) { btn.textContent = '⏸'; btn.classList.add('active'); }
+    }
+    renderExercises(); renderRoutinePicker();
+    showToast(`"${routine.name}" lancée ! ⏱`);
+    autosaveDraft();
+    setTimeout(() => document.getElementById('exerciseList').scrollIntoView({behavior:'smooth',block:'start'}), 200);
+  }
+
+  function closeRoutineConfirm() {
+    document.getElementById('routineConfirmModal').style.display = 'none';
   }
 
   // ── Exercises ──
