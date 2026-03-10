@@ -119,13 +119,13 @@
   .inp:focus { outline: none; border-color: var(--accent); background: #fff; }
   .inp::placeholder { color: var(--muted2); }
   select.inp { cursor: pointer; min-width: 130px; flex: 0 0 auto; }
-  .btn-add { width: 100%; background: var(--text); color: var(--bg); border: none; border-radius: 2px; padding: 11px; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+  .btn-add { width: 100%; background: var(--text); color: var(--bg); border: none; border-radius: 20px; padding: 11px 20px; font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.18s; }
   .btn-add:hover { background: var(--accent); }
   .notes-area { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; color: var(--text); font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 400; font-style: italic; resize: none; min-height: 80px; margin-bottom: 22px; transition: border-color 0.15s; line-height: 1.6; }
   .notes-area:focus { outline: none; border-color: var(--accent); }
   .notes-area::placeholder { color: var(--muted2); }
-  .save-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 15px; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
-  .save-btn:hover { background: #234830; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(45,90,61,0.2); }
+  .save-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 13px 20px; font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.18s; }
+  .save-btn:hover { background: #234830; box-shadow: 0 4px 16px rgba(45,90,61,0.2); }
 
   /* Rest settings */
   .rest-settings { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 22px; }
@@ -155,7 +155,7 @@
   .rc-ex-name { font-family: 'Cormorant Garamond', serif; font-size: 16px; }
   .rc-ex-muscle { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
   .rc-ex-sets { font-size: 10px; color: var(--muted2); }
-  .btn-ghost { background: none; border: 1px solid var(--border2); border-radius: 2px; padding: 5px 12px; font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .btn-ghost { background: none; border: 1px solid var(--border2); border-radius: 20px; padding: 6px 14px; font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: all 0.15s; }
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .btn-ghost.danger:hover { border-color: var(--accent2); color: var(--accent2); }
   .create-routine-form { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 18px; margin-bottom: 18px; }
@@ -558,9 +558,9 @@
 
       <div class="label">Ressenti & notes</div>
       <textarea class="notes-area" id="sessionNotes" placeholder="Comment tu te sens aujourd'hui ?"></textarea>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="save-btn" onclick="saveSession()">Terminer la séance</button>
-        <button onclick="abandonSession()" style="background:none;border:1px solid #ddd;border-radius:4px;padding:10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;width:100%;">Annuler la séance</button>
+      <div style="display:flex;gap:10px">
+        <button onclick="abandonSession()" style="flex:1;background:none;border:1px solid var(--border2);border-radius:20px;padding:12px 10px;font-family:'Geist Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all 0.18s;">Annuler</button>
+        <button class="save-btn" onclick="saveSession()" style="flex:2">Terminer ✓</button>
       </div>
         </div><!-- end freeSessionContent -->
       </div><!-- end freeSessionBlock -->
