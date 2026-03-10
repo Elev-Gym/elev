@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SÉANCE — Gym Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
   :root {
     --bg: #f7f5f2;
@@ -499,9 +499,25 @@
 <script>
   const SUPA_URL = 'https://cyzjnfyrqcyoaknnqehl.supabase.co';
   const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5empuZnlycWN5b2Frbm5xZWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNTczNTAsImV4cCI6MjA4ODczMzM1MH0.DGn8FpXlhWYP98c2UH8P7BTK0UUcoI_wF1EUiWb5Q7w';
-  const { createClient } = supabase;
-  const db = createClient(SUPA_URL, SUPA_KEY);
   let currentUser = null;
+  let accessToken = null;
+
+  // ── Direct fetch helpers ──
+  async function supaFetch(path, options = {}) {
+    const headers = {
+      'apikey': SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+      ...(accessToken ? { 'Authorization': 'Bearer ' + accessToken } : {}),
+      ...(options.headers || {})
+    };
+    const res = await fetch(SUPA_URL + path, { ...options, headers });
+    if (options.returnData) {
+      const json = await res.json();
+      return json;
+    }
+    return res;
+  }
 
   // ── Auth ──
   async function signUp() {
@@ -509,22 +525,47 @@
     const password = document.getElementById('loginPassword').value;
     if (!email || !password) { showLoginError('Remplis tous les champs'); return; }
     if (password.length < 6) { showLoginError('Mot de passe trop court (6 car. min)'); return; }
-    const { error } = await db.auth.signUp({ email, password });
-    if (error) { showLoginError(error.message); return; }
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('loginConfirm').style.display = 'block';
+    const res = await fetch(SUPA_URL + '/auth/v1/signup', {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.error || data.msg) { showLoginError(data.error_description || data.msg || 'Erreur'); return; }
+    if (data.access_token) {
+      await handleSession(data);
+    } else {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('loginConfirm').style.display = 'block';
+    }
   }
 
   async function signIn() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     if (!email || !password) { showLoginError('Remplis tous les champs'); return; }
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
-    if (error) { showLoginError('Email ou mot de passe incorrect'); return; }
+    const res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!data.access_token) { showLoginError('Email ou mot de passe incorrect'); return; }
+    await handleSession(data);
+  }
+
+  async function handleSession(data) {
+    accessToken = data.access_token;
+    currentUser = data.user;
+    localStorage.setItem('seance_session', JSON.stringify({ access_token: data.access_token, user: data.user }));
+    document.getElementById('loginScreen').style.display = 'none';
+    await loadAllData();
+    initApp();
   }
 
   async function signOut() {
-    await db.auth.signOut();
+    localStorage.removeItem('seance_session');
+    accessToken = null; currentUser = null;
     document.getElementById('loginScreen').style.display = 'flex';
   }
 
@@ -534,66 +575,47 @@
     setTimeout(() => el.style.display = 'none', 3000);
   }
 
-  db.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth event:', event, session?.user?.email);
-    if (session?.user) {
-      currentUser = session.user;
-      document.getElementById('loginScreen').style.display = 'none';
-      await loadAllData();
-      initApp();
+  // Check saved session on load
+  (async () => {
+    const saved = localStorage.getItem('seance_session');
+    if (saved) {
+      try {
+        const s = JSON.parse(saved);
+        accessToken = s.access_token; currentUser = s.user;
+        document.getElementById('loginScreen').style.display = 'none';
+        await loadAllData();
+        initApp();
+      } catch(e) {
+        localStorage.removeItem('seance_session');
+        document.getElementById('loginScreen').style.display = 'flex';
+      }
     } else {
-      currentUser = null;
       document.getElementById('loginScreen').style.display = 'flex';
     }
-  });
+  })();
 
-  // Also check session on load
-  db.auth.getSession().then(({ data: { session } }) => {
-    console.log('Initial session:', session?.user?.email);
-    if (session?.user && !currentUser) {
-      currentUser = session.user;
-      document.getElementById('loginScreen').style.display = 'none';
-      loadAllData().then(() => initApp());
-    } else if (!session) {
-      document.getElementById('loginScreen').style.display = 'flex';
-    }
-  });
-
-  // ── Supabase helpers ──
-  async function getUser() {
-    if (currentUser) return currentUser;
-    const { data: { session } } = await db.auth.getSession();
-    if (session?.user) { currentUser = session.user; return currentUser; }
-    return null;
-  }
-
+  // ── Data helpers ──
   async function sbLoad(table) {
-    const user = await getUser();
-    if (!user) { console.log('sbLoad: no user'); return []; }
-    const { data, error } = await db.from(table).select('*').eq('user_id', user.id);
-    if (error) { console.error('sbLoad error:', error); return []; }
+    if (!accessToken) return [];
+    const data = await supaFetch('/rest/v1/' + table + '?select=*&user_id=eq.' + currentUser.id, { returnData: true });
+    if (!Array.isArray(data)) { console.error('sbLoad error:', data); return []; }
     return data.map(row => row.data);
   }
 
   async function sbSave(table, records) {
-    const user = await getUser();
-    if (!user) { console.log('sbSave: no user'); return; }
-    console.log('sbSave start:', table, 'user:', user.email);
-    const rows = records.map(r => ({ id: String(r.id), user_id: user.id, data: r }));
-    console.log('sbSave rows:', JSON.stringify(rows));
-    try {
-      const result = await db.from(table).upsert(rows, { onConflict: 'id' });
-      console.log('sbSave result:', JSON.stringify(result));
-      if (result.error) console.error('sbSave error:', result.error);
-    } catch(e) {
-      console.error('sbSave exception:', e);
-    }
+    if (!accessToken) return;
+    const rows = records.map(r => ({ id: String(r.id), user_id: currentUser.id, data: r }));
+    const res = await supaFetch('/rest/v1/' + table, {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify(rows)
+    });
+    if (!res.ok) { const t = await res.text(); console.error('sbSave error:', t); }
   }
 
   async function sbDelete(table, id) {
-    const user = await getUser();
-    if (!user) return;
-    await db.from(table).delete().eq('id', String(id)).eq('user_id', user.id);
+    if (!accessToken) return;
+    await supaFetch('/rest/v1/' + table + '?id=eq.' + String(id) + '&user_id=eq.' + currentUser.id, { method: 'DELETE' });
   }
 
   async function loadAllData() {
