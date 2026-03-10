@@ -415,34 +415,37 @@
 </style>
 
 <!-- ══ LOGIN SCREEN ══ -->
-<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;padding:32px;overflow:hidden;">
-  <div style="width:100%;max-width:340px;">
-    <div style="text-align:center;margin-bottom:32px;">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="168" height="48">
-      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&amp;display=swap');</style></defs>
-      <text x="140" y="58" font-family="'Cormorant Garamond','Georgia',serif" font-size="56" font-weight="300" fill="#1a1a1a" text-anchor="middle" letter-spacing="18">ÉLEV</text>
-      <line x1="50" y1="68" x2="230" y2="68" stroke="#1a1a1a" stroke-width="0.6" opacity="0.4"/>
-    </svg>
-    </div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--text);margin-bottom:6px;">Bienvenue</div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--muted);margin-bottom:32px;line-height:1.7;">Chaque séance est une promesse tenue à toi-même.</div>
+<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;justify-content:space-between;padding:48px 32px 40px;overflow:hidden;">
+  <div>
+    <div style="font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:32px;">Élev — Suivi de musculation</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:var(--text);line-height:1.05;margin-bottom:8px;">Bienvenue.</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:var(--muted);line-height:1.7;margin-bottom:44px;">Chaque séance est une promesse<br>tenue à toi-même.</div>
 
     <div id="loginForm">
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Adresse e-mail</div>
-      <input id="loginEmail" type="email" placeholder="ton@email.com" style="width:100%;background:var(--warm);border:1px solid var(--border2);border-radius:2px;padding:11px 14px;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);margin-bottom:10px;"/>
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Mot de passe</div>
-      <input id="loginPassword" type="password" placeholder="••••••••" style="width:100%;background:var(--warm);border:1px solid var(--border2);border-radius:2px;padding:11px 14px;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);margin-bottom:16px;"/>
-      <button onclick="signIn()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:14px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-bottom:10px;">Se connecter</button>
-      <button onclick="signUp()" style="width:100%;background:none;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:14px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;">Créer un compte</button>
-      <div id="loginError" style="margin-top:12px;font-size:11px;color:var(--accent2);text-align:center;display:none;"></div>
+      <div style="margin-bottom:22px;">
+        <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;">E-mail</div>
+        <input id="loginEmail" type="email" placeholder="Votre e-mail" style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 0;font-family:'Geist Mono',monospace;font-size:14px;color:var(--text);outline:none;"/>
+      </div>
+      <div style="margin-bottom:32px;">
+        <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;">Mot de passe</div>
+        <input id="loginPassword" type="password" placeholder="••••••••" style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 0;font-family:'Geist Mono',monospace;font-size:14px;color:var(--text);outline:none;"/>
+      </div>
+      <button onclick="signIn()" style="width:100%;background:var(--text);color:var(--bg);border:none;border-radius:20px;padding:14px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-bottom:10px;transition:background 0.2s;">Se connecter</button>
+      <button onclick="signUp()" style="width:100%;background:none;color:var(--muted);border:1px solid var(--border2);border-radius:20px;padding:12px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">Créer un compte</button>
+      <div id="loginError" style="margin-top:14px;font-size:11px;color:var(--accent2);text-align:center;display:none;font-family:'Geist Mono',monospace;"></div>
     </div>
 
-    <div id="loginConfirm" style="display:none;text-align:center;padding:20px 0;">
-      <div style="font-size:32px;margin-bottom:12px;">📬</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);margin-bottom:8px;">Vérifie ta boîte mail</div>
-      <div style="font-size:11px;color:var(--muted);line-height:1.7;">Un lien de confirmation t'a été envoyé.<br>Clique dessus puis reviens ici te connecter.</div>
-      <button onclick="document.getElementById('loginConfirm').style.display='none';document.getElementById('loginForm').style.display='block';" style="margin-top:20px;background:none;border:1px solid var(--border2);border-radius:2px;padding:8px 20px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;">Retour</button>
+    <div id="loginConfirm" style="display:none;padding:20px 0;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--text);margin-bottom:10px;">Vérifie<br>ta boîte mail.</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.8;font-family:'Geist Mono',monospace;margin-bottom:28px;">Un lien de confirmation<br>t'a été envoyé.</div>
+      <button onclick="document.getElementById('loginConfirm').style.display='none';document.getElementById('loginForm').style.display='block';" style="background:none;border:1px solid var(--border2);border-radius:20px;padding:10px 24px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;">Retour</button>
     </div>
+  </div>
+
+  <div style="text-align:right;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="70" height="20">
+      <text x="280" y="62" font-family="'Cormorant Garamond','Georgia',serif" font-size="56" font-weight="300" fill="#b5b2ae" text-anchor="end" letter-spacing="14">ÉLEV</text>
+    </svg>
   </div>
 </div>
 
