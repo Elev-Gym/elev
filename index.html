@@ -134,6 +134,14 @@
   .rc-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; }
   .rc-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
   .rc-chip-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 18px 12px; }
+  .rc-drag-handle { cursor: grab; color: var(--muted); font-size: 16px; padding: 0 8px 0 0; user-select: none; touch-action: none; }
+  .rc-drag-handle:active { cursor: grabbing; }
+  .routine-card { transition: opacity 0.15s; }
+  .routine-card.dragging { opacity: 0.4; }
+  .rc-exs-list { display: none; }
+  .rc-exs-list.open { display: block; }
+  .rc-toggle-btn { background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:2px 6px;transition:transform 0.2s; }
+  .rc-toggle-btn.open { transform: rotate(180deg); }
   .rc-exs-list { border-top: 1px solid var(--border); }
   .rc-ex-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); }
   .rc-ex-row:last-child { border-bottom: none; }
@@ -701,6 +709,11 @@
     sessions = await sbLoad('sessions');
     sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
     routines = await sbLoad('routines');
+    // Sort routines by day number extracted from name (J1, J2, J3...)
+    routines.sort((a, b) => {
+      const getDay = name => { const m = (name||'').match(/J(\d+)/i); return m ? parseInt(m[1]) : 999; };
+      return getDay(a.name) - getDay(b.name);
+    });
     bodyWeights = await sbLoad('body_weights');
     bodyWeights.sort((a, b) => a.date.localeCompare(b.date));
     showSyncBadge('✓ Sync', true);
@@ -1285,21 +1298,71 @@
     renderDraftRoutineExs(); renderRoutinesList(); renderRoutinePicker();
     showToast(`"${name}" créée !`);
   }
+  let openRoutineIds = new Set();
+
+  function toggleRoutineExs(id) {
+    if (openRoutineIds.has(id)) openRoutineIds.delete(id);
+    else openRoutineIds.add(id);
+    renderRoutinesList();
+  }
+
   function renderRoutinesList() {
     const el = document.getElementById('routinesList');
     if (!routines.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📌</div><div class="empty-title">Aucune routine</div><div class="empty-sub">Crée ta première routine ci-dessus.</div></div>`; return; }
     el.innerHTML = routines.map((r,ri)=>{
       const muscles=[...new Set(r.exercises.map(e=>e.muscle).filter(Boolean))];
-      return `<div class="routine-card">
-        <div class="rc-head"><div><div class="rc-name">${r.name}</div><div class="rc-meta">${r.exercises.length} exercice${r.exercises.length>1?'s':''}</div></div>
-        <div style="display:flex;gap:8px">
-          <button class="btn-ghost" onclick="editRoutine(${ri})">✏️ Modifier</button>
-          <button class="btn-ghost danger" onclick="deleteRoutine(${ri})">Supprimer</button>
-        </div></div>
+      const isOpen = openRoutineIds.has(r.id);
+      return `<div class="routine-card" draggable="true" data-ri="${ri}"
+        ondragstart="onRoutineDragStart(event,${ri})"
+        ondragover="onRoutineDragOver(event)"
+        ondrop="onRoutineDrop(event,${ri})"
+        ondragend="onRoutineDragEnd(event)">
+        <div class="rc-head">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="rc-drag-handle" title="Déplacer">⠿</span>
+            <div onclick="toggleRoutineExs(${r.id})" style="cursor:pointer">
+              <div class="rc-name">${r.name}</div>
+              <div class="rc-meta">${r.exercises.length} exercice${r.exercises.length>1?'s':''}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="rc-toggle-btn ${isOpen?'open':''}" onclick="toggleRoutineExs(${r.id})" title="${isOpen?'Masquer':'Voir les exercices'}">▼</button>
+            <button class="btn-ghost" onclick="editRoutine(${ri})">✏️</button>
+            <button class="btn-ghost danger" onclick="deleteRoutine(${ri})">✕</button>
+          </div>
+        </div>
         ${muscles.length?`<div class="rc-chip-row">${muscles.map(m=>`<span class="h-chip">${m}</span>`).join('')}</div>`:''}
-        <div class="rc-exs-list">${r.exercises.map(ex=>`<div class="rc-ex-row"><div><div class="rc-ex-name">${ex.name}</div>${ex.muscle?`<div class="rc-ex-muscle">${ex.muscle}</div>`:''}</div><div class="rc-ex-sets">${ex.sets} série${ex.sets>1?'s':''} · ${ex.restTime??90}s</div></div>`).join('')}</div>
+        <div class="rc-exs-list ${isOpen?'open':''}">${r.exercises.map(ex=>`<div class="rc-ex-row"><div><div class="rc-ex-name">${ex.name}</div>${ex.muscle?`<div class="rc-ex-muscle">${ex.muscle}</div>`:''}</div><div class="rc-ex-sets">${ex.sets} série${ex.sets>1?'s':''} · ${ex.restTime??90}s</div></div>`).join('')}</div>
       </div>`;
     }).join('');
+  }
+
+  // ── Drag & drop routines ──
+  let dragSrcRi = null;
+  function onRoutineDragStart(e, ri) {
+    dragSrcRi = ri;
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function onRoutineDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+  async function onRoutineDrop(e, targetRi) {
+    e.preventDefault();
+    if (dragSrcRi === null || dragSrcRi === targetRi) return;
+    const moved = routines.splice(dragSrcRi, 1)[0];
+    routines.splice(targetRi, 0, moved);
+    dragSrcRi = null;
+    renderRoutinesList(); renderRoutinePicker();
+    // Save new order to Supabase
+    showSyncBadge('Sauvegarde...');
+    await sbSave('routines', routines);
+    showSyncBadge('✓ Sync', true);
+  }
+  function onRoutineDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    dragSrcRi = null;
   }
   async function deleteRoutine(ri) {
     const r = routines[ri]; routines.splice(ri,1);
