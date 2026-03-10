@@ -1268,8 +1268,10 @@
         showSyncBadge('✓ Sync', true);
         showToast(`"${name}" mise à jour !`);
       }
+      const scrollY = window.scrollY;
       cancelEditRoutine();
       renderRoutinesList(); renderRoutinePicker();
+      requestAnimationFrame(() => window.scrollTo({ top: scrollY }));
       return;
     }
 
