@@ -1312,8 +1312,8 @@
           </div>`;
         }).join('')}
         <button class="add-set" onclick="addSet(${ei})">+ série</button>
-        <button class="ex-note-toggle" onclick="toggleExNote(${ei})">${ex.note ? '📝 Note' : '+ Note'}</button>
-        ${ex.note !== undefined && ex.note !== '' ? `<textarea class="ex-note-area" placeholder="Note sur cet exercice..." onchange="updExNote(${ei},this.value)" onblur="updExNote(${ei},this.value)">${ex.note}</textarea>` : `<textarea class="ex-note-area" id="ex-note-${ei}" placeholder="Note sur cet exercice..." style="display:none" onchange="updExNote(${ei},this.value)" onblur="updExNote(${ei},this.value)"></textarea>`}
+        <button class="ex-note-toggle" onclick="toggleExNote(${ei})" id="ex-note-btn-${ei}">${ex.note ? '📝 ' + ex.note.substring(0,20) + (ex.note.length>20?'...':'') : '+ Note'}</button>
+        <textarea class="ex-note-area" id="ex-note-${ei}" placeholder="Note sur cet exercice..." style="display:${ex.note ? 'block' : 'none'}" onchange="updExNote(${ei},this.value)" onblur="updExNote(${ei},this.value)">${ex.note || ''}</textarea>
       </div>`;
     }).join('');
   }
