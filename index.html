@@ -144,7 +144,14 @@
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .btn-ghost.danger:hover { border-color: var(--accent2); color: var(--accent2); }
   .create-routine-form { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 18px; margin-bottom: 18px; }
-  .routine-ex-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .routine-ex-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .routine-ex-edit-row { background: var(--warm); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display:flex; flex-direction:column; gap:6px; }
+  .routine-ex-edit-top { display:flex; gap:6px; align-items:center; }
+  .routine-ex-edit-bot { display:flex; gap:6px; align-items:center; }
+  .rex-inp { border:1px solid #ddd; border-radius:6px; padding:6px 9px; font-size:13px; background:#fff; outline:none; }
+  .rex-inp:focus { border-color:var(--accent); }
+  .rex-name-wrap { position:relative; flex:1; }
+  .rex-name-inp { width:100%; box-sizing:border-box; font-family:'Cormorant Garamond',serif; font-size:15px; }
   .routine-ex-item { display: flex; align-items: center; justify-content: space-between; background: var(--warm); border: 1px solid var(--border); border-radius: 2px; padding: 8px 12px; }
   .routine-ex-item-name { font-family: 'Cormorant Garamond', serif; font-size: 15px; }
   .routine-ex-item-tag { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
@@ -958,9 +965,42 @@
   }
   function renderDraftRoutineExs() {
     document.getElementById('routineExList').innerHTML = draftRoutineExs.map((ex,i)=>`
-      <div class="routine-ex-item"><div><div class="routine-ex-item-name">${ex.name}</div><div class="routine-ex-item-tag">${ex.muscle||'—'} · ${ex.sets} série${ex.sets>1?'s':''} · repos ${ex.restTime?ex.restTime+'s':'—'}</div></div>
-      <button class="routine-ex-del" onclick="delDraftEx(${i})">✕</button></div>`).join('');
+      <div class="routine-ex-edit-row">
+        <div class="routine-ex-edit-top">
+          <div class="rex-name-wrap">
+            <input class="rex-inp rex-name-inp" value="${ex.name.replace(/"/g,'&quot;')}" placeholder="Nom exercice"
+              oninput="draftRoutineExs[${i}].name=this.value; filterDraftExSug(${i}, this.value)"
+              onfocus="filterDraftExSug(${i}, this.value)"
+              autocomplete="off"/>
+            <div class="ex-suggestions ex-add-suggestions" id="draftExSug${i}"></div>
+          </div>
+          <button class="routine-ex-del" onclick="delDraftEx(${i})" style="font-size:14px;padding:4px 8px;">✕</button>
+        </div>
+        <div class="routine-ex-edit-bot">
+          <select class="rex-inp" style="flex:1" onchange="draftRoutineExs[${i}].muscle=this.value">
+            <option value="">Muscle</option>
+            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
+          </select>
+          <input class="rex-inp" type="number" style="width:60px;text-align:center" value="${ex.sets}" min="1" max="10" placeholder="Séries"
+            oninput="draftRoutineExs[${i}].sets=parseInt(this.value)||3" title="Nombre de séries"/>
+          <select class="rex-inp" style="width:100px" onchange="draftRoutineExs[${i}].restTime=this.value==='custom'?draftRoutineExs[${i}].restTime:parseInt(this.value)">
+            ${[['60','1 min'],['90','1m30'],['120','2 min'],['180','3 min'],['0','Sans']].map(([v,l])=>`<option value="${v}" ${parseInt(ex.restTime)===parseInt(v)?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+      </div>`).join('');
   }
+
+  function filterDraftExSug(i, q) {
+    const box = document.getElementById('draftExSug'+i);
+    if (!box) return;
+    const matches = q ? getKnownExercises().filter(e => e.name.toLowerCase().includes(q.toLowerCase())).slice(0,6) : [];
+    if (!matches.length) { box.classList.remove('show'); return; }
+    box.innerHTML = matches.map(e => `<div class="ex-suggestion" onmousedown="draftRoutineExs[${i}].name='${e.name.replace(/'/g,"\'")}'; document.getElementById('draftExSug${i}').classList.remove('show'); renderDraftRoutineExs();">
+      <span>${e.name}</span>${e.muscle?`<span class="ex-sug-muscle">${e.muscle}</span>`:''}
+    </div>`).join('');
+    box.classList.add('show');
+  }
+
   function delDraftEx(i) { draftRoutineExs.splice(i,1); renderDraftRoutineExs(); }
   // ── Routine form autocomplete ──
   function filterRoutineExSuggestions() {
