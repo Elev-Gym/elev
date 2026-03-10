@@ -421,11 +421,13 @@
     <div id="sessionRoutineBlock">
       <div class="label">Charger une routine</div>
       <div id="routinePickerList" style="margin-bottom:4px"></div>
-      <div class="section-divider"></div>
     </div>
 
     <!-- Séance libre -->
-    <button id="freeSessionToggleBtn" class="btn-add" style="width:100%;margin-bottom:16px" onclick="event.stopPropagation();toggleFreeSessionBlock()">Démarrer une séance libre</button>
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
+      <div class="label">Séance libre</div>
+      <button id="freeSessionToggleBtn" class="btn-add" style="width:100%;margin-bottom:16px" ontouchend="event.preventDefault();event.stopPropagation();toggleFreeSessionBlock()" onclick="event.stopPropagation();toggleFreeSessionBlock()">Démarrer une séance libre</button>
+    </div>
     <div id="freeSessionBlock" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div class="label" style="margin:0">Séance en cours</div>
@@ -1107,7 +1109,7 @@
     el.innerHTML = routines.map(r => {
       const muscles = [...new Set(r.exercises.map(e => e.muscle).filter(Boolean))];
       const isLoaded = loadedRoutineId === r.id;
-      return `<div class="routine-pick-card ${isLoaded?'loaded':''}" onclick="event.stopPropagation();loadRoutine(${r.id})">
+      return `<div class="routine-pick-card ${isLoaded?'loaded':''}" ontouchend="event.preventDefault();loadRoutine(${r.id})" onclick="loadRoutine(${r.id})">
         <div><div class="rpc-name">${r.name}</div><div class="rpc-exs">${r.exercises.length} exercice${r.exercises.length>1?'s':''}</div>
         ${muscles.length?`<div class="rpc-muscles">${muscles.map(m=>`<span class="rpc-chip">${m}</span>`).join('')}</div>`:''}</div>
         <div class="rpc-arrow">${isLoaded?'✓':'→'}</div></div>`;
