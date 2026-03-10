@@ -1345,7 +1345,11 @@
     const tag = document.getElementById('freeSessionRoutineTag');
     if (tag) { const r = loadedRoutineId ? routines.find(r=>r.id===loadedRoutineId) : null; tag.textContent = r ? `📌 ${r.name}` : ''; }
     if (!routines.length) { el.innerHTML = `<div class="no-routine-hint">Aucune routine créée.<br><span onclick="switchTab('routines')">Créer ma première routine →</span></div>`; return; }
-    el.innerHTML = routines.map(r => {
+    // Sort: loaded routine first, then rest in original order
+    const sorted = loadedRoutineId
+      ? [...routines.filter(r => r.id === loadedRoutineId), ...routines.filter(r => r.id !== loadedRoutineId)]
+      : routines;
+    el.innerHTML = sorted.map(r => {
       const muscles = [...new Set(r.exercises.map(e => e.muscle).filter(Boolean))];
       const isLoaded = loadedRoutineId === r.id;
       return `<div class="routine-pick-card ${isLoaded?'loaded':''}" ontouchstart="_rpcTouchStart(event)" ontouchend="_rpcTouchEnd(event,${r.id})" onclick="loadRoutine(${r.id})">
