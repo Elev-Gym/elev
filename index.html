@@ -509,7 +509,7 @@
 
 <!-- ══ LOADING SCREEN ══ -->
 <div class="offline-banner" id="offlineBanner">⚡ Mode hors-ligne — tes données seront synchronisées à la reconnexion</div>
-<div id="loadingScreen" style="position:fixed;inset:0;background:var(--bg);color:var(--text);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+<div id="loadingScreen" style="position:fixed;inset:0;background:var(--bg);color:var(--text);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="168" height="48">
     <defs><style>@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&amp;display=swap');</style></defs>
     <text x="140" y="58" font-family="'Cormorant Garamond','Georgia',serif" font-size="56" font-weight="300" fill="currentColor" text-anchor="middle" letter-spacing="18">ÉLEV</text>
@@ -1111,7 +1111,6 @@
     const saved = localStorage.getItem('seance_session');
     if (!saved) {
       document.getElementById('loginScreen').style.display = 'flex';
-      hideLoading();
       return;
     }
 
