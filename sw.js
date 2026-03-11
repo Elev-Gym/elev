@@ -8,6 +8,8 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   console.log('[SW] Activate', SW_VERSION);
+  // Annule tout timer résiduel d'une ancienne instance
+  clearRestTimer();
   e.waitUntil(self.clients.claim());
 });
 
