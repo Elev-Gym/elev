@@ -1934,42 +1934,21 @@
   };
 
   // ── Audio via <audio> WAV — passe en mode silence iOS comme la musique ──
-  const _beepAudio = (() => {
+  // ── Audio : joué UNIQUEMENT à la fin du timer ──
+  // Pas de preload/prime — on crée l'élément à la volée au moment du beep
+  // iOS autorise la lecture car elle suit une interaction utilisateur (tap sur le timer)
+  function playBeep() {
     try {
       const a = document.createElement('audio');
       a.src = '/elev/beep.wav';
       a.setAttribute('playsinline', '');
-      a.preload = 'auto';
-      return a;
-    } catch(e) { return null; }
-  })();
-
-  // Pré-charge au premier tap (requis par iOS pour jouer sans interaction directe)
-  let _beepReady = false;
-  function _primeBeep() {
-    if (_beepReady || !_beepAudio) return;
-    _beepReady = true;
-    _beepAudio.volume = 0;
-    _beepAudio.play().then(() => {
-      _beepAudio.pause();
-      _beepAudio.currentTime = 0;
-      _beepAudio.volume = 1;
-    }).catch(() => {});
-  }
-
-  document.addEventListener('touchstart', _primeBeep, { once: true, passive: true });
-  document.addEventListener('click', _primeBeep, { once: true, passive: true });
-
-  function playBeep() {
-    if (_beepAudio) {
-      try {
-        _beepAudio.currentTime = 0;
-        _beepAudio.volume = 1;
-        _beepAudio.play().catch(() => _playBeepFallback());
-        return;
-      } catch(e) {}
+      a.volume = 1;
+      document.body.appendChild(a);
+      a.play().catch(() => _playBeepFallback());
+      a.onended = () => a.remove();
+    } catch(e) {
+      _playBeepFallback();
     }
-    _playBeepFallback();
   }
 
   function _playBeepFallback() {
