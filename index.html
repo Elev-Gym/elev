@@ -527,18 +527,22 @@
       try {
         const reg = await navigator.serviceWorker.register('/elev/sw.js');
         console.log('[Élev] SW enregistré, scope:', reg.scope);
-        console.log('[Élev] SW state:', reg.active?.state || reg.installing?.state || 'unknown');
-        // Ping le SW pour vérifier qu'il répond
         await reg.update();
-        const worker = reg.active;
-        if (worker) {
-          navigator.serviceWorker.addEventListener('message', function pong(ev) {
-            if (ev.data?.type === 'PONG') {
-              console.log('[Élev] SW répond, version:', ev.data.version);
-              navigator.serviceWorker.removeEventListener('message', pong);
-            }
-          });
-          worker.postMessage({ type: 'PING' });
+        // Attendre que le SW soit actif puis signaler la nouvelle session
+        const worker = reg.active || reg.installing || reg.waiting;
+        const sendAppStarted = (w) => {
+          w.postMessage({ type: 'APP_STARTED', payload: { sessionId: window._elevSessionId } });
+        };
+        if (reg.active) {
+          sendAppStarted(reg.active);
+        } else {
+          // SW pas encore actif, attendre
+          const sw = reg.installing || reg.waiting;
+          if (sw) {
+            sw.addEventListener('statechange', function() {
+              if (this.state === 'activated') sendAppStarted(this);
+            });
+          }
         }
       } catch(err) {
         console.warn('[Élev] SW échec:', err.message);
@@ -549,7 +553,7 @@
       const _swReadyAt = Date.now();
       navigator.serviceWorker.addEventListener('message', e => {
         if (e.data?.type === 'REST_DONE') {
-          if (Date.now() - _swReadyAt < 3000) return; // Trop tôt, ignorer
+          // sessionId côté SW garantit qu'on ignore les timers résiduels
           if (typeof playBeep === 'function') playBeep();
           if (navigator.vibrate) navigator.vibrate([200,100,200]);
           if (typeof showToast === 'function') showToast("C'est reparti ! 💪");
@@ -569,6 +573,9 @@
         console.log('[Élev] Permission après demande:', result);
       }
     }
+
+    // SessionId unique par ouverture d'app
+    window._elevSessionId = Date.now() + '-' + Math.random().toString(36).slice(2);
 
     // Init SW immédiatement
     initSW();
@@ -1756,7 +1763,7 @@
         const sw = reg.active || reg.installing || reg.waiting;
         if (sw) {
           console.log('[Élev] Envoi START_REST_TIMER au SW, seconds:', d);
-          sw.postMessage({ type: 'START_REST_TIMER', payload: { seconds: d, exName: exName || '' } });
+          sw.postMessage({ type: 'START_REST_TIMER', payload: { seconds: d, exName: exName || '', sessionId: window._elevSessionId } });
         } else {
           console.warn('[Élev] Pas de SW actif pour envoyer le timer');
         }
