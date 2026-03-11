@@ -4307,24 +4307,31 @@
       document.getElementById('homeKcalSub').textContent = kcalTarget ? 'objectif' : 'non saisi';
     }
 
-    // Prochaine séance suggérée
+    // Prochaine séance suggérée — basée sur les jours du programme
     const activeProgram = programs.find(p => p.id === activeProgId);
     let nextRoutine = null;
-    if (activeProgram?.routines?.length) {
-      const lastSession = sessions[0];
-      const lastRoutineId = lastSession?.routineId;
-      const progRoutineIds = activeProgram.routines.map(r => r.id || r);
-      const lastIdx = lastRoutineId ? progRoutineIds.indexOf(lastRoutineId) : -1;
-      const nextIdx = (lastIdx + 1) % progRoutineIds.length;
-      const nextId = progRoutineIds[nextIdx];
-      nextRoutine = routines.find(r => r.id === nextId);
+    let nextDayLabel = '';
+    if (activeProgram?.trainingDays?.length) {
+      // JS getDay() : 0=Dim, 1=Lun... → on cherche le prochain jour assigné à partir d'aujourd'hui
+      const todayJs = new Date().getDay(); // 0-6
+      const sortedDays = [...activeProgram.trainingDays].sort((a, b) => a.day - b.day);
+      // Chercher le prochain jour >= aujourd'hui, sinon prendre le premier de la semaine prochaine
+      let found = sortedDays.find(td => td.day >= todayJs && td.sessionId);
+      if (!found) found = sortedDays.find(td => td.sessionId); // reboucle sur lundi
+      if (found) {
+        nextRoutine = routines.find(r => r.id === found.sessionId);
+        const DAY_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+        const delta = ((found.day - todayJs) + 7) % 7;
+        nextDayLabel = delta === 0 ? "Aujourd'hui" : delta === 1 ? 'Demain' : DAY_FR[found.day];
+      }
     }
-    if (!nextRoutine && routines.length) nextRoutine = routines[0];
+    if (!nextRoutine && routines.length) { nextRoutine = routines[0]; nextDayLabel = ''; }
 
     if (nextRoutine) {
       document.getElementById('homeNextName').textContent = nextRoutine.name;
-      document.getElementById('homeNextMeta').textContent = nextRoutine.exercises.length + ' exercice' + (nextRoutine.exercises.length > 1 ? 's' : '');
-      const muscles = [...new Set(nextRoutine.exercises.map(e => e.muscle).filter(Boolean))].slice(0, 4);
+      const exCount = (nextRoutine.exercises || []).length;
+      document.getElementById('homeNextMeta').textContent = (nextDayLabel ? nextDayLabel + ' · ' : '') + exCount + ' exercice' + (exCount > 1 ? 's' : '');
+      const muscles = [...new Set((nextRoutine.exercises || []).map(e => e.muscle).filter(Boolean))].slice(0, 4);
       document.getElementById('homeNextMuscles').innerHTML = muscles.map(m => `<span class="rpc-chip">${m}</span>`).join('');
       document.getElementById('homeNextSession').dataset.routineId = nextRoutine.id;
     } else {
