@@ -255,7 +255,7 @@
 
   /* ── Onboarding ── */
   /* ── Full-screen onboarding overlay ── */
-  .fullscreen-onboarding { position: fixed; inset: 0; z-index: 600; background: var(--bg); display: flex; flex-direction: column; justify-content: center; padding: 48px 32px 40px; animation: fadeUp 0.3s ease; }
+  .fullscreen-onboarding { position: fixed; inset: 0; z-index: 1100; background: var(--bg); display: flex; flex-direction: column; justify-content: flex-start; padding: 64px 32px 40px; animation: fadeUp 0.3s ease; overflow-y: auto; }
   .fob-logo { font-family: 'Cormorant Garamond', serif; font-size: 13px; letter-spacing: 7px; text-transform: uppercase; color: var(--muted); margin-bottom: 48px; }
   .fob-step-count { font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--muted2); text-transform: uppercase; margin-bottom: 16px; }
   .fob-question { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--text); line-height: 1.2; margin-bottom: 8px; }
@@ -263,9 +263,9 @@
   .fob-inp { background: transparent; border: none; border-bottom: 2px solid var(--border2); padding: 10px 4px; font-family: 'Cormorant Garamond', serif; font-size: 40px; color: var(--text); width: 100%; outline: none; margin-bottom: 40px; transition: border-color 0.2s; }
   .fob-inp:focus { border-bottom-color: var(--accent); }
   .fob-inp::placeholder { color: var(--border2); }
-  .fob-next { width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: 4px; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; margin-bottom: 14px; }
-  .fob-back { background: none; border: none; color: var(--muted); font-size: 10px; font-family: 'Geist Mono', monospace; cursor: pointer; width: 100%; text-align: center; letter-spacing: 1px; }
-  .fob-skip { background: none; border: none; color: var(--muted2); font-size: 9px; font-family: 'Geist Mono', monospace; cursor: pointer; width: 100%; text-align: center; letter-spacing: 1px; margin-top: 6px; }
+  .fob-next { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 4px; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; margin-bottom: 14px; pointer-events: auto; position: relative; z-index: 1; }
+  .fob-back { background: none; border: none; color: var(--muted); font-size: 10px; font-family: 'Geist Mono', monospace; cursor: pointer; width: 100%; text-align: center; letter-spacing: 1px; padding: 10px; pointer-events: auto; position: relative; z-index: 1; }
+  .fob-skip { background: none; border: none; color: var(--muted2); font-size: 9px; font-family: 'Geist Mono', monospace; cursor: pointer; width: 100%; text-align: center; letter-spacing: 1px; margin-top: 6px; padding: 10px; pointer-events: auto; position: relative; z-index: 1; }
   .fob-dots { display: flex; gap: 5px; margin-bottom: 40px; }
   .fob-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); transition: all 0.2s; }
   .fob-dot.active { background: var(--accent); width: 18px; border-radius: 3px; }
@@ -698,9 +698,9 @@
   <div class="fob-question" id="fobQuestion"></div>
   <div class="fob-hint" id="fobHint"></div>
   <div id="fobInputArea"></div>
-  <button class="fob-next" id="fobNextBtn" onclick="fobNext()">Suivant →</button>
-  <button class="fob-back" id="fobBackBtn" onclick="fobBack()">← Retour</button>
-  <button class="fob-skip" id="fobSkipBtn" onclick="fobSkip()" style="display:none">Passer cette étape →</button>
+  <button class="fob-next" id="fobNextBtn" onclick="window.fobNext()">Suivant →</button>
+  <button class="fob-back" id="fobBackBtn" onclick="window.fobBack()">← Retour</button>
+  <button class="fob-skip" id="fobSkipBtn" onclick="window.fobSkip()" style="display:none">Passer cette étape →</button>
 </div>
 
 <!-- ══ DAILY GREETING OVERLAY ══ -->
@@ -4100,6 +4100,11 @@
   let _fobStep = 0;
   let _fobData = {};
 
+  // Exposer sur window pour garantir l'accès depuis les onclick HTML
+  window.fobNext = async function() { await fobNextFn(); };
+  window.fobBack = function() { fobBackFn(); };
+  window.fobSkip = async function() { await fobSkipFn(); };
+
   function showFullscreenOnboarding() {
     _fobStep = 0;
     _fobData = {};
@@ -4162,7 +4167,7 @@
         ${step.autocomplete ? `autocomplete="${step.autocomplete}"` : ''}
         ${step.type === 'number' ? `inputmode="decimal" min="${step.min}" max="${step.max}"` : ''}
         ${step.key === 'firstName' ? 'style="text-transform:capitalize"' : ''}
-        onkeydown="if(event.key==='Enter')fobNext()"
+        onkeydown="if(event.key==='Enter')window.fobNext()"
       />`;
       setTimeout(() => document.getElementById('fobInp')?.focus(), 100);
     }
@@ -4177,7 +4182,7 @@
     });
   }
 
-  async function fobNext() {
+  async function fobNextFn() {
     const step = FOB_STEPS[_fobStep];
 
     if (step.type === 'choice') {
@@ -4214,11 +4219,11 @@
     }
   }
 
-  function fobBack() {
+  function fobBackFn() {
     if (_fobStep > 0) { _fobStep--; fobRender(); }
   }
 
-  async function fobSkip() {
+  async function fobSkipFn() {
     _fobStep++;
     if (_fobStep < FOB_STEPS.length) fobRender();
     else await fobFinish();
