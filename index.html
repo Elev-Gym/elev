@@ -1655,17 +1655,32 @@
   // Autosave every 15 seconds if session active
   setInterval(() => { if (exercises.length) autosaveDraft(); }, 15000);
 
-  // ── PR helpers ──
+  // ── PR helpers — basés sur volume = reps × poids ──
   function getLastSessionData(exName) {
     for (const s of sessions) { const ex = s.exercises.find(e => e.name.toLowerCase() === exName.toLowerCase()); if (ex) return ex.sets; }
     return null;
   }
-  function getPR(exName) {
-    let maxW = 0, maxDate = null;
-    for (const s of sessions) { const ex = s.exercises.find(e => e.name.toLowerCase() === exName.toLowerCase()); if (ex) ex.sets.forEach(set => { const w = parseFloat(set.w||set.weight||0); if (w > maxW) { maxW = w; maxDate = s.date; } }); }
-    return maxW > 0 ? { weight: maxW, date: maxDate } : null;
+  function setVolume(set) {
+    const w = parseFloat(set.w || set.weight || 0);
+    const r = parseFloat(set.r || set.reps || 1);
+    return w * r;
   }
-  function checkNewPR(exName, weight) { const pr = getPR(exName); return !pr || weight > pr.weight; }
+  function getPR(exName) {
+    // Retourne la meilleure série toutes séances confondues (max volume = reps × poids)
+    let maxVol = 0, bestSet = null, maxDate = null;
+    for (const s of sessions) {
+      const ex = s.exercises.find(e => e.name.toLowerCase() === exName.toLowerCase());
+      if (ex) ex.sets.forEach(set => {
+        const vol = setVolume(set);
+        if (vol > maxVol) { maxVol = vol; bestSet = set; maxDate = s.date; }
+      });
+    }
+    return maxVol > 0 ? { volume: maxVol, weight: parseFloat(bestSet.w||bestSet.weight||0), reps: parseFloat(bestSet.r||bestSet.reps||0), date: maxDate } : null;
+  }
+  function checkNewPR(exName, set) {
+    const pr = getPR(exName);
+    return !pr || setVolume(set) > pr.volume;
+  }
 
   // ── Routine Picker ──
   function renderRoutinePicker() {
@@ -1895,7 +1910,7 @@
               ontouchmove="onExTouchMove(event,${ei})"
               ontouchend="onExTouchEnd(event,${ei})">⠿</span>
             <div><div class="ex-name">${ex.name}${_isInSS ? '<span class="ss-badge">SS</span>' : ''}</div>
-            <div class="ex-meta">${ex.muscle?'<span class="ex-muscle-tag">'+ex.muscle+'</span>':''}${pr?'<span class="ex-pr-badge">🏆 PR '+pr.weight+'kg</span>':''}</div></div>
+            <div class="ex-meta">${ex.muscle?'<span class="ex-muscle-tag">'+ex.muscle+'</span>':''}${pr?'<span class="ex-pr-badge">🏆 PR '+pr.weight+'kg × '+pr.reps+'reps</span>':''}</div></div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="ex-del" style="background:#f0ece6;color:var(--muted);font-size:11px;letter-spacing:0.5px;font-family:Geist Mono,monospace;" onclick="openSSPicker(${ei})" title="Superset">⇄</button>
@@ -1909,16 +1924,22 @@
           const prevR=prev?(prev.r||prev.reps||''):'';
 
           const _w = parseFloat(s.w||0);
+          const _r = parseFloat(s.r||0);
+          const _vol = _w * (_r || 1);
           const _pr = getPR(ex.name);
-          const _histBest = _pr ? _pr.weight : 0;
-          // Best weight in current session for this exercise
-          const _sessionBest = Math.max(0, ...ex.sets.map(ss => parseFloat(ss.w||0)));
-          // Only the LAST set with the best weight gets the medal
-          const _lastBestIdx = ex.sets.reduce((best, ss, idx) => parseFloat(ss.w||0) >= parseFloat(ex.sets[best]?.w||0) ? idx : best, 0);
-          const _isTopSet = si === _lastBestIdx && _w > 0;
-          const _isAllTimePR = _isTopSet && _w > _histBest;
-          const _isSessionBest = _isTopSet && _w >= _sessionBest;
-          const _medal = _isAllTimePR ? '🥇' : (_isSessionBest ? '🥈' : '');
+          const _histBestVol = _pr ? _pr.volume : 0;
+          // Meilleur volume de la session en cours
+          const _sessionBestVol = Math.max(0, ...ex.sets.map(ss => parseFloat(ss.w||0) * (parseFloat(ss.r||0)||1)));
+          // Série avec le meilleur volume dans la session
+          const _lastBestIdx = ex.sets.reduce((best, ss, idx) => {
+            const vol = parseFloat(ss.w||0) * (parseFloat(ss.r||0)||1);
+            const bestVol = parseFloat(ex.sets[best]?.w||0) * (parseFloat(ex.sets[best]?.r||0)||1);
+            return vol >= bestVol ? idx : best;
+          }, 0);
+          const _isTopSet = si === _lastBestIdx && _w > 0 && _r > 0;
+          const _isAllTimePR = _isTopSet && _vol > _histBestVol;
+          const _isSessionBest = _isTopSet && _vol >= _sessionBestVol;
+          const _medal = _isAllTimePR ? '🥇' : '';
           const _medalHtml = _medal ? '<span class="set-medal">' + _medal + '</span>' : '';
           return `<div class="set-row ${_isAllTimePR ? 'set-row-pr' : ''}">
             <div class="set-n">${si+1}</div>
