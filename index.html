@@ -670,6 +670,7 @@
             </select>
           </div>
           <div class="form-row" style="margin-top:8px">
+            <input class="inp" id="exSets" type="number" placeholder="Séries" min="1" max="20" value="3" style="max-width:80px;text-align:center"/>
             <select class="inp" id="exRest" onchange="document.getElementById('exRestCustom').style.display=this.value==='custom'?'block':'none'">
               <option value="60">Repos 1 min</option>
               <option value="90" selected>Repos 1 min 30</option>
@@ -1908,9 +1909,12 @@
     const restTime = restSel.value === 'custom'
       ? (parseInt(document.getElementById('exRestCustom').value) || 90)
       : parseInt(restSel.value);
-    exercises.push({ id: Date.now(), name, muscle: document.getElementById('exMuscle').value, restTime, sets: [{w:'',r:'',done:false}] });
+    const nSets = Math.max(1, parseInt(document.getElementById('exSets')?.value) || 3);
+    exercises.push({ id: Date.now(), name, muscle: document.getElementById('exMuscle').value, restTime, sets: Array.from({length: nSets}, () => ({w:'',r:'',done:false})) });
     document.getElementById('exName').value = '';
     document.getElementById('exMuscle').value = '';
+    const exSetsEl = document.getElementById('exSets');
+    if (exSetsEl) exSetsEl.value = '3';
     restSel.value = '90';
     document.getElementById('exRestCustom').style.display = 'none';
     document.getElementById('exRestCustom').value = '';
