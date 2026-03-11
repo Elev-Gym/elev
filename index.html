@@ -613,7 +613,6 @@
 
     <!-- Bloc routines -->
     <div id="sessionRoutineBlock">
-      <div class="label">Charger une séance</div>
       <div id="routinePickerList" style="margin-bottom:4px"></div>
     </div>
 
@@ -1801,10 +1800,11 @@
     // Badge programme actif
     const activeProg = programs.find(p => p.id === activeProgId);
     const progBadge = activeProg
-      ? `<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-family:Geist Mono,monospace;margin-bottom:10px">Programme actif : ${activeProg.name}</div>`
+      ? `<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-family:Geist Mono,monospace;margin-bottom:12px">Programme actif : ${activeProg.name}</div>`
       : '';
+    const loadLabel = `<div class="label" style="margin-bottom:8px">Charger une séance</div>`;
 
-    el.innerHTML = progBadge + sorted.map(r => {
+    el.innerHTML = progBadge + loadLabel + sorted.map(r => {
       const muscles = [...new Set(r.exercises.map(e => e.muscle).filter(Boolean))];
       const isLoaded = loadedRoutineId === r.id;
       return `<div class="routine-pick-card ${isLoaded?'loaded':''}" ontouchstart="_rpcTouchStart(event)" ontouchend="_rpcTouchEnd(event,${r.id})" onclick="loadRoutine(${r.id})">
