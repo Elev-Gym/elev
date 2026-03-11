@@ -934,10 +934,17 @@
 
       <!-- Recherche exercice spécifique -->
       <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Zoom sur un exercice</div>
-      <div class="pr-search-wrap" style="position:relative;display:flex;align-items:center;gap:0">
-        <input class="pr-search-inp" id="progExSearch" placeholder="Rechercher un exercice…" oninput="showProgSuggestions(this.value);if(!this.value){document.getElementById('progChart').style.display='none';document.getElementById('progEmpty').style.display='none';}" onblur="setTimeout(()=>document.getElementById('progExSuggestions').style.display='none',150)" autocomplete="off" style="flex:1"/>
-        <button onclick="showProgSuggestions('');document.getElementById('progExSuggestions').style.display==='block'?document.getElementById('progExSuggestions').style.display='none':showProgSuggestions('')" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:0 10px;height:38px;flex-shrink:0">▾</button>
-        <div id="progExSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)"></div>
+      <div style="position:relative">
+        <div style="display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:visible">
+          <div id="progExSelected" onclick="toggleProgExDropdown()" style="flex:1;padding:10px 14px;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--text);cursor:pointer;min-height:20px">
+            <span id="progExSelectedText" style="color:var(--muted2)">Choisir un exercice…</span>
+          </div>
+          <button onclick="toggleProgExDropdown()" style="background:none;border:none;border-left:1px solid var(--border);color:var(--muted);font-size:13px;cursor:pointer;padding:0 12px;height:40px;flex-shrink:0">▾</button>
+          <button onclick="toggleProgExSearch()" title="Rechercher" style="background:none;border:none;border-left:1px solid var(--border);color:var(--muted);font-size:13px;cursor:pointer;padding:0 12px;height:40px;flex-shrink:0">🔍</button>
+        </div>
+        <input class="pr-search-inp" id="progExSearch" placeholder="Rechercher…" oninput="showProgSuggestions(this.value)" onblur="setTimeout(()=>{document.getElementById('progExSuggestions').style.display='none';},150)" autocomplete="off"
+          style="display:none;width:100%;box-sizing:border-box;margin-top:4px"/>
+        <div id="progExSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,0.18)"></div>
       </div>
       <canvas id="progChart" height="140" style="margin-top:10px"></canvas>
       <div id="progEmpty" style="display:none;text-align:center;padding:20px 0;font-size:11px;color:var(--muted2)">Aucune donnée pour cet exercice.</div>
@@ -947,10 +954,17 @@
 
     <div class="label">Records personnels</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 16px;margin-bottom:24px">
-      <div class="pr-search-wrap" style="padding-top:8px;position:relative;display:flex;align-items:center">
-        <input class="pr-search-inp" id="prSearch" placeholder="Rechercher un exercice…" oninput="showPrSuggestions(this.value)" onblur="setTimeout(()=>document.getElementById('prSuggestions').style.display='none',150)" autocomplete="off" style="flex:1"/>
-        <button onclick="showPrSuggestions(document.getElementById('prSearch').value||'')" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:0 10px;height:38px;flex-shrink:0">▾</button>
-        <div id="prSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)"></div>
+      <div style="position:relative;padding-top:8px;padding-bottom:4px">
+        <div style="display:flex;align-items:center;background:var(--surface2,var(--surface));border:1px solid var(--border);border-radius:4px;overflow:visible">
+          <div id="prSelected" onclick="togglePrDropdown()" style="flex:1;padding:10px 14px;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--text);cursor:pointer">
+            <span id="prSelectedText" style="color:var(--muted2)">Tous les records…</span>
+          </div>
+          <button onclick="togglePrDropdown()" style="background:none;border:none;border-left:1px solid var(--border);color:var(--muted);font-size:13px;cursor:pointer;padding:0 12px;height:40px;flex-shrink:0">▾</button>
+          <button onclick="togglePrSearch()" title="Rechercher" style="background:none;border:none;border-left:1px solid var(--border);color:var(--muted);font-size:13px;cursor:pointer;padding:0 12px;height:40px;flex-shrink:0">🔍</button>
+        </div>
+        <input class="pr-search-inp" id="prSearch" placeholder="Rechercher…" oninput="showPrSuggestions(this.value)" onblur="setTimeout(()=>{document.getElementById('prSuggestions').style.display='none';},150)" autocomplete="off"
+          style="display:none;width:100%;box-sizing:border-box;margin-top:4px"/>
+        <div id="prSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,0.18)"></div>
       </div>
       <div class="pr-list" id="prList"></div>
     </div>
@@ -3596,7 +3610,46 @@
     const inp = document.getElementById('progExSearch');
     if (inp) inp.value = name;
     document.getElementById('progExSuggestions').style.display = 'none';
+    inp.style.display = 'none';
+    const txt = document.getElementById('progExSelectedText');
+    if (txt) { txt.textContent = name; txt.style.color = 'var(--text)'; }
     drawProgChart(name);
+  }
+
+  // ── Toggle dropdown / search pour Zoom exercice ──
+  function toggleProgExDropdown() {
+    const box = document.getElementById('progExSuggestions');
+    const searchInp = document.getElementById('progExSearch');
+    if (box.style.display === 'block') { box.style.display = 'none'; return; }
+    searchInp.style.display = 'none';
+    showProgSuggestions('');
+  }
+  function toggleProgExSearch() {
+    const searchInp = document.getElementById('progExSearch');
+    const box = document.getElementById('progExSuggestions');
+    const isVisible = searchInp.style.display !== 'none';
+    if (isVisible) { searchInp.style.display = 'none'; box.style.display = 'none'; return; }
+    box.style.display = 'none';
+    searchInp.style.display = 'block';
+    setTimeout(() => searchInp.focus(), 50);
+  }
+
+  // ── Toggle dropdown / search pour Records personnels ──
+  function togglePrDropdown() {
+    const box = document.getElementById('prSuggestions');
+    const searchInp = document.getElementById('prSearch');
+    if (box.style.display === 'block') { box.style.display = 'none'; return; }
+    searchInp.style.display = 'none';
+    showPrSuggestions('');
+  }
+  function togglePrSearch() {
+    const searchInp = document.getElementById('prSearch');
+    const box = document.getElementById('prSuggestions');
+    const isVisible = searchInp.style.display !== 'none';
+    if (isVisible) { searchInp.style.display = 'none'; box.style.display = 'none'; renderStats(); return; }
+    box.style.display = 'none';
+    searchInp.style.display = 'block';
+    setTimeout(() => searchInp.focus(), 50);
   }
 
   function showPrSuggestions(q) {
@@ -3607,7 +3660,7 @@
     if (!matches.length) { box.style.display='none'; return; }
     box.style.display = 'block';
     box.innerHTML = matches.map(n=>`<div style="padding:9px 14px;cursor:pointer;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--text);border-bottom:1px solid var(--border)"
-      onmousedown="document.getElementById('prSearch').value='${n.replace(/'/g,"\'")}';document.getElementById('prSuggestions').style.display='none';renderStats();">
+      onmousedown="document.getElementById('prSearch').value='${n.replace(/'/g,"\'")}';document.getElementById('prSearch').style.display='none';document.getElementById('prSuggestions').style.display='none';const t=document.getElementById('prSelectedText');if(t){t.textContent='${n.replace(/'/g,"\'")}';t.style.color='var(--text)';}renderStats();">
       ${n}
     </div>`).join('');
   }
