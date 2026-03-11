@@ -559,28 +559,34 @@
 </script>
   <script>
     // ── Service Worker + Notifications ──
+    // Timestamp d'ouverture de l'app — tout REST_DONE avant 4s est ignoré
+    const _appOpenedAt = Date.now();
+
     async function initSW() {
-      if (!('serviceWorker' in navigator)) {
-        console.warn('[Élev] SW non supporté');
-        return;
-      }
+      if (!('serviceWorker' in navigator)) return;
       try {
         const reg = await navigator.serviceWorker.register('/elev/sw.js');
-        console.log('[Élev] SW enregistré, scope:', reg.scope);
         await reg.update();
-        // Attendre que le SW soit actif puis signaler la nouvelle session
-        const worker = reg.active || reg.installing || reg.waiting;
+
+        // Annuler immédiatement tout timer SW résiduel sur TOUTES les instances
+        const cancelAll = (r) => {
+          [r.active, r.installing, r.waiting].forEach(w => {
+            if (w) w.postMessage({ type: 'CANCEL_REST_TIMER' });
+          });
+        };
+        cancelAll(reg);
+
+        // Puis signaler la nouvelle session (double sécurité)
         const sendAppStarted = (w) => {
           w.postMessage({ type: 'APP_STARTED', payload: { sessionId: window._elevSessionId } });
         };
         if (reg.active) {
           sendAppStarted(reg.active);
         } else {
-          // SW pas encore actif, attendre
           const sw = reg.installing || reg.waiting;
           if (sw) {
             sw.addEventListener('statechange', function() {
-              if (this.state === 'activated') sendAppStarted(this);
+              if (this.state === 'activated') { cancelAll(reg); sendAppStarted(this); }
             });
           }
         }
@@ -589,11 +595,18 @@
       }
 
       // Écoute les messages du SW
-      // Ignore REST_DONE pendant 3s après le chargement (évite les faux bips au démarrage)
-      const _swReadyAt = Date.now();
       navigator.serviceWorker.addEventListener('message', e => {
         if (e.data?.type === 'REST_DONE') {
-          // sessionId côté SW garantit qu'on ignore les timers résiduels
+          // Ignorer tout REST_DONE dans les 4 premières secondes après ouverture
+          if (Date.now() - _appOpenedAt < 4000) {
+            console.log('[Élev] REST_DONE ignoré (démarrage app)');
+            return;
+          }
+          // Ignorer si aucun timer de repos actif dans l'app
+          if (!restRemaining || restRemaining <= 0) {
+            console.log('[Élev] REST_DONE ignoré (pas de timer actif)');
+            return;
+          }
           if (typeof playBeep === 'function') playBeep();
           if (navigator.vibrate) navigator.vibrate([200,100,200]);
           if (typeof showToast === 'function') showToast("C'est reparti ! 💪");
