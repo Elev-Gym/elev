@@ -3456,47 +3456,195 @@
 
   // ── Share session ──
   let shareSessionId = null;
+
   function openShare(id) {
     const s = sessions.find(x => x.id === id);
     if (!s) return;
     shareSessionId = id;
-    const d = new Date(s.date);
-    const dateStr = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
-    const dur = s.duration > 0 ? fmt(s.duration) : '';
-    const NL = String.fromCharCode(10);
-    let text = '\ud83d\udcaa ' + dateStr + (dur ? ' \u00b7 ' + dur : '') + NL;
-    if (s.routineName) text += '\ud83d\udccc ' + s.routineName + NL;
-    text += NL;
-    s.exercises.forEach(function(ex) {
-      text += ex.name + NL;
-      ex.sets.forEach(function(set, i) {
-        const w = set.w || set.weight || '-';
-        const r = set.r || set.reps || '-';
-        text += '  Serie ' + (i+1) + ' : ' + w + 'kg x ' + r + ' reps' + NL;
-      });
-      text += NL;
-    });
-    text += '\u2014 Elev';
-    const preview = document.getElementById('sharePreview');
-    preview.innerHTML = '<pre style="font-family:Geist Mono,monospace;font-size:11px;color:var(--text);white-space:pre-wrap;margin:0">' + text + '</pre>';
-    preview._text = text;
     document.getElementById('shareOverlay').classList.add('show');
+    setTimeout(() => drawShareCanvas(s), 50);
   }
-  function closeShare() { document.getElementById('shareOverlay').classList.remove('show'); shareSessionId = null; }
-  async function copyShareText() {
-    const preview = document.getElementById('sharePreview');
-    const text = preview._text || '';
-    try {
-      await navigator.clipboard.writeText(text);
-      showToast('Copié dans le presse-papier ✓');
-    } catch {
-      // Fallback
-      const ta = document.createElement('textarea');
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-      showToast('Copié ✓');
+
+  function closeShare() {
+    document.getElementById('shareOverlay').classList.remove('show');
+    shareSessionId = null;
+  }
+
+  function drawShareCanvas(s) {
+    const canvas = document.getElementById('shareCanvas');
+    const isDark = document.documentElement.classList.contains('dark');
+
+    // Card dimensions — 2x for retina
+    const W = 680, PADDING = 44, COL = W - PADDING * 2;
+    let H = 0; // will be computed
+
+    // ── Measure pass ──
+    const d = new Date(s.date);
+    const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const dur = s.duration > 0 ? fmt(s.duration) : null;
+    const totalSets = s.exercises.reduce((a, e) => a + (e.sets?.length || 0), 0);
+    const totalVol = s.exercises.reduce((a, e) => a + e.sets.reduce((b, st) => b + ((st.w || 0) * (st.r || 0)), 0), 0);
+
+    // Colors
+    const BG       = isDark ? '#141412' : '#f7f5f2';
+    const SURFACE  = isDark ? '#1e1c1a' : '#ffffff';
+    const ACCENT   = isDark ? '#4a8c5c' : '#2d5a3d';
+    const TEXT     = isDark ? '#f0f0ed' : '#0f0f0d';
+    const MUTED    = isDark ? '#9a948e' : '#5c5954';
+    const BORDER   = isDark ? '#2a2825' : '#e8e4df';
+    const GOLD     = '#b8860b';
+    const GOLD_BG  = isDark ? '#2a2518' : '#fdf6e3';
+
+    // Draw on offscreen first to measure, then set height
+    function buildCanvas(measureOnly) {
+      let y = PADDING;
+
+      if (!measureOnly) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, W, H);
+
+        // Background
+        ctx.fillStyle = BG;
+        ctx.fillRect(0, 0, W, H);
+
+        // Top accent bar
+        ctx.fillStyle = ACCENT;
+        ctx.fillRect(0, 0, W, 4);
+      }
+
+      const ctx = measureOnly ? null : canvas.getContext('2d');
+
+      function text(txt, x, yPos, font, color, align = 'left', maxW = COL) {
+        if (!measureOnly) {
+          ctx.font = font;
+          ctx.fillStyle = color;
+          ctx.textAlign = align;
+          ctx.fillText(txt, x, yPos, maxW);
+        }
+      }
+
+      function rect(x, yPos, w, h, color, radius = 6) {
+        if (!measureOnly) {
+          ctx.beginPath();
+          ctx.roundRect(x, yPos, w, h, radius);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+      }
+
+      function line(x1, y1, x2, y2, color) {
+        if (!measureOnly) {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      // ── Header ──
+      y += 8;
+      text('ÉLEV', PADDING, y + 16, '500 11px/1 "Geist Mono", monospace', ACCENT);
+      text('Résumé de séance', W - PADDING, y + 16, '400 11px/1 "Geist Mono", monospace', MUTED, 'right');
+      y += 32;
+
+      // ── Date & duration ──
+      const dateLine = dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + (dur ? '  ·  ' + dur : '');
+      text(dateLine, PADDING, y + 24, '400 22px/1 "Cormorant Garamond", serif', TEXT);
+      y += 38;
+
+      // ── Routine name ──
+      if (s.routineName) {
+        text(s.routineName.toUpperCase(), PADDING, y + 14, '500 10px/1 "Geist Mono", monospace', MUTED);
+        y += 26;
+      }
+
+      // ── Stats row ──
+      y += 8;
+      const stats = [
+        { val: s.exercises.length, lbl: 'EXERCICES' },
+        { val: totalSets, lbl: 'SÉRIES' },
+        { val: totalVol > 0 ? (totalVol >= 1000 ? (totalVol/1000).toFixed(1) + 't' : totalVol + 'kg') : '—', lbl: 'VOLUME' },
+      ];
+      const statW = (COL - 16) / 3;
+      stats.forEach((st, i) => {
+        const sx = PADDING + i * (statW + 8);
+        rect(sx, y, statW, 68, SURFACE);
+        text(String(st.val), sx + statW / 2, y + 36, '400 28px/1 "Cormorant Garamond", serif', TEXT, 'center', statW);
+        text(st.lbl, sx + statW / 2, y + 56, '500 8px/1 "Geist Mono", monospace', MUTED, 'center', statW);
+      });
+      y += 84;
+
+      // ── Exercises ──
+      s.exercises.forEach((ex, ei) => {
+        // Separator
+        if (ei > 0) { line(PADDING, y, W - PADDING, y, BORDER); y += 16; }
+
+        // Exercise name + muscle
+        text(ex.name, PADDING, y + 16, '500 15px/1 "Geist Mono", monospace', TEXT);
+        if (ex.muscle) {
+          text(ex.muscle.toUpperCase(), W - PADDING, y + 16, '400 9px/1 "Geist Mono", monospace', MUTED, 'right');
+        }
+        y += 26;
+
+        // Sets
+        const bestSet = ex.sets.reduce((best, st) => {
+          const v = (st.w || 0) * (st.r || 0);
+          return v > (best.w || 0) * (best.r || 0) ? st : best;
+        }, ex.sets[0] || {});
+
+        ex.sets.forEach((st, si) => {
+          const w = st.w || st.weight || 0;
+          const r = st.r || st.reps || 0;
+          const isBest = st === bestSet && w > 0;
+          const setTxt = `S${si + 1}`;
+          const valTxt = `${w}kg × ${r} reps`;
+
+          if (isBest && ex.sets.length > 1) {
+            rect(PADDING, y + 1, COL, 22, GOLD_BG, 3);
+          }
+          text(setTxt, PADDING + 8, y + 16, '500 10px/1 "Geist Mono", monospace', isBest && ex.sets.length > 1 ? GOLD : MUTED);
+          text(valTxt, PADDING + 48, y + 16, '400 13px/1 "Geist Mono", monospace', isBest && ex.sets.length > 1 ? GOLD : TEXT);
+          if (isBest && ex.sets.length > 1) {
+            text('★ meilleure', W - PADDING - 8, y + 16, '400 9px/1 "Geist Mono", monospace', GOLD, 'right');
+          }
+          y += 24;
+        });
+        y += 4;
+      });
+
+      // ── Footer ──
+      y += 12;
+      line(PADDING, y, W - PADDING, y, BORDER);
+      y += 20;
+      text('élev — gym tracker', PADDING, y + 12, '400 10px/1 "Geist Mono", monospace', MUTED);
+      y += 28;
+
+      return y;
     }
-    closeShare();
+
+    // Measure
+    H = buildCanvas(true) + PADDING;
+
+    // Set canvas size (2x retina)
+    canvas.width = W;
+    canvas.height = H;
+    canvas.style.height = (H / 2) + 'px'; // display half size
+
+    // Draw
+    buildCanvas(false);
+  }
+
+  function downloadShareImage() {
+    const canvas = document.getElementById('shareCanvas');
+    const link = document.createElement('a');
+    const s = sessions.find(x => x.id === shareSessionId);
+    const d = s ? new Date(s.date).toISOString().slice(0, 10) : 'seance';
+    link.download = `elev-${d}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Image enregistrée ✓');
   }
 
   // ── Drag & drop exercises in session ──
@@ -3757,11 +3905,11 @@
 
 <!-- ══ SHARE SESSION MODAL ══ -->
 <div class="share-overlay" id="shareOverlay" onclick="if(event.target===this)closeShare()">
-  <div class="share-card">
-    <div class="share-title">Partager la séance</div>
-    <div class="share-preview" id="sharePreview"></div>
+  <div class="share-card" style="max-width:380px;padding:20px 20px 24px">
+    <div class="share-title">Résumé de séance</div>
+    <canvas id="shareCanvas" style="width:100%;border-radius:8px;display:block;margin-bottom:14px"></canvas>
     <div class="share-btns">
-      <button class="share-btn" style="background:var(--accent);color:#fff" onclick="copyShareText()">📋 Copier</button>
+      <button class="share-btn" style="background:var(--accent);color:#fff" onclick="downloadShareImage()">⬇ Enregistrer</button>
       <button class="share-btn" style="background:var(--warm);border:1px solid var(--border);color:var(--text)" onclick="closeShare()">Fermer</button>
     </div>
   </div>
