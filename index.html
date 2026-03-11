@@ -1082,12 +1082,13 @@
   }
 
   // Check saved session on load
-  (async () => {
-    // Sécurité : masquer le loading screen dans tous les cas après 8s max
-    const safetyHide = setTimeout(() => {
-      document.getElementById('loadingScreen').style.display = 'none';
-    }, 8000);
+  // Safety net INDEPENDANT — masque le loading dans tous les cas après 6s
+  setTimeout(() => {
+    const ls = document.getElementById('loadingScreen');
+    if (ls) ls.style.display = 'none';
+  }, 6000);
 
+  (async () => {
     try {
       const saved = localStorage.getItem('seance_session');
       if (saved) {
@@ -1124,7 +1125,6 @@
       document.getElementById('loginScreen').style.display = 'flex';
     }
 
-    clearTimeout(safetyHide);
     document.getElementById('loadingScreen').style.display = 'none';
   })();
 
