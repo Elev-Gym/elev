@@ -875,6 +875,41 @@
         <input class="pr-search-inp" id="weightSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderWeightTab()" title="Filtrer par mois"/>
       </div>
       <div class="weight-hist-list" id="weightHistList"></div>
+
+      <!-- ── CALORIES ── -->
+      <div style="height:1px;background:var(--border);margin:24px 0 20px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="label" style="margin:0">Calories</div>
+        <div id="kcalTodayBadge" style="display:none;font-size:10px;font-family:Geist Mono,monospace;letter-spacing:1px;padding:4px 10px;border-radius:20px;"></div>
+      </div>
+
+      <!-- Saisie calories -->
+      <div class="weight-entry-card" style="margin-bottom:16px">
+        <div class="weight-input-row" style="margin-bottom:10px">
+          <input type="date" id="kcalDate" class="inp" style="flex:1"/>
+        </div>
+        <div class="weight-input-row" style="margin-bottom:10px">
+          <input class="weight-inp" id="kcalInput" type="number" step="1" placeholder="kcal (ex: 2200)" style="flex:1"/>
+        </div>
+        <div style="margin-bottom:10px">
+          <input class="inp" id="kcalNote" type="text" placeholder="Note (optionnel)" style="width:100%;box-sizing:border-box"/>
+        </div>
+        <button class="weight-save" onclick="logKcal()" style="width:100%">Ajouter</button>
+      </div>
+
+      <!-- Graphique calories -->
+      <div class="chart-wrap" id="kcalChartWrap" style="display:none">
+        <div class="chart-title">Calories — 30 derniers jours</div>
+        <canvas id="kcalChart" height="140"></canvas>
+      </div>
+
+      <!-- Historique calories -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:16px">
+        <div class="label" style="margin:0">Historique</div>
+        <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderKcalHistory()" title="Filtrer par mois"/>
+      </div>
+      <div id="kcalHistList"></div>
+
     </div>
   </div>
 
@@ -1440,6 +1475,8 @@
     });
     bodyWeights = await loadWithTimeout('body_weights');
     bodyWeights.sort((a, b) => a.date.localeCompare(b.date));
+    kcalEntries = await loadWithTimeout('kcal_entries');
+    kcalEntries.sort((a, b) => a.date.localeCompare(b.date));
     showSyncBadge('✓ Sync', true);
   }
 
@@ -1459,7 +1496,7 @@
   let exercises = [];
   let timerSec = 0, timerRunning = false, timerInterval = null;
   let timerStartedAt = null; // timestamp Date.now() quand le timer a démarré
-  let sessions = [], routines = [], bodyWeights = [];
+  let sessions = [], routines = [], bodyWeights = [], kcalEntries = [];
   let draftRoutineExs = [];
   let loadedRoutineId = null;
   let restDur = 90, restRemaining = 0, restInterval = null;
@@ -1507,6 +1544,7 @@
     if (tab === 'routines') { renderRoutinesList(); renderProgramsList(); }
     if (tab === 'poids') {
       sbLoad('body_weights').then(data => { bodyWeights = data; bodyWeights.sort((a,b)=>a.date.localeCompare(b.date)); });
+      sbLoad('kcal_entries').then(data => { kcalEntries = data; kcalEntries.sort((a,b)=>a.date.localeCompare(b.date)); renderKcalHistory(); drawKcalChart(); renderKcalBadge(); });
       if (!getUserProfile()) {
         loadUserProfileFromSupabase().then(p => checkWeightOnboarding()).catch(() => checkWeightOnboarding());
       } else {
@@ -3139,6 +3177,7 @@
         { value: 'prise',     label: 'Prise de masse',  icon: '💪', desc: 'Gagner du muscle et du poids' },
       ]
     },
+    { key: 'kcalTarget',   question: 'Objectif calorique journalier ?', hint: 'EN KCAL (OPTIONNEL)', placeholder: '2200', type: 'number', unit: 'kcal', min: 500, max: 10000, optional: true },
   ];
 
   // Steps affichés uniquement lors de la création (âge + taille = une seule fois)
@@ -3252,10 +3291,18 @@
         <div class="onboarding-hint">${step.hint}</div>
         ${inputHtml}
         <button class="onboarding-btn" id="onboardingNextBtn" onclick="nextOnboardingStep()">${btnLabel}</button>
-        ${_onboardingStep > 0 ? `<button class="onboarding-back" onclick="prevOnboardingStep()">← Retour</button>` : ''}
+        ${step.optional ? `<button class="onboarding-back" onclick="skipOnboardingStep()" style="opacity:0.6">Passer →</button>` : (_onboardingStep > 0 ? `<button class="onboarding-back" onclick="prevOnboardingStep()">← Retour</button>` : '')}
       </div>
     `;
     if (step.type !== 'choice') setTimeout(() => document.getElementById('onboardingInp')?.focus(), 100);
+  }
+
+  function skipOnboardingStep() {
+    const steps = getActiveSteps();
+    const step = steps[_onboardingStep];
+    _onboardingData[step.key] = null;
+    if (_onboardingStep < steps.length - 1) { _onboardingStep++; renderOnboardingStep(); }
+    else nextOnboardingStep();
   }
 
   function selectOnboardingChoice(key, value) {
@@ -3343,6 +3390,173 @@
       goalBadge;
   }
 
+
+  // ══ CALORIES ══
+
+  async function logKcal() {
+    const dateEl = document.getElementById('kcalDate');
+    const valEl  = document.getElementById('kcalInput');
+    const noteEl = document.getElementById('kcalNote');
+    const date = dateEl.value || new Date().toISOString().split('T')[0];
+    const kcal = parseInt(valEl.value);
+    if (!kcal || kcal < 1) { showToast('Entre un nombre de kcal'); return; }
+    const note = noteEl.value.trim();
+    const existing = kcalEntries.find(e => e.date === date);
+    if (existing) { await sbDelete('kcal_entries', existing.id); kcalEntries = kcalEntries.filter(e => e.date !== date); }
+    const entry = { id: date + '_kcal_' + Date.now(), date, kcal, note };
+    kcalEntries.push(entry);
+    kcalEntries.sort((a,b) => a.date.localeCompare(b.date));
+    await sbSave('kcal_entries', [entry]);
+    valEl.value = ''; noteEl.value = '';
+    showToast('Calories enregistrées ✓');
+    renderKcalHistory(); drawKcalChart(); renderKcalBadge();
+  }
+
+  function renderKcalBadge() {
+    const badge = document.getElementById('kcalTodayBadge');
+    if (!badge) return;
+    const profile = getUserProfile();
+    const target = profile?.kcalTarget ? parseInt(profile.kcalTarget) : null;
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntry = kcalEntries.find(e => e.date === today);
+    if (!todayEntry) { badge.style.display = 'none'; return; }
+    badge.style.display = 'inline-block';
+    const kcal = todayEntry.kcal;
+    if (!target) {
+      badge.textContent = kcal + " kcal aujourd'hui";
+      badge.style.background = 'var(--surface)';
+      badge.style.color = 'var(--text)';
+      badge.style.border = '1px solid var(--border)';
+      return;
+    }
+    const diff = kcal - target;
+    const isOk = Math.abs(diff) <= 50;
+    const isOver = diff > 50;
+    if (isOk) {
+      badge.style.background = '#1a3a1a'; badge.style.color = '#4caf50'; badge.style.border = '1px solid #4caf50';
+      badge.textContent = kcal + ' kcal ✓';
+    } else if (isOver) {
+      badge.style.background = '#3a1a1a'; badge.style.color = '#f44336'; badge.style.border = '1px solid #f44336';
+      badge.textContent = kcal + ' kcal (+' + diff + ')';
+    } else {
+      badge.style.background = '#3a1a1a'; badge.style.color = '#f44336'; badge.style.border = '1px solid #f44336';
+      badge.textContent = kcal + ' kcal (' + diff + ')';
+    }
+  }
+
+  function renderKcalHistory() {
+    const el = document.getElementById('kcalHistList');
+    if (!el) return;
+    const profile = getUserProfile();
+    const target = profile?.kcalTarget ? parseInt(profile.kcalTarget) : null;
+    const monthFilter = document.getElementById('kcalSearchDate')?.value || '';
+    let display = [...kcalEntries].reverse();
+    if (monthFilter) display = display.filter(e => e.date.startsWith(monthFilter));
+    else display = display.slice(0, 14);
+    if (!display.length) {
+      el.innerHTML = '<div style="padding:16px;font-size:11px;color:var(--muted2);text-align:center">Aucun enregistrement.</div>';
+      return;
+    }
+    el.innerHTML = display.map(e => {
+      const diff = target ? (e.kcal - target) : null;
+      const isOk  = diff !== null && Math.abs(diff) <= 50;
+      const isOver = diff !== null && diff > 50;
+      const isUnder = diff !== null && diff < -50;
+      let diffHtml = '';
+      if (diff !== null) {
+        const sign = diff >= 0 ? '+' : '';
+        const col = isOk ? '#4caf50' : '#f44336';
+        diffHtml = `<span style="font-size:10px;color:${col};margin-left:6px">${sign}${diff}</span>`;
+      }
+      const dateStr = new Date(e.date).toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+      const noteHtml = e.note ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${e.note}</div>` : '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:11px;font-family:Geist Mono,monospace;color:var(--muted);letter-spacing:0.5px">${dateStr}</div>
+          ${noteHtml}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--text)">${e.kcal}<span style="font-size:11px;color:var(--muted);margin-left:2px">kcal</span>${diffHtml}</div>
+          <button class="weight-hist-del" onclick="delKcal('${e.date}')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function delKcal(date) {
+    if (!confirm('Supprimer cette entrée ?')) return;
+    const entry = kcalEntries.find(e => e.date === date);
+    if (entry) { await sbDelete('kcal_entries', entry.id); }
+    kcalEntries = kcalEntries.filter(e => e.date !== date);
+    renderKcalHistory(); drawKcalChart(); renderKcalBadge();
+  }
+
+  function drawKcalChart() {
+    const canvas = document.getElementById('kcalChart');
+    const wrap   = document.getElementById('kcalChartWrap');
+    if (!canvas || !wrap) return;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 29); cutoff.setHours(0,0,0,0);
+    const recent = kcalEntries.filter(e => new Date(e.date) >= cutoff);
+    if (recent.length < 2) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    const profile = getUserProfile();
+    const target  = profile?.kcalTarget ? parseInt(profile.kcalTarget) : null;
+    const W = canvas.offsetWidth || 320, H = 140;
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const vals = recent.map(e => e.kcal);
+    const allVals = target ? [...vals, target] : vals;
+    const minV = Math.min(...allVals) * 0.95;
+    const maxV = Math.max(...allVals) * 1.05;
+    const pad = { t:12, r:10, b:24, l:36 };
+    const toX = i => pad.l + (i / (recent.length - 1)) * (W - pad.l - pad.r);
+    const toY = v => pad.t + (1 - (v - minV) / (maxV - minV)) * (H - pad.t - pad.b);
+    // Grille
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridCol = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const textCol = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+    for (let i = 0; i < 4; i++) {
+      const y = pad.t + (i / 3) * (H - pad.t - pad.b);
+      ctx.strokeStyle = gridCol; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      const val = Math.round(maxV - (i / 3) * (maxV - minV));
+      ctx.fillStyle = textCol; ctx.font = '9px Geist Mono, monospace'; ctx.textAlign = 'right';
+      ctx.fillText(val, pad.l - 4, y + 3);
+    }
+    // Ligne objectif
+    if (target) {
+      const ty = toY(target);
+      ctx.strokeStyle = 'rgba(100,180,100,0.4)'; ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(pad.l, ty); ctx.lineTo(W - pad.r, ty); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(100,180,100,0.7)'; ctx.font = '8px Geist Mono,monospace'; ctx.textAlign = 'left';
+      ctx.fillText('obj.', W - pad.r - 22, ty - 3);
+    }
+    // Courbe
+    ctx.strokeStyle = '#e8a838'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    recent.forEach((e, i) => {
+      const x = toX(i), y = toY(e.kcal);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // Points
+    recent.forEach((e, i) => {
+      const x = toX(i), y = toY(e.kcal);
+      const diff = target ? (e.kcal - target) : null;
+      const col = diff === null ? '#e8a838' : Math.abs(diff) <= 50 ? '#4caf50' : '#f44336';
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = col; ctx.fill();
+    });
+    // Dates extrêmes
+    ctx.fillStyle = textCol; ctx.font = '9px Geist Mono,monospace'; ctx.textAlign = 'left';
+    ctx.fillText(new Date(recent[0].date).toLocaleDateString('fr-FR', {day:'numeric',month:'short'}), pad.l, H - 6);
+    ctx.textAlign = 'right';
+    ctx.fillText(new Date(recent[recent.length-1].date).toLocaleDateString('fr-FR', {day:'numeric',month:'short'}), W - pad.r, H - 6);
+  }
+
   function checkWeightOnboarding() {
     const profile = getUserProfile();
     if (!profile) {
@@ -3358,6 +3572,8 @@
     // Set default date to today
     const dateEl = document.getElementById('weightDate');
     if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+    const kcalDateEl = document.getElementById('kcalDate');
+    if (kcalDateEl && !kcalDateEl.value) kcalDateEl.value = new Date().toISOString().split('T')[0];
     // Update clock
     updateWeightClock();
     // Goal banner
@@ -3369,6 +3585,9 @@
       else deltaEl.style.display='none';
     } else { currentEl.textContent='—'; deltaEl.style.display='none'; }
     drawWeightChart();
+    drawKcalChart();
+    renderKcalHistory();
+    renderKcalBadge();
     const histEl=document.getElementById('weightHistList');
     if (!bodyWeights.length) { histEl.innerHTML='<div style="padding:16px;font-size:11px;color:var(--muted2);text-align:center">Aucun enregistrement encore.</div>'; return; }
     const monthFilter = document.getElementById('weightSearchDate')?.value || '';
