@@ -1159,7 +1159,11 @@
       }
       // Sync silencieuse des données fraîches
       loadAllData().then(() => {
+        // Re-render tout après sync Supabase
+        renderRoutinePicker();
+        renderProgramsList();
         renderCurrentTab();
+        showSyncBadge('✓ Sync', true);
       }).catch(e => console.warn('Background sync failed:', e));
 
     } catch(e) {
@@ -1420,6 +1424,7 @@
     const active = document.querySelector('.section.active');
     if (!active) return;
     const tab = active.id.replace('tab-', '');
+    if (tab === 'session') { renderRoutinePicker(); }
     if (tab === 'history') renderHistory();
     if (tab === 'stats') { renderCalendar(); renderStats(); renderWeeklySummary(); }
     if (tab === 'routines') { renderRoutinesList(); renderProgramsList(); }
