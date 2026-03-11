@@ -860,24 +860,8 @@
         </div>
       </div>
 
-      <!-- Chart -->
-      <div class="chart-wrap" id="weightChartWrap">
-        <div class="chart-title">Évolution du poids</div>
-        <canvas id="weightChart" height="140"></canvas>
-      </div>
-
-      <!-- History -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="label" style="margin:0">Historique</div>
-          <button onclick="sbLoad('body_weights').then(d=>{bodyWeights=d;bodyWeights.sort((a,b)=>a.date.localeCompare(b.date));renderWeightTab();showToast('Données rechargées ✓')})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:0 4px;" title="Recharger depuis le serveur">↻</button>
-        </div>
-        <input class="pr-search-inp" id="weightSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderWeightTab()" title="Filtrer par mois"/>
-      </div>
-      <div class="weight-hist-list" id="weightHistList"></div>
-
       <!-- ── CALORIES ── -->
-      <div style="height:1px;background:var(--border);margin:24px 0 20px"></div>
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div class="label" style="margin:0">Calories</div>
         <div id="kcalTodayBadge" style="display:none;font-size:10px;font-family:Geist Mono,monospace;letter-spacing:1px;padding:4px 10px;border-radius:20px;"></div>
@@ -903,12 +887,40 @@
         <canvas id="kcalChart" height="140"></canvas>
       </div>
 
-      <!-- Historique calories -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:16px">
-        <div class="label" style="margin:0">Historique</div>
-        <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderKcalHistory()" title="Filtrer par mois"/>
+      <!-- Historique calories dépliable (replié par défaut) -->
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
+      <div onclick="toggleKcalHist()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;margin-bottom:4px">
+        <div class="label" style="margin:0">Historique calories</div>
+        <span id="kcalHistArrow" style="font-size:12px;color:var(--muted);transition:transform 0.2s">▾</span>
       </div>
-      <div id="kcalHistList"></div>
+      <div id="kcalHistCollapse" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderKcalHistory()" title="Filtrer par mois"/>
+        </div>
+        <div id="kcalHistList"></div>
+      </div>
+
+      <!-- Chart poids -->
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
+      <div class="chart-wrap" id="weightChartWrap">
+        <div class="chart-title">Évolution du poids</div>
+        <canvas id="weightChart" height="140"></canvas>
+      </div>
+
+      <!-- Historique poids dépliable (déplié par défaut) -->
+      <div onclick="toggleWeightHist()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="label" style="margin:0">Historique poids</div>
+          <button onclick="event.stopPropagation();sbLoad('body_weights').then(d=>{bodyWeights=d;bodyWeights.sort((a,b)=>a.date.localeCompare(b.date));renderWeightTab();showToast('Données rechargées ✓')})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:0 4px;" title="Recharger">↻</button>
+        </div>
+        <span id="weightHistArrow" style="font-size:12px;color:var(--muted);transition:transform 0.2s">▴</span>
+      </div>
+      <div id="weightHistCollapse" style="display:block">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <input class="pr-search-inp" id="weightSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderWeightTab()" title="Filtrer par mois"/>
+        </div>
+        <div class="weight-hist-list" id="weightHistList"></div>
+      </div>
 
     </div>
   </div>
@@ -3390,6 +3402,23 @@
       goalBadge;
   }
 
+
+
+  function toggleWeightHist() {
+    const col = document.getElementById('weightHistCollapse');
+    const arrow = document.getElementById('weightHistArrow');
+    const open = col.style.display !== 'none';
+    col.style.display = open ? 'none' : 'block';
+    arrow.textContent = open ? '▾' : '▴';
+  }
+
+  function toggleKcalHist() {
+    const col = document.getElementById('kcalHistCollapse');
+    const arrow = document.getElementById('kcalHistArrow');
+    const open = col.style.display !== 'none';
+    col.style.display = open ? 'none' : 'block';
+    arrow.textContent = open ? '▾' : '▴';
+  }
 
   // ══ CALORIES ══
 
