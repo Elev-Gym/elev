@@ -952,8 +952,6 @@
       <div class="pr-list" id="prList"></div>
     </div>
 
-    <div class="label">Top exercices</div>
-    <div id="topEx"></div>
   </div>
 </div>
 
@@ -3760,30 +3758,7 @@
     const muscles = [...new Set(weekSessions.flatMap(s => s.muscles || []))];
     const musclesHtml = muscles.map(m => '<span class="weekly-muscle-chip">' + m + '</span>').join('');
 
-    // New PRs this week
-    const weekPRs = [];
-    weekSessions.forEach(sess => {
-      sess.exercises.forEach(ex => {
-        ex.sets.forEach(st => {
-          const w = parseFloat(st.w || 0);
-          if (w > 0) {
-            const prevBest = sessions
-              .filter(s => new Date(s.date) < weekStart)
-              .flatMap(s => s.exercises.filter(e => e.name === ex.name))
-              .flatMap(e => e.sets)
-              .reduce((max, s) => Math.max(max, parseFloat(s.w||0)), 0);
-            if (w > prevBest && !weekPRs.find(p => p.name === ex.name)) {
-              weekPRs.push({ name: ex.name, weight: w });
-            }
-          }
-        });
-      });
-    });
-    const prsHtml = weekPRs.length
-      ? '<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px"><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">🏆 Records cette semaine</div>'
-        + weekPRs.map(p => '<div class="weekly-pr-line">🥇 ' + p.name + ' — ' + p.weight + ' kg</div>').join('')
-        + '</div>'
-      : '';
+    const prsHtml = '';
 
     el.innerHTML =
       '<div class="weekly-title">' + nbSessions + ' séance' + (nbSessions > 1 ? 's' : '') + '</div>' +
@@ -3800,8 +3775,8 @@
   }
 
   function renderStats() {
-    const grid=document.getElementById('statsGrid'),topEl=document.getElementById('topEx'),prEl=document.getElementById('prList');
-    if(!sessions.length){grid.innerHTML='';prEl.innerHTML='<div style="padding:12px 0;font-size:11px;color:var(--muted2)">Aucun record encore.</div>';topEl.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Pas encore de données</div><div class="empty-sub">Tes statistiques apparaîtront après ta première séance.</div></div>`;renderProgSelector();return;}
+    const grid=document.getElementById('statsGrid'),prEl=document.getElementById('prList');
+    if(!sessions.length){grid.innerHTML='';prEl.innerHTML='<div style="padding:12px 0;font-size:11px;color:var(--muted2)">Aucun record encore.</div>';renderProgSelector();return;}
     const n=sessions.length,totalSets=sessions.reduce((a,s)=>a+s.exercises.reduce((b,e)=>b+e.sets.length,0),0),avgDur=Math.round(sessions.reduce((a,s)=>a+s.duration,0)/n);
     const allMuscles=sessions.flatMap(s=>s.muscles||[]),topMuscle=allMuscles.length?[...allMuscles.reduce((m,v)=>m.set(v,(m.get(v)||0)+1),new Map())].sort((a,b)=>b[1]-a[1])[0][0]:'—';
     const streak2=computeSmartStreak();
@@ -3813,9 +3788,7 @@
     prEl.innerHTML=prs.length?prs.map(p=>`<div class="pr-row"><div><div class="pr-ex">${p.name}</div><div class="pr-date">${new Date(p.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div></div><div class="pr-val">🏆 ${p.weight} kg</div></div>`).join(''):'<div style="padding:12px 0;font-size:11px;color:var(--muted2)">Aucun résultat.</div>';
     renderProgSelector();
    
-    const exCount={};sessions.forEach(s=>s.exercises.forEach(e=>{exCount[e.name]=(exCount[e.name]||0)+1;}));
-    const sorted=Object.entries(exCount).sort((a,b)=>b[1]-a[1]).slice(0,6),max=sorted[0]?.[1]||1;
-    topEl.innerHTML=sorted.map(([name,count])=>`<div class="top-row"><div class="top-info"><div class="top-name">${name}</div><div class="top-cnt">${count}×</div></div><div class="bar-track"><div class="bar-fill" style="width:${(count/max*100).toFixed(0)}%"></div></div></div>`).join('');
+
   }
 
 
