@@ -1924,6 +1924,7 @@
 
   // Track which days have a "create new session" form open
   let _progNewSessionDays = {};
+  let _progNewSessionExs = {}; // key = "day" or "progId-day" => [{name,muscle,sets,rest}]
 
   function renderProgSessionAssign() {
     const selectedDays = [...document.querySelectorAll('.day-btn.on')].map(b => parseInt(b.dataset.day));
@@ -1946,9 +1947,23 @@
               ${isCreating ? '✕' : '+ Nouvelle'}
             </button>
           </div>
-          ${isCreating ? `<div style="background:var(--warm);border:1px solid var(--border);border-radius:4px;padding:12px;margin-top:8px;margin-left:50px">
-            <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Nouvelle séance</div>
-            <input class="inp" id="newSessName-${d}" placeholder="Nom (ex: Push A, Legs…)" style="width:100%;box-sizing:border-box;margin-bottom:8px"/>
+          ${isCreating ? `<div style="background:var(--warm);border:1px solid var(--border);border-radius:4px;padding:14px;margin-top:8px;margin-left:50px">
+            <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Nouvelle séance</div>
+            <input class="inp" id="newSessName-${d}" placeholder="Nom (ex: Push A, Legs…)" style="width:100%;box-sizing:border-box;margin-bottom:12px"/>
+            <div id="newSessExList-${d}" style="margin-bottom:8px"></div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:10px">
+              <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">+ Ajouter un exercice</div>
+              <input class="inp" id="newSessExName-${d}" placeholder="Nom de l'exercice" style="width:100%;box-sizing:border-box;margin-bottom:6px"/>
+              <div style="display:flex;gap:6px;margin-bottom:6px">
+                <select class="inp" id="newSessExMuscle-${d}" style="flex:1;font-size:12px">
+                  <option value="">Muscle</option>
+                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
+                </select>
+                <input class="inp" id="newSessExSets-${d}" type="number" min="1" max="20" placeholder="Séries" style="width:70px;text-align:center"/>
+                <input class="inp" id="newSessExRest-${d}" type="number" min="0" placeholder="Repos s" style="width:75px;text-align:center"/>
+              </div>
+              <button onclick="addExToNewSess('${d}')" style="width:100%;background:none;border:1px dashed var(--border2);border-radius:4px;padding:7px;font-size:11px;color:var(--muted);cursor:pointer;">Ajouter ↵</button>
+            </div>
             <button class="btn-add" style="width:100%" onclick="createSessionFromProg(${d})">Créer et associer</button>
           </div>` : ''}
         </div>`;
@@ -1963,26 +1978,44 @@
     }
   }
 
+  function addExToNewSess(day) {
+    const name = document.getElementById('newSessExName-' + day)?.value.trim();
+    if (!name) { showToast('Donne un nom à l\'exercice'); return; }
+    const muscle = document.getElementById('newSessExMuscle-' + day)?.value || '';
+    const sets = parseInt(document.getElementById('newSessExSets-' + day)?.value) || 3;
+    const rest = parseInt(document.getElementById('newSessExRest-' + day)?.value) || 90;
+    const key = 'p-' + day;
+    if (!_progNewSessionExs[key]) _progNewSessionExs[key] = [];
+    _progNewSessionExs[key].push({ id: Date.now(), name, muscle, sets, reps: 10, weight: 0, rest });
+    // Re-render exercise list
+    const listEl = document.getElementById('newSessExList-' + day);
+    if (listEl) listEl.innerHTML = renderMiniExList(_progNewSessionExs[key], key, 'newSess');
+    // Clear inputs
+    document.getElementById('newSessExName-' + day).value = '';
+    document.getElementById('newSessExMuscle-' + day).value = '';
+    document.getElementById('newSessExSets-' + day).value = '';
+    document.getElementById('newSessExRest-' + day).value = '';
+    document.getElementById('newSessExName-' + day).focus();
+  }
+
   async function createSessionFromProg(day) {
     const nameEl = document.getElementById('newSessName-' + day);
     const name = nameEl?.value.trim();
     if (!name) { showToast('Donne un nom à la séance'); return; }
-    // Create new routine
-    const newRoutine = { id: Date.now(), name, exercises: [] };
+    const key = 'p-' + day;
+    const exercises = _progNewSessionExs[key] || [];
+    const newRoutine = { id: Date.now(), name, exercises };
     routines.push(newRoutine);
     routines.sort((a,b) => { const g=n=>{const m=(n||'').match(/J(\d+)/i);return m?parseInt(m[1]):999;}; return g(a.name)-g(b.name); });
-    showSyncBadge('Sauvegarde...');
     await sbSave('routines', [newRoutine]);
-    showSyncBadge('✓ Sync', true);
-    // Close create form for this day
     delete _progNewSessionDays[day];
-    // Re-render and select the new routine
+    delete _progNewSessionExs[key];
     renderProgSessionAssign();
     setTimeout(() => {
       const sel = document.getElementById('progDaySession-' + day);
       if (sel) sel.value = newRoutine.id;
     }, 30);
-    showToast(`Séance "${name}" créée ✓`);
+    showToast(`Séance "${name}" créée avec ${exercises.length} exercice(s) ✓`);
     renderRoutinesList();
   }
 
@@ -2105,8 +2138,23 @@
               ${isCreating ? '✕' : '+ Nouvelle'}
             </button>
           </div>
-          ${isCreating ? `<div style="background:var(--warm);border:1px solid var(--border);border-radius:4px;padding:12px;margin-top:8px;margin-left:50px">
-            <input class="inp" id="inlineNewSessName-${progId}-${d}" placeholder="Nom de la séance…" style="width:100%;box-sizing:border-box;margin-bottom:8px"/>
+          ${isCreating ? `<div style="background:var(--warm);border:1px solid var(--border);border-radius:4px;padding:14px;margin-top:8px;margin-left:50px">
+            <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Nouvelle séance</div>
+            <input class="inp" id="inlineNewSessName-${progId}-${d}" placeholder="Nom (ex: Push A, Legs…)" style="width:100%;box-sizing:border-box;margin-bottom:12px"/>
+            <div id="inlineNewSessExList-${progId}-${d}" style="margin-bottom:8px"></div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:10px">
+              <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">+ Ajouter un exercice</div>
+              <input class="inp" id="inlineNewSessExName-${progId}-${d}" placeholder="Nom de l'exercice" style="width:100%;box-sizing:border-box;margin-bottom:6px"/>
+              <div style="display:flex;gap:6px;margin-bottom:6px">
+                <select class="inp" id="inlineNewSessExMuscle-${progId}-${d}" style="flex:1;font-size:12px">
+                  <option value="">Muscle</option>
+                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
+                </select>
+                <input class="inp" id="inlineNewSessExSets-${progId}-${d}" type="number" min="1" max="20" placeholder="Séries" style="width:70px;text-align:center"/>
+                <input class="inp" id="inlineNewSessExRest-${progId}-${d}" type="number" min="0" placeholder="Repos s" style="width:75px;text-align:center"/>
+              </div>
+              <button onclick="addExToInlineNewSess('${progId}','${d}')" style="width:100%;background:none;border:1px dashed var(--border2);border-radius:4px;padding:7px;font-size:11px;color:var(--muted);cursor:pointer;">Ajouter ↵</button>
+            </div>
             <button class="btn-add" style="width:100%" onclick="createInlineSession('${progId}',${d})">Créer et associer</button>
           </div>` : ''}
         </div>`;
@@ -2123,22 +2171,72 @@
     }
   }
 
+  function addExToInlineNewSess(progId, day) {
+    const name = document.getElementById(`inlineNewSessExName-${progId}-${day}`)?.value.trim();
+    if (!name) { showToast('Donne un nom à l\'exercice'); return; }
+    const muscle = document.getElementById(`inlineNewSessExMuscle-${progId}-${day}`)?.value || '';
+    const sets = parseInt(document.getElementById(`inlineNewSessExSets-${progId}-${day}`)?.value) || 3;
+    const rest = parseInt(document.getElementById(`inlineNewSessExRest-${progId}-${day}`)?.value) || 90;
+    const key = 'i-' + progId + '-' + day;
+    if (!_progNewSessionExs[key]) _progNewSessionExs[key] = [];
+    _progNewSessionExs[key].push({ id: Date.now(), name, muscle, sets, reps: 10, weight: 0, rest });
+    const listEl = document.getElementById(`inlineNewSessExList-${progId}-${day}`);
+    if (listEl) listEl.innerHTML = renderMiniExList(_progNewSessionExs[key], key, 'inlineNewSess');
+    document.getElementById(`inlineNewSessExName-${progId}-${day}`).value = '';
+    document.getElementById(`inlineNewSessExMuscle-${progId}-${day}`).value = '';
+    document.getElementById(`inlineNewSessExSets-${progId}-${day}`).value = '';
+    document.getElementById(`inlineNewSessExRest-${progId}-${day}`).value = '';
+    document.getElementById(`inlineNewSessExName-${progId}-${day}`).focus();
+  }
+
+  function renderMiniExList(exs, key, prefix) {
+    if (!exs?.length) return '';
+    return exs.map((ex, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:5px">
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--text);font-weight:500">${ex.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${ex.muscle ? ex.muscle + ' · ' : ''}${ex.sets} séries · Repos ${ex.rest}s</div>
+        </div>
+        <button onclick="removeMiniEx('${key}',${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px">✕</button>
+      </div>`).join('');
+  }
+
+  function removeMiniEx(key, idx) {
+    if (_progNewSessionExs[key]) {
+      _progNewSessionExs[key].splice(idx, 1);
+      // Find and re-render the list
+      const parts = key.split('-');
+      if (parts[0] === 'p') {
+        const day = parts[1];
+        const listEl = document.getElementById('newSessExList-' + day);
+        if (listEl) listEl.innerHTML = renderMiniExList(_progNewSessionExs[key], key, 'newSess');
+      } else {
+        const progId = parts[1], day = parts[2];
+        const listEl = document.getElementById(`inlineNewSessExList-${progId}-${day}`);
+        if (listEl) listEl.innerHTML = renderMiniExList(_progNewSessionExs[key], key, 'inlineNewSess');
+      }
+    }
+  }
+
   async function createInlineSession(progId, day) {
     const nameEl = document.getElementById(`inlineNewSessName-${progId}-${day}`);
     const name = nameEl?.value.trim();
     if (!name) { showToast('Donne un nom à la séance'); return; }
-    const newRoutine = { id: Date.now(), name, exercises: [] };
+    const key = 'i-' + progId + '-' + day;
+    const exercises = _progNewSessionExs[key] || [];
+    const newRoutine = { id: Date.now(), name, exercises };
     routines.push(newRoutine);
     routines.sort((a,b) => { const g=n=>{const m=(n||'').match(/J(\d+)/i);return m?parseInt(m[1]):999;}; return g(a.name)-g(b.name); });
     await sbSave('routines', [newRoutine]);
     delete _inlineNewSessionDays[progId + '-' + day];
+    delete _progNewSessionExs[key];
     const p = programs.find(x => x.id === parseInt(progId));
     renderInlineProgAssign(progId, p);
     setTimeout(() => {
       const sel = document.getElementById(`inlineProgDay-${progId}-${day}`);
       if (sel) sel.value = newRoutine.id;
     }, 30);
-    showToast(`Séance "${name}" créée ✓`);
+    showToast(`Séance "${name}" créée avec ${exercises.length} exercice(s) ✓`);
     renderRoutinesList();
   }
 
