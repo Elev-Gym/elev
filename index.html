@@ -105,14 +105,14 @@
   .chip.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
 
   /* Routine picker */
-  .routine-pick-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.18s; animation: fadeUp 0.2s ease; margin-bottom: 8px; }
+  .routine-pick-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.18s; animation: fadeUp 0.2s ease; margin-bottom: 10px; }
   .routine-pick-card:hover { border-color: var(--accent); background: var(--accent-light); }
   .routine-pick-card.loaded { border-color: var(--accent); background: var(--accent-light); }
-  .rpc-name { font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 400; }
-  .rpc-exs { font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .rpc-muscles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-  .rpc-chip { background: rgba(45,90,61,0.08); border: 1px solid rgba(45,90,61,0.15); color: var(--accent); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border-radius: 1px; }
-  .rpc-arrow { font-size: 16px; color: var(--muted2); }
+  .rpc-name { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; letter-spacing: 0.2px; }
+  .rpc-exs { font-size: 9px; color: var(--muted); margin-top: 5px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'Geist Mono', monospace; }
+  .rpc-muscles { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .rpc-chip { background: rgba(45,90,61,0.08); border: 1px solid rgba(45,90,61,0.22); color: var(--accent); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 2px; font-family: 'Geist Mono', monospace; }
+  .rpc-arrow { font-size: 18px; color: var(--muted); font-weight: 300; }
   .routine-pick-card:hover .rpc-arrow, .routine-pick-card.loaded .rpc-arrow { color: var(--accent); }
   .no-routine-hint { font-size: 11px; color: var(--muted2); line-height: 1.7; padding: 14px 16px; background: var(--surface); border: 1px dashed var(--border2); border-radius: 4px; text-align: center; }
   .no-routine-hint span { color: var(--accent); cursor: pointer; text-decoration: underline; }
@@ -202,10 +202,10 @@
   /* ── Routines ── */
   .routines-list { display: flex; flex-direction: column; gap: 12px; }
   .routine-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; animation: fadeUp 0.2s ease; }
-  .rc-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; }
-  .rc-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; }
-  .rc-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .rc-chip-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 18px 12px; }
+  .rc-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 12px; border-bottom: 1px solid var(--border); }
+  .rc-name { font-family: 'Cormorant Garamond', serif; font-size: 23px; font-weight: 600; letter-spacing: 0.2px; }
+  .rc-meta { font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'Geist Mono', monospace; }
+  .rc-chip-row { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 18px 14px; }
   .rc-drag-handle { cursor: grab; color: var(--muted); font-size: 16px; padding: 0 8px 0 0; user-select: none; touch-action: none; }
   .rc-drag-handle:active { cursor: grabbing; }
   .routine-card { transition: opacity 0.15s; }
@@ -416,7 +416,7 @@
   .h-date { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 400; text-transform: capitalize; }
   .h-dur { font-size: 10px; letter-spacing: 1px; color: var(--muted); }
   .h-muscles { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
-  .h-chip { background: var(--accent-light); border: 1px solid rgba(45,90,61,0.15); color: var(--accent); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 1px; }
+  .h-chip { background: var(--accent-light); border: 1px solid rgba(45,90,61,0.25); color: var(--accent); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; font-family: 'Geist Mono', monospace; font-weight: 500; }
   .h-routine-tag { background: var(--warm); border: 1px solid var(--border2); color: var(--muted); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 1px; }
   .h-exs { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .h-note { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); line-height: 1.5; }
