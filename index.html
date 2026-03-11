@@ -1874,9 +1874,19 @@
       switchTab('home');
     }
     // Charger le profil depuis Supabase en arrière-plan et rafraîchir si nécessaire
+    // Charger le profil depuis Supabase (source de vérité) puis vérifier l'onboarding
     loadUserProfileFromSupabase().then(profile => {
-      if (profile) checkWeightOnboarding();
-    }).catch(() => {});
+      // Si Supabase a un profil → pas d'onboarding nécessaire
+      if (profile) {
+        checkWeightOnboarding();
+      } else if (!getUserProfile()) {
+        // Ni Supabase ni localStorage → premier lancement → onboarding
+        setTimeout(() => showFullscreenOnboarding(), 400);
+      }
+    }).catch(() => {
+      // Offline ou erreur → vérifier le localStorage
+      checkWeightOnboarding();
+    });
   }
 
   // ── Tabs ──
@@ -3597,7 +3607,11 @@
   updateWeightClock();
 
   // ── Onboarding poids ──
-  const ONBOARDING_KEY = 'elev_user_profile';
+  // Clé dynamique par user — isolée par compte
+  const ONBOARDING_KEY = 'elev_user_profile'; // fallback si pas encore connecté
+  function profileKey() {
+    return currentUser?.id ? ('elev_profile_' + currentUser.id) : ONBOARDING_KEY;
+  }
 
   const ONBOARDING_STEPS = [
     { key: 'firstName',    question: "Comment tu t'appelles ?",        hint: 'TON PRÉNOM',       placeholder: 'Louis', type: 'text' },
@@ -3622,13 +3636,26 @@
   let _onboardingData = {};
 
   function getUserProfile() {
-    try { return JSON.parse(localStorage.getItem(ONBOARDING_KEY)) || null; } catch { return null; }
+    try {
+      // Chercher d'abord avec la clé user-spécifique, puis fallback clé générique
+      const key = profileKey();
+      const specific = localStorage.getItem(key);
+      if (specific) return JSON.parse(specific);
+      // Migration : si profil générique existant et user connecté, le migrer
+      const generic = localStorage.getItem(ONBOARDING_KEY);
+      if (generic && currentUser?.id) {
+        localStorage.setItem(key, generic);
+        localStorage.removeItem(ONBOARDING_KEY);
+        return JSON.parse(generic);
+      }
+      return JSON.parse(generic) || null;
+    } catch { return null; }
   }
 
   async function saveUserProfile(data) {
-    // Toujours sauvegarder en local (rapide + offline)
-    localStorage.setItem(ONBOARDING_KEY, JSON.stringify(data));
-    // Sync Supabase pour les autres appareils
+    // Sauvegarder avec clé user-spécifique
+    localStorage.setItem(profileKey(), JSON.stringify(data));
+    // Sync Supabase (source de vérité multi-appareils)
     if (accessToken && isOnline() && currentUser) {
       try {
         await supaFetch('/rest/v1/profiles', {
@@ -3646,7 +3673,10 @@
       const res = await supaFetch('/rest/v1/profiles?select=*&user_id=eq.' + currentUser.id, { returnData: true });
       if (Array.isArray(res) && res.length > 0) {
         const profile = res[0].data;
-        localStorage.setItem(ONBOARDING_KEY, JSON.stringify(profile));
+        // Stocker avec clé user-spécifique
+        localStorage.setItem(profileKey(), JSON.stringify(profile));
+        // Nettoyer l'ancienne clé générique si elle existe
+        localStorage.removeItem(ONBOARDING_KEY);
         return profile;
       }
     } catch(e) {
