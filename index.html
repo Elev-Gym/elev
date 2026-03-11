@@ -1842,11 +1842,12 @@
     }
     // Restore any in-progress session
     restoreDraft();
-    // Restaurer le dernier onglet visité, sauf si séance en cours
-    const lastTab = localStorage.getItem('elev_last_tab');
+    // Toujours démarrer sur Accueil, sauf si séance en cours
     const hasDraft = !!localStorage.getItem('seance_draft');
-    if (lastTab && lastTab !== 'session' && !hasDraft) {
-      switchTab(lastTab);
+    if (hasDraft) {
+      switchTab('session');
+    } else {
+      switchTab('home');
     }
     // Charger le profil depuis Supabase en arrière-plan et rafraîchir si nécessaire
     loadUserProfileFromSupabase().then(profile => {
@@ -1855,7 +1856,7 @@
   }
 
   // ── Tabs ──
-  const TAB_TITLES = { session: 'Séances', history: 'Historique', stats: 'Stats', routines: 'Programmes', poids: 'Poids' };
+  const TAB_TITLES = { home: 'Accueil', session: 'Séances', history: 'Historique', stats: 'Stats', routines: 'Programmes', poids: 'Poids' };
   function switchTab(tab) {
     document.title = 'Élev | ' + (TAB_TITLES[tab] || tab);
     localStorage.setItem('elev_last_tab', tab);
