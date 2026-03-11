@@ -1065,29 +1065,26 @@
         <canvas id="kcalChart" height="140"></canvas>
       </div>
 
-      <!-- ── 6. HISTORIQUE POIDS ── -->
+      <!-- ── 6+7. HISTORIQUE (onglets) ── -->
       <div style="height:1px;background:var(--border);margin:20px 0"></div>
-      <div onclick="toggleWeightHist()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;margin-bottom:4px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="label" style="margin:0">Historique poids</div>
-          <button onclick="event.stopPropagation();sbLoad('body_weights').then(d=>{bodyWeights=d;bodyWeights.sort((a,b)=>a.date.localeCompare(b.date));renderWeightTab();showToast('Données rechargées ✓')})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:0 4px;" title="Recharger">↻</button>
-        </div>
-        <span id="weightHistArrow" style="font-size:12px;color:var(--muted);transition:transform 0.2s">▴</span>
+      <div class="entry-tabs">
+        <button class="entry-tab active" id="histTabWeight" onclick="switchHistTab('weight')">
+          Histo poids
+          <button onclick="event.stopPropagation();sbLoad('body_weights').then(d=>{bodyWeights=d;bodyWeights.sort((a,b)=>a.date.localeCompare(b.date));renderWeightTab();showToast('Données rechargées ✓')})" style="background:none;border:none;color:inherit;cursor:pointer;font-size:13px;padding:0 0 0 4px;opacity:0.7" title="Recharger">↻</button>
+        </button>
+        <button class="entry-tab" id="histTabKcal" onclick="switchHistTab('kcal')">Histo calories</button>
       </div>
-      <div id="weightHistCollapse" style="display:block">
+
+      <!-- Panel histo poids -->
+      <div class="entry-panel active" id="histPanelWeight" style="border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;padding:12px">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
           <input class="pr-search-inp" id="weightSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderWeightTab()" title="Filtrer par mois"/>
         </div>
         <div class="weight-hist-list" id="weightHistList"></div>
       </div>
 
-      <!-- ── 7. HISTORIQUE CALORIES ── -->
-      <div style="height:1px;background:var(--border);margin:20px 0"></div>
-      <div onclick="toggleKcalHist()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;margin-bottom:4px">
-        <div class="label" style="margin:0">Historique calories</div>
-        <span id="kcalHistArrow" style="font-size:12px;color:var(--muted);transition:transform 0.2s">▾</span>
-      </div>
-      <div id="kcalHistCollapse" style="display:none">
+      <!-- Panel histo calories -->
+      <div class="entry-panel" id="histPanelKcal" style="border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;padding:12px">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
           <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderKcalHistory()" title="Filtrer par mois"/>
         </div>
@@ -3746,7 +3743,14 @@
       document.getElementById('kcalDate').value = new Date().toISOString().split('T')[0];
   }
 
-    function toggleWeightHist() {
+  function switchHistTab(tab) {
+    document.getElementById('histTabWeight').classList.toggle('active', tab === 'weight');
+    document.getElementById('histTabKcal').classList.toggle('active', tab === 'kcal');
+    document.getElementById('histPanelWeight').classList.toggle('active', tab === 'weight');
+    document.getElementById('histPanelKcal').classList.toggle('active', tab === 'kcal');
+  }
+
+      function toggleWeightHist() {
     const col = document.getElementById('weightHistCollapse');
     const arrow = document.getElementById('weightHistArrow');
     const open = col.style.display !== 'none';
