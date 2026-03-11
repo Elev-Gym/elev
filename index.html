@@ -1362,10 +1362,7 @@
     document.getElementById('headerTitle').textContent = h < 12 ? 'Bonne séance' : h < 18 ? 'À toi de jouer' : 'Bonne session';
     renderRoutinePicker();
     renderProgramsList();
-    // Charger le profil depuis Supabase puis vérifier l'onboarding
-    // Timeout de 3s max pour le chargement du profil — évite le blocage si Supabase lent
-    const profileTimeout = new Promise(resolve => setTimeout(resolve, 3000));
-    Promise.race([loadUserProfileFromSupabase(), profileTimeout]).then(() => checkWeightOnboarding());
+    checkWeightOnboarding();
     // Restore any in-progress session
     restoreDraft();
   }
@@ -1389,7 +1386,7 @@
     if (tab === 'history') renderHistory();
     if (tab === 'stats') { renderCalendar(); renderStats(); renderWeeklySummary(); }
     if (tab === 'routines') { renderRoutinesList(); renderProgramsList(); }
-    if (tab === 'poids') { sbLoad('body_weights').then(data => { bodyWeights = data; bodyWeights.sort((a,b)=>a.date.localeCompare(b.date)); loadUserProfileFromSupabase().then(() => checkWeightOnboarding()); }); }
+    if (tab === 'poids') { sbLoad('body_weights').then(data => { bodyWeights = data; bodyWeights.sort((a,b)=>a.date.localeCompare(b.date)); checkWeightOnboarding(); }); }
   }
 
   function renderCurrentTab() {
