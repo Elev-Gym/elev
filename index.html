@@ -1083,37 +1083,48 @@
 
   // Check saved session on load
   (async () => {
-    const saved = localStorage.getItem('seance_session');
-    if (saved) {
-      try {
+    // Sécurité : masquer le loading screen dans tous les cas après 8s max
+    const safetyHide = setTimeout(() => {
+      document.getElementById('loadingScreen').style.display = 'none';
+    }, 8000);
+
+    try {
+      const saved = localStorage.getItem('seance_session');
+      if (saved) {
         const s = JSON.parse(saved);
         accessToken = s.access_token; currentUser = s.user;
         document.getElementById('loginScreen').style.display = 'none';
-        // Try to refresh token if we have a refresh_token
+        // Try to refresh token
         if (s.refresh_token) {
           try {
-            const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
-              method: 'POST',
-              headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refresh_token: s.refresh_token })
-            });
+            const r = await Promise.race([
+              fetch(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
+                method: 'POST',
+                headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: s.refresh_token })
+              }),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
+            ]);
             const rd = await r.json();
             if (rd.access_token) {
               accessToken = rd.access_token;
               currentUser = rd.user;
               localStorage.setItem('seance_session', JSON.stringify({ access_token: rd.access_token, refresh_token: rd.refresh_token, user: rd.user }));
             }
-          } catch(e) { console.warn('Token refresh failed', e); }
+          } catch(e) { console.warn('Token refresh skipped:', e.message); }
         }
         await loadAllData();
         initApp();
-      } catch(e) {
-        localStorage.removeItem('seance_session');
+      } else {
         document.getElementById('loginScreen').style.display = 'flex';
       }
-    } else {
+    } catch(e) {
+      console.warn('Init error:', e);
+      localStorage.removeItem('seance_session');
       document.getElementById('loginScreen').style.display = 'flex';
     }
+
+    clearTimeout(safetyHide);
     document.getElementById('loadingScreen').style.display = 'none';
   })();
 
@@ -1276,17 +1287,24 @@
 
   async function loadAllData() {
     showSyncBadge('Chargement...');
-    sessions = await sbLoad('sessions');
+    const timeout = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    const loadWithTimeout = async (table) => {
+      try {
+        return await Promise.race([sbLoad(table), timeout(5000).then(() => [])]);
+      } catch { return []; }
+    };
+
+    sessions = await loadWithTimeout('sessions');
     sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
-    routines = await sbLoad('routines');
-    programs = await sbLoad('programs');
+    routines = await loadWithTimeout('routines');
+    programs = await loadWithTimeout('programs');
     activeProgId = parseInt(localStorage.getItem('elev_active_prog')) || (programs[0]?.id || null);
-    // Sort routines by day number extracted from name (J1, J2, J3...)
     routines.sort((a, b) => {
       const getDay = name => { const m = (name||'').match(/J(\d+)/i); return m ? parseInt(m[1]) : 999; };
       return getDay(a.name) - getDay(b.name);
     });
-    bodyWeights = await sbLoad('body_weights');
+    bodyWeights = await loadWithTimeout('body_weights');
     bodyWeights.sort((a, b) => a.date.localeCompare(b.date));
     showSyncBadge('✓ Sync', true);
   }
