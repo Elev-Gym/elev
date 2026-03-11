@@ -1101,13 +1101,8 @@
     setTimeout(() => el.style.display = 'none', 3000);
   }
 
-  // ── Démarrage : cache d'abord, Supabase en arrière-plan ──
+  // ── Démarrage ──
   (async () => {
-    const hideLoading = () => {
-      const ls = document.getElementById('loadingScreen');
-      if (ls) ls.style.display = 'none';
-    };
-
     const saved = localStorage.getItem('seance_session');
     if (!saved) {
       document.getElementById('loginScreen').style.display = 'flex';
@@ -1120,25 +1115,7 @@
       currentUser = s.user;
       document.getElementById('loginScreen').style.display = 'none';
 
-      // 1. Charger depuis le cache LOCAL immédiatement
-      const getCache = key => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
-      sessions    = getCache('elev_cache_sessions');
-      routines    = getCache('elev_cache_routines');
-      programs    = getCache('elev_cache_programs');
-      bodyWeights = getCache('elev_cache_body_weights');
-      sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
-      bodyWeights.sort((a, b) => a.date.localeCompare(b.date));
-      routines.sort((a, b) => {
-        const getDay = name => { const m = (name||'').match(/J(\d+)/i); return m ? parseInt(m[1]) : 999; };
-        return getDay(a.name) - getDay(b.name);
-      });
-      activeProgId = parseInt(localStorage.getItem('elev_active_prog')) || (programs[0]?.id || null);
-
-      // 2. Afficher l'app immédiatement avec les données du cache
-      hideLoading();
-      initApp();
-
-      // 3. Sync Supabase en arrière-plan (sans bloquer)
+      // Refresh token silencieux
       if (s.refresh_token) {
         try {
           const r = await Promise.race([
@@ -1147,7 +1124,7 @@
               headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
               body: JSON.stringify({ refresh_token: s.refresh_token })
             }),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
           ]);
           const rd = await r.json();
           if (rd.access_token) {
@@ -1157,28 +1134,31 @@
           }
         } catch(e) { console.warn('Token refresh skipped:', e.message); }
       }
-      // Sync silencieuse des données fraîches
-      loadAllData().then(() => {
-        // Re-render tout après sync Supabase
-        renderRoutinePicker();
-        renderProgramsList();
-        renderCurrentTab();
-        showSyncBadge('✓ Sync', true);
-      }).catch(e => console.warn('Background sync failed:', e));
+
+      // Charger depuis Supabase (avec fallback cache)
+      await loadAllData();
+
+      // Afficher l'app
+      initApp();
 
     } catch(e) {
       console.warn('Init error:', e);
-      // Ne supprimer la session QUE si c'est vraiment une erreur de parsing
-      // Pas si c'est un problème réseau
-      if (e instanceof SyntaxError) {
-        localStorage.removeItem('seance_session');
-        document.getElementById('loginScreen').style.display = 'flex';
-      } else {
-        // Réseau HS — garder la session et afficher l'app quand même
+      // En cas d'erreur réseau, essayer quand même avec le cache
+      try {
+        const getCache = key => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
+        sessions    = getCache('elev_cache_sessions');
+        routines    = getCache('elev_cache_routines');
+        programs    = getCache('elev_cache_programs');
+        bodyWeights = getCache('elev_cache_body_weights');
+        sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
+        bodyWeights.sort((a, b) => a.date.localeCompare(b.date));
+        activeProgId = parseInt(localStorage.getItem('elev_active_prog')) || (programs[0]?.id || null);
         document.getElementById('loginScreen').style.display = 'none';
         initApp();
+      } catch(e2) {
+        localStorage.removeItem('seance_session');
+        document.getElementById('loginScreen').style.display = 'flex';
       }
-      hideLoading();
     }
   })();
 
@@ -1237,21 +1217,43 @@
   // ── Data helpers ──
   async function sbLoad(table) {
     if (!accessToken) return [];
-    // Try network first
     if (isOnline()) {
       try {
         const data = await supaFetch('/rest/v1/' + table + '?select=*&user_id=eq.' + currentUser.id, { returnData: true });
         if (Array.isArray(data)) {
           const result = data.map(row => row.data);
-          // Update cache
           if (CACHE_KEYS[table]) localStorage.setItem(CACHE_KEYS[table], JSON.stringify(result));
           return result;
-        } else {
-          console.warn('sbLoad: unexpected response', data);
         }
+        // Token expiré (401) — tenter un refresh puis retry
+        if (data && (data.code === 'PGRST301' || data.message?.includes('JWT'))) {
+          const saved = localStorage.getItem('seance_session');
+          if (saved) {
+            const s = JSON.parse(saved);
+            const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
+              method: 'POST',
+              headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refresh_token: s.refresh_token })
+            });
+            const rd = await r.json();
+            if (rd.access_token) {
+              accessToken = rd.access_token;
+              currentUser = rd.user;
+              localStorage.setItem('seance_session', JSON.stringify({ access_token: rd.access_token, refresh_token: rd.refresh_token, user: rd.user }));
+              // Retry
+              const data2 = await supaFetch('/rest/v1/' + table + '?select=*&user_id=eq.' + currentUser.id, { returnData: true });
+              if (Array.isArray(data2)) {
+                const result = data2.map(row => row.data);
+                if (CACHE_KEYS[table]) localStorage.setItem(CACHE_KEYS[table], JSON.stringify(result));
+                return result;
+              }
+            }
+          }
+        }
+        console.warn('sbLoad: unexpected response', data);
       } catch(e) { console.warn('sbLoad network fail, using cache', e); }
     }
-    // Fallback to cache — only show toast if truly offline
+    // Fallback cache
     try {
       const cached = localStorage.getItem(CACHE_KEYS[table]);
       if (cached) {
