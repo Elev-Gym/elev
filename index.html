@@ -1369,7 +1369,7 @@
       // Corriger aussi le timer de repos
       if (restRemaining > 0 && !restPaused && _restStartedAt) {
         restRemaining = Math.max(0, _restTotalAtStart - Math.floor((Date.now() - _restStartedAt) / 1000));
-        if (restRemaining <= 0) { skipRest(); }
+        if (restRemaining <= 0) { skipRest(); showToast("C'est reparti ! 💪"); if (navigator.vibrate) navigator.vibrate([200,100,200]); playBeep(); }
       }
     }
     if (document.visibilityState === 'hidden') {
