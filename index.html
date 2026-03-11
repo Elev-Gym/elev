@@ -946,7 +946,7 @@
           style="display:none;width:100%;box-sizing:border-box;margin-top:4px"/>
         <div id="progExSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,0.18)"></div>
       </div>
-      <canvas id="progChart" height="140" style="margin-top:10px"></canvas>
+      <canvas id="progChart" height="140" style="margin-top:10px;display:none"></canvas>
       <div id="progEmpty" style="display:none;text-align:center;padding:20px 0;font-size:11px;color:var(--muted2)">Aucune donnée pour cet exercice.</div>
     </div>
 
@@ -3584,13 +3584,15 @@
 
   function renderProgSelector() {
     drawGlobalProgChart();
-    // Init search avec premier exo
-    const exNames=[...new Set(sessions.flatMap(s=>s.exercises.map(e=>e.name)))];
-    if(!exNames.length) return;
-    if(!selectedProgEx||!exNames.includes(selectedProgEx)) selectedProgEx=exNames[0];
-    const inp = document.getElementById('progExSearch');
-    if (inp && !inp.value) { inp.value = selectedProgEx; }
-    drawProgChart(selectedProgEx);
+    // Masquer le graphique tant qu'aucun exercice n'est choisi
+    if (!selectedProgEx) {
+      document.getElementById('progChart').style.display = 'none';
+      document.getElementById('progEmpty').style.display = 'none';
+    } else {
+      drawProgChart(selectedProgEx);
+      const txt = document.getElementById('progExSelectedText');
+      if (txt) { txt.textContent = selectedProgEx; txt.style.color = 'var(--text)'; }
+    }
   }
 
   function showProgSuggestions(q) {
