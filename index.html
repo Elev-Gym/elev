@@ -1030,7 +1030,7 @@
       ...(options.headers || {})
     };
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch(SUPA_URL + path, { ...options, headers, signal: controller.signal });
       clearTimeout(timeout);
@@ -1134,6 +1134,9 @@
           }
         } catch(e) { console.warn('Token refresh skipped:', e.message); }
       }
+
+      // Vider la queue offline en premier (séances en attente)
+      await flushQueue();
 
       // Charger depuis Supabase (avec fallback cache)
       await loadAllData();
@@ -1283,20 +1286,46 @@
       showSyncBadge('Hors-ligne', false);
       return;
     }
-    try {
+    const doSave = async () => {
       const rows = records.map(r => ({ id: String(r.id), user_id: currentUser.id, data: r }));
-      const res = await supaFetch('/rest/v1/' + table, {
+      return await supaFetch('/rest/v1/' + table, {
         method: 'POST',
         headers: { 'Prefer': 'resolution=merge-duplicates' },
         body: JSON.stringify(rows)
       });
+    };
+    try {
+      let res = await doSave();
+      console.log('sbSave response:', res.status, table);
+      // Token expiré — refresh et retry
+      if (res.status === 401) {
+        const saved = localStorage.getItem('seance_session');
+        if (saved) {
+          const s = JSON.parse(saved);
+          const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
+            method: 'POST',
+            headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: s.refresh_token })
+          });
+          const rd = await r.json();
+          if (rd.access_token) {
+            accessToken = rd.access_token;
+            currentUser = rd.user;
+            localStorage.setItem('seance_session', JSON.stringify({ access_token: rd.access_token, refresh_token: rd.refresh_token, user: rd.user }));
+            res = await doSave();
+          }
+        }
+      }
       if (!res.ok) {
-        const t = await res.text(); console.error('sbSave error:', t);
+        const t = await res.text();
+        console.error('sbSave error:', t);
         queueOp({ type: 'save', table, records, id: records[0]?.id });
       }
-    } catch {
+    } catch(err) {
+      console.error('sbSave catch:', err);
       queueOp({ type: 'save', table, records, id: records[0]?.id });
       setDot('offline');
+      showToast('Sauvegarde en attente (réseau)');
     }
   }
 
