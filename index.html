@@ -248,6 +248,28 @@
   .weight-entry-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 18px; margin-bottom: 20px; }
 
   /* ── Onboarding ── */
+  /* ── Full-screen onboarding overlay ── */
+  .fullscreen-onboarding { position: fixed; inset: 0; z-index: 600; background: var(--bg); display: flex; flex-direction: column; justify-content: center; padding: 48px 32px 40px; animation: fadeUp 0.3s ease; }
+  .fob-logo { font-family: 'Cormorant Garamond', serif; font-size: 13px; letter-spacing: 7px; text-transform: uppercase; color: var(--muted); margin-bottom: 48px; }
+  .fob-step-count { font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--muted2); text-transform: uppercase; margin-bottom: 16px; }
+  .fob-question { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--text); line-height: 1.2; margin-bottom: 8px; }
+  .fob-hint { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted2); font-family: 'Geist Mono', monospace; margin-bottom: 32px; }
+  .fob-inp { background: transparent; border: none; border-bottom: 2px solid var(--border2); padding: 10px 4px; font-family: 'Cormorant Garamond', serif; font-size: 40px; color: var(--text); width: 100%; outline: none; margin-bottom: 40px; transition: border-color 0.2s; }
+  .fob-inp:focus { border-bottom-color: var(--accent); }
+  .fob-inp::placeholder { color: var(--border2); }
+  .fob-next { width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: 4px; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; margin-bottom: 14px; }
+  .fob-back { background: none; border: none; color: var(--muted); font-size: 10px; font-family: 'Geist Mono', monospace; cursor: pointer; width: 100%; text-align: center; letter-spacing: 1px; }
+  .fob-skip { background: none; border: none; color: var(--muted2); font-size: 9px; font-family: 'Geist Mono', monospace; cursor: pointer; width: 100%; text-align: center; letter-spacing: 1px; margin-top: 6px; }
+  .fob-dots { display: flex; gap: 5px; margin-bottom: 40px; }
+  .fob-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); transition: all 0.2s; }
+  .fob-dot.active { background: var(--accent); width: 18px; border-radius: 3px; }
+  .fob-choices { display: flex; flex-direction: column; gap: 10px; margin-bottom: 40px; }
+  .fob-choice { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 8px; cursor: pointer; border: 2px solid var(--border); background: var(--surface); transition: all 0.15s; text-align: left; }
+  .fob-choice.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .fob-choice-icon { font-size: 22px; }
+  .fob-choice-label { font-family: 'Cormorant Garamond', serif; font-size: 20px; }
+  .fob-choice-desc { font-size: 10px; font-family: 'Geist Mono', monospace; opacity: 0.7; margin-top: 1px; }
+
   .onboarding-wrap { padding: 8px 0 24px; }
   .onboarding-step { display:none; }
   .onboarding-step.active { display:block; animation: fadeUp 0.25s ease; }
@@ -600,6 +622,19 @@
   </script>
 </head>
 <body>
+
+<!-- ══ FULLSCREEN ONBOARDING ══ -->
+<div id="fobOverlay" class="fullscreen-onboarding" style="display:none">
+  <div class="fob-logo">Élev</div>
+  <div class="fob-dots" id="fobDots"></div>
+  <div class="fob-step-count" id="fobStepCount"></div>
+  <div class="fob-question" id="fobQuestion"></div>
+  <div class="fob-hint" id="fobHint"></div>
+  <div id="fobInputArea"></div>
+  <button class="fob-next" id="fobNextBtn" onclick="fobNext()">Suivant →</button>
+  <button class="fob-back" id="fobBackBtn" onclick="fobBack()">← Retour</button>
+  <button class="fob-skip" id="fobSkipBtn" onclick="fobSkip()" style="display:none">Passer cette étape →</button>
+</div>
 
 <!-- ══ DAILY GREETING OVERLAY ══ -->
 <div id="dailyGreetingOverlay" class="daily-overlay" style="display:none">
@@ -1674,8 +1709,11 @@
     renderRoutinePicker();
     renderProgramsList();
     checkWeightOnboarding();
-    // Daily greeting — première connexion du jour
-    if (shouldShowDailyGreeting()) {
+    // Fullscreen onboarding — toute première connexion
+    if (!getUserProfile()) {
+      setTimeout(() => showFullscreenOnboarding(), 400);
+    } else if (shouldShowDailyGreeting()) {
+      // Daily greeting — première connexion du jour
       setTimeout(() => showDailyGreeting(), 600);
     }
     // Restore any in-progress session
@@ -3850,7 +3888,171 @@
     ctx.fillText(new Date(recent[recent.length-1].date).toLocaleDateString('fr-FR', {day:'numeric',month:'short'}), W - pad.r, H - 6);
   }
 
-  // ── Daily greeting ──
+  // ══ FULLSCREEN ONBOARDING ══
+  // Affiché une seule fois à la première connexion, avant d'accéder à l'app
+
+  const FOB_STEPS = [
+    { key: 'firstName',    question: "Comment tu t'appelles ?",          hint: 'TON PRÉNOM',              type: 'text',   placeholder: 'Louis',  autocomplete: 'given-name' },
+    { key: 'age',          question: 'Quel est ton âge ?',               hint: 'EN ANNÉES',               type: 'number', placeholder: '25',     unit: 'ans', min: 10, max: 100 },
+    { key: 'height',       question: 'Quelle est ta taille ?',           hint: 'EN CENTIMÈTRES',          type: 'number', placeholder: '175',    unit: 'cm',  min: 100, max: 250 },
+    { key: 'startWeight',  question: 'Quel est ton poids actuellement ?', hint: 'EN KILOGRAMMES',          type: 'number', placeholder: '80',     unit: 'kg',  min: 20, max: 300 },
+    { key: 'targetWeight', question: 'Quel est ton poids cible ?',       hint: 'EN KILOGRAMMES',          type: 'number', placeholder: '72',     unit: 'kg',  min: 20, max: 300 },
+    { key: 'goal',         question: 'Quel est ton objectif principal ?', hint: 'CHOISIS TON MODE',        type: 'choice',
+      choices: [
+        { value: 'seche',    label: 'Sèche',         icon: '🔥', desc: 'Perdre de la masse grasse' },
+        { value: 'maintien', label: 'Maintien',       icon: '⚖️', desc: 'Garder ton poids actuel' },
+        { value: 'prise',    label: 'Prise de masse', icon: '💪', desc: 'Gagner du muscle et du poids' },
+      ]
+    },
+    { key: 'kcalTarget',   question: 'Objectif calorique journalier ?',  hint: 'EN KCAL — OPTIONNEL',    type: 'number', placeholder: '2200',   unit: 'kcal', min: 500, max: 10000, optional: true },
+  ];
+
+  let _fobStep = 0;
+  let _fobData = {};
+
+  function showFullscreenOnboarding() {
+    _fobStep = 0;
+    _fobData = {};
+    document.getElementById('fobOverlay').style.display = 'flex';
+    fobRender();
+  }
+
+  function fobRender() {
+    const step = FOB_STEPS[_fobStep];
+    const total = FOB_STEPS.length;
+
+    // Dots
+    document.getElementById('fobDots').innerHTML = FOB_STEPS.map((_, i) =>
+      `<div class="fob-dot ${i === _fobStep ? 'active' : ''}"></div>`
+    ).join('');
+
+    // Compteur
+    document.getElementById('fobStepCount').textContent = `${_fobStep + 1} / ${total}`;
+    document.getElementById('fobQuestion').textContent = step.question;
+    document.getElementById('fobHint').textContent = step.hint;
+
+    // Back
+    document.getElementById('fobBackBtn').style.display = _fobStep > 0 ? 'block' : 'none';
+
+    // Skip
+    document.getElementById('fobSkipBtn').style.display = step.optional ? 'block' : 'none';
+    document.getElementById('fobNextBtn').style.display = step.optional ? 'none' : 'block';
+    if (step.optional) {
+      document.getElementById('fobNextBtn').style.display = 'block';
+      document.getElementById('fobNextBtn').textContent = 'Enregistrer →';
+    } else if (_fobStep === total - 1) {
+      document.getElementById('fobNextBtn').textContent = "C'est parti 🚀";
+    } else {
+      document.getElementById('fobNextBtn').textContent = 'Suivant →';
+    }
+
+    // Input area
+    const area = document.getElementById('fobInputArea');
+    if (step.type === 'choice') {
+      const current = _fobData[step.key] || '';
+      area.innerHTML = `<div class="fob-choices" id="fobChoices">` +
+        step.choices.map(ch => `
+          <button class="fob-choice ${current === ch.value ? 'selected' : ''}"
+            onclick="fobSelectChoice('${step.key}','${ch.value}')">
+            <span class="fob-choice-icon">${ch.icon}</span>
+            <div>
+              <div class="fob-choice-label">${ch.label}</div>
+              <div class="fob-choice-desc">${ch.desc}</div>
+            </div>
+          </button>`
+        ).join('') + '</div>';
+    } else {
+      const saved = _fobData[step.key] || '';
+      area.innerHTML = `<input class="fob-inp" id="fobInp"
+        type="${step.type === 'number' ? 'number' : 'text'}"
+        placeholder="${step.placeholder}"
+        value="${saved}"
+        ${step.autocomplete ? `autocomplete="${step.autocomplete}"` : ''}
+        ${step.type === 'number' ? `inputmode="decimal" min="${step.min}" max="${step.max}"` : ''}
+        ${step.key === 'firstName' ? 'style="text-transform:capitalize"' : ''}
+        onkeydown="if(event.key==='Enter')fobNext()"
+      />`;
+      setTimeout(() => document.getElementById('fobInp')?.focus(), 100);
+    }
+  }
+
+  function fobSelectChoice(key, value) {
+    _fobData[key] = value;
+    // Re-render choices pour mettre à jour la sélection
+    const step = FOB_STEPS[_fobStep];
+    document.querySelectorAll('.fob-choice').forEach((btn, i) => {
+      btn.classList.toggle('selected', step.choices[i].value === value);
+    });
+  }
+
+  async function fobNext() {
+    const step = FOB_STEPS[_fobStep];
+
+    if (step.type === 'choice') {
+      if (!_fobData[step.key]) { showToast('Choisis une option'); return; }
+    } else if (step.type === 'text') {
+      const val = document.getElementById('fobInp')?.value?.trim();
+      if (!val && !step.optional) { showToast("Entre ton prénom 🙂"); return; }
+      if (val) _fobData[step.key] = val.charAt(0).toUpperCase() + val.slice(1);
+    } else {
+      const rawVal = document.getElementById('fobInp')?.value;
+      if (rawVal === '' || rawVal === null || rawVal === undefined) {
+        if (step.optional) { _fobStep++; if (_fobStep < FOB_STEPS.length) { fobRender(); } else { await fobFinish(); } return; }
+        showToast('Entre une valeur'); return;
+      }
+      const val = parseFloat(rawVal);
+      if (isNaN(val) || val < step.min || val > step.max) {
+        showToast(`Entre une valeur entre ${step.min} et ${step.max}`); return;
+      }
+      _fobData[step.key] = val;
+    }
+
+    if (_fobStep < FOB_STEPS.length - 1) {
+      _fobStep++;
+      fobRender();
+    } else {
+      await fobFinish();
+    }
+  }
+
+  function fobBack() {
+    if (_fobStep > 0) { _fobStep--; fobRender(); }
+  }
+
+  async function fobSkip() {
+    _fobStep++;
+    if (_fobStep < FOB_STEPS.length) fobRender();
+    else await fobFinish();
+  }
+
+  async function fobFinish() {
+    const profile = { ..._fobData };
+    await saveUserProfile(profile);
+    // Enregistrer le poids de départ comme première entrée
+    if (profile.startWeight) {
+      const today = new Date().toISOString().split('T')[0];
+      const entry = { date: today, kg: profile.startWeight };
+      bodyWeights = bodyWeights.filter(w => w.date !== today);
+      bodyWeights.push(entry);
+      bodyWeights.sort((a, b) => a.date.localeCompare(b.date));
+      cacheSet('elev_cache_body_weights', bodyWeights);
+      if (accessToken && isOnline() && currentUser) {
+        try {
+          await supaFetch('/rest/v1/body_weights', {
+            method: 'POST',
+            headers: { 'Prefer': 'resolution=merge-duplicates' },
+            body: JSON.stringify([{ id: today + '_' + currentUser.id, user_id: currentUser.id, data: entry }])
+          });
+        } catch(e) {}
+      }
+    }
+    document.getElementById('fobOverlay').style.display = 'none';
+    // Marquer le daily greeting comme vu aujourd'hui (évite double popup)
+    localStorage.setItem(DAILY_GREETING_KEY, new Date().toISOString().split('T')[0]);
+    showToast(`Bienvenue ${profile.firstName || ''} 🎉`);
+  }
+
+    // ── Daily greeting ──
   const DAILY_GREETING_KEY = 'elev_daily_greeting';
 
   function shouldShowDailyGreeting() {
