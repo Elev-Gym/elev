@@ -14,22 +14,23 @@
 
 <style>
   :root {
-    --bg: #EDE7DE;
-    --surface: #F8F4EF;
-    --border: #D8D0C6;
-    --border2: #C0B8AE;
-    --accent: #2d5a3d;
-    --accent-light: #e8f0eb;
+    --bg: #E8E2D9;
+    --surface: #F5F1EC;
+    --border: #DDD7CE;
+    --border2: #C8C0B6;
+    --accent: #2C5F4A;
+    --accent-hover: #1E4535;
+    --accent-light: #E4EDE8;
     --accent2: #c0392b;
-    --terra: #8B5E3C;
-    --terra-light: rgba(139,94,60,0.09);
-    --terra-border: rgba(139,94,60,0.22);
+    --terra: #2C5F4A;
+    --terra-light: #E4EDE8;
+    --terra-border: #B8D0C4;
     --gold: #b8860b;
     --gold-light: #fdf6e3;
-    --text: #0f0f0d;
-    --muted: #6B6460;
-    --muted2: #A09890;
-    --warm: #F2EBE0;
+    --text: #1A1A18;
+    --muted: #6B7280;
+    --muted2: #9CA3AF;
+    --warm: #EEE8DE;
   }
   html.dark {
     --bg: #0D1014;
@@ -474,8 +475,8 @@
 
   /* CTA */
   .home-cta { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; margin-bottom: 24px; transition: background 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(45,90,61,0.18); }
-  .home-cta:hover { background: #234a31; box-shadow: 0 4px 14px rgba(45,90,61,0.28); }
-  .home-cta:active { background: #1a3826; box-shadow: none; }
+  .home-cta:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(44,95,74,0.28); }
+  .home-cta:active { background: #162e24; box-shadow: none; }
 
   .home-section-title { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); font-family: 'Geist Mono', monospace; margin-bottom: 10px; }
   .home-streak { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
