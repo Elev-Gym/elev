@@ -53,19 +53,25 @@
   body { background: var(--bg); color: var(--text); font-family: 'Geist Mono', monospace; min-height: 100vh; font-weight: 400; }
   .app { max-width: 460px; margin: 0 auto; padding-bottom: 100px; }
 
-  /* Header */
-  header { padding: 36px 28px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(247,245,242,0.96); backdrop-filter: blur(12px); z-index: 100; transition: background 0.3s; }
+  /* Header — Option C */
+  header { padding: 12px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(247,245,242,0.96); backdrop-filter: blur(12px); z-index: 100; transition: background 0.3s; display: flex; align-items: center; justify-content: space-between; }
   html.dark header { background: rgba(20,20,18,0.97); }
-  .logo { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-weight: 400; letter-spacing: 6px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
-  .header-title { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 400; letter-spacing: -0.5px; color: var(--text); line-height: 1.1; }
-  .header-date { font-size: 10px; color: var(--muted2); letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
+  .logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; letter-spacing: 8px; text-transform: uppercase; color: var(--text); line-height: 1; }
+  .header-title { font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 400; font-style: italic; color: var(--accent); line-height: 1; }
+  .header-date { font-size: 8px; color: var(--muted2); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+  .header-center { text-align: center; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .header-icon-btn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; border: none; background: rgba(0,0,0,0.05); color: var(--muted); transition: background 0.2s; }
+  html.dark .header-icon-btn { background: rgba(255,255,255,0.06); }
+  .header-icon-btn:hover { background: rgba(0,0,0,0.1); }
+  html.dark .header-icon-btn:hover { background: rgba(255,255,255,0.1); }
 
   /* Nav */
-  .nav { display: flex; padding: 0 28px; border-bottom: 1px solid var(--border); gap: 18px; overflow-x: auto; }
+  .nav { display: flex; padding: 0 20px; border-bottom: 1px solid var(--border); position: relative; }
   .nav::-webkit-scrollbar { display: none; }
-  .nav-btn { background: none; border: none; color: var(--muted); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; padding: 14px 0; cursor: pointer; position: relative; transition: color 0.2s; white-space: nowrap; flex-shrink: 0; }
+  .nav-indicator { position: absolute; bottom: 0; height: 2px; background: var(--accent); transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1); pointer-events: none; }
+  .nav-btn { background: none; border: none; color: var(--muted); font-family: 'Geist Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; padding: 13px 10px 12px; cursor: pointer; position: relative; transition: color 0.2s; white-space: nowrap; flex: 1; text-align: center; }
   .nav-btn.active { color: var(--text); }
-  .nav-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px; background: var(--accent); }
 
   /* Sections */
   .section { display: none; padding: 24px; }
@@ -577,31 +583,28 @@
 
 <div class="app">
   <header>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-      <div>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="90" height="26" style="display:block;margin-bottom:10px">
-          <defs><style>@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&amp;display=swap');</style></defs>
-          <text x="0" y="62" font-family="'Cormorant Garamond','Georgia',serif" font-size="56" font-weight="300" fill="#1a1a1a" text-anchor="start" letter-spacing="14">ÉLEV</text>
-          <line x1="0" y1="71" x2="185" y2="71" stroke="#1a1a1a" stroke-width="0.6" opacity="0.4"/>
-        </svg>
-        <div class="header-title" id="headerTitle" style="margin-left:3px">Bonne session</div>
-        <div class="header-date" id="headerDate" style="margin-left:3px"></div>
-        <div class="header-date" id="headerTime" style="margin-top:2px;margin-left:3px"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <button onclick="signOut()" style="background:none;border:1px solid var(--border2);border-radius:2px;padding:4px 10px;font-family:Geist Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;flex-shrink:0;" title="Déconnexion">Déconnexion</button>
-        <button onclick="toggleDark()" id="darkToggleBtn" style="background:none;border:1px solid var(--border2);border-radius:2px;padding:4px 10px;font-family:Geist Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;flex-shrink:0;transition:all 0.2s;" title="Mode sombre">☽ Nuit</button>
-        <div style="display:flex;align-items:center;gap:5px;font-family:Geist Mono,monospace;font-size:8px;letter-spacing:1px;color:var(--muted)" id="netStatusLabel">
-          <span id="syncDot" class="sync-dot"></span>
-        </div>
-      </div>
+    <!-- Logo -->
+    <div class="logo">Élev</div>
+
+    <!-- Centre : salutation + date -->
+    <div class="header-center">
+      <div class="header-title" id="headerTitle">Bonne session</div>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+
+    <!-- Droite : icônes -->
+    <div class="header-right">
+      <span id="syncDot" class="sync-dot" style="margin-right:2px"></span>
+      <button class="header-icon-btn" onclick="toggleDark()" id="darkToggleBtn" title="Mode sombre">☽</button>
+      <button class="header-icon-btn" onclick="signOut()" title="Déconnexion">⏻</button>
     </div>
   </header>
 
   <div style="height:2px;background:transparent;overflow:hidden;">
     <div id="tabLoadBar" style="height:2px;width:0%;background:var(--accent);opacity:0;"></div>
   </div>
-  <nav class="nav">
+  <nav class="nav" id="mainNav">
+    <div class="nav-indicator" id="navIndicator"></div>
     <button class="nav-btn active" onclick="switchTab('session')">Session</button>
     <button class="nav-btn" onclick="switchTab('routines')">Programmes</button>
     <button class="nav-btn" onclick="switchTab('poids')">Poids</button>
@@ -1518,10 +1521,21 @@
   function initApp() {
     const nowDate = new Date();
     calYear = nowDate.getFullYear(); calMonth = nowDate.getMonth();
-    document.getElementById('headerDate').textContent = nowDate.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const dateStr = nowDate.toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+    const timeStr = nowDate.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('headerDate').textContent = dateStr + ' · ' + timeStr;
     const h = nowDate.getHours();
     document.getElementById('headerTitle').textContent = h < 12 ? 'Bonne séance' : h < 18 ? 'À toi de jouer' : 'Bonne session';
     initDark();
+    // Init indicateur nav
+    setTimeout(() => {
+      const activeBtn = document.querySelector('.nav-btn.active');
+      const indicator = document.getElementById('navIndicator');
+      if (activeBtn && indicator) {
+        indicator.style.left = activeBtn.offsetLeft + 'px';
+        indicator.style.width = activeBtn.offsetWidth + 'px';
+      }
+    }, 50);
     renderRoutinePicker();
     renderProgramsList();
     checkWeightOnboarding();
@@ -1537,6 +1551,15 @@
   const TAB_TITLES = { session: 'Séance', history: 'Historique', stats: 'Stats', routines: 'Programmes', poids: 'Poids' };
   function switchTab(tab) {
     document.title = 'Élev | ' + (TAB_TITLES[tab] || tab);
+    // Indicateur glissant
+    setTimeout(() => {
+      const activeBtn = document.querySelector('.nav-btn.active');
+      const indicator = document.getElementById('navIndicator');
+      if (activeBtn && indicator) {
+        indicator.style.left = activeBtn.offsetLeft + 'px';
+        indicator.style.width = activeBtn.offsetWidth + 'px';
+      }
+    }, 10);
     const bar = document.getElementById('tabLoadBar');
     if (bar) {
       bar.style.transition = 'none'; bar.style.width = '0%'; bar.style.opacity = '1';
@@ -3164,7 +3187,7 @@
   }
 
   function updateWeightClock() {
-    const el = document.getElementById('headerTime');
+    const el = document.getElementById('headerDate') && false && document.getElementById('headerDate');
     if (!el) return;
     const now = new Date();
     const h = String(now.getHours()).padStart(2,'0');
@@ -4523,17 +4546,17 @@
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('elev_dark', isDark ? '1' : '0');
     const btn = document.getElementById('darkToggleBtn');
-    if (btn) btn.textContent = isDark ? '☀ Jour' : '☽ Nuit';
+    if (btn) btn.textContent = isDark ? '☀' : '☽';
   }
   function initDark() {
     const saved = localStorage.getItem('elev_dark');
     const btn = document.getElementById('darkToggleBtn');
     if (saved === '1') {
       document.documentElement.classList.add('dark');
-      if (btn) btn.textContent = '☀ Jour';
+      if (btn) btn.textContent = '☀';
     } else {
       document.documentElement.classList.remove('dark');
-      if (btn) btn.textContent = '☽ Nuit';
+      if (btn) btn.textContent = '☽';
     }
   }
 
