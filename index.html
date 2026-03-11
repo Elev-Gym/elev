@@ -225,24 +225,24 @@
 
   /* Exercise replace modal */
   .ex-replace-modal { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:flex;align-items:flex-end;justify-content:center; }
-  .ex-replace-sheet { background:#fff;border-radius:18px 18px 0 0;padding:28px 22px 36px;width:100%;max-width:480px;box-shadow:0 -4px 32px rgba(0,0,0,.12); }
-  .ex-replace-title { font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:16px;color:var(--ink); }
+  .ex-replace-sheet { background:var(--surface);border-radius:18px 18px 0 0;padding:28px 22px 36px;width:100%;max-width:480px;box-shadow:0 -4px 32px rgba(0,0,0,.12); }
+  .ex-replace-title { font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:16px;color:var(--text); }
   .ex-search-wrap { position:relative;margin-bottom:8px; }
-  .ex-search-inp { width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:15px;box-sizing:border-box;outline:none; }
+  .ex-search-inp { width:100%;padding:10px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:15px;box-sizing:border-box;outline:none; }
   .ex-search-inp:focus { border-color:var(--accent); }
-  .ex-suggestions { position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0ddd8;border-radius:0 0 10px 10px;max-height:220px;overflow-y:auto;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.1); }
-  .ex-suggestion { padding:10px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid #f5f3f0;display:flex;justify-content:space-between;align-items:center; }
-  .ex-suggestion:hover { background:#f7f5f2; }
+  .ex-suggestions { position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 10px 10px;max-height:220px;overflow-y:auto;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.1); }
+  .ex-suggestion { padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center; }
+  .ex-suggestion:hover { background:var(--warm); }
   .ex-suggestion:last-child { border-bottom:none; }
   .ex-sug-muscle { font-size:11px;color:var(--muted);background:#f0ece6;padding:2px 7px;border-radius:20px; }
   .ex-replace-actions { display:flex;gap:10px;margin-top:16px; }
   .ex-replace-confirm { flex:1;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:10px;font-size:15px;cursor:pointer; }
-  .ex-replace-cancel { background:#f0ece6;color:var(--ink);border:none;padding:12px 18px;border-radius:10px;font-size:15px;cursor:pointer; }
-  .ex-muscle-sel { width:100%;padding:9px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;margin-bottom:0;box-sizing:border-box;margin-top:8px; }
+  .ex-replace-cancel { background:var(--warm);color:var(--text);border:1px solid var(--border2);padding:12px 18px;border-radius:10px;font-size:15px;cursor:pointer; }
+  .ex-muscle-sel { width:100%;padding:9px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:14px;margin-bottom:0;box-sizing:border-box;margin-top:8px; }
 
   /* Autocomplete on add form */
   .add-form { position:relative; }
-  .ex-add-suggestions { position:absolute;left:0;right:0;background:#fff;border:1px solid #e0ddd8;border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,.1);display:none; }
+  .ex-add-suggestions { position:absolute;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,.1);display:none; }
   .ex-add-suggestions.show { display:block; }
 
   /* Progression chart (exercise) */
@@ -665,7 +665,7 @@
   <div class="ex-replace-modal" id="routineConfirmModal" style="display:none" onclick="if(event.target===this)closeRoutineConfirm()">
     <div class="ex-replace-sheet">
       <div class="ex-replace-title">Lancer la routine</div>
-      <div style="margin-bottom:6px;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--ink)" id="routineConfirmName"></div>
+      <div style="margin-bottom:6px;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--text)" id="routineConfirmName"></div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:20px;" id="routineConfirmExs"></div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Le chrono démarrera automatiquement.</div>
       <div class="ex-replace-actions">
