@@ -58,7 +58,7 @@
   html.dark header { background: rgba(20,20,18,0.97); }
   .logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; letter-spacing: 8px; text-transform: uppercase; color: var(--text); line-height: 1; }
   .header-title { font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 400; font-style: italic; color: var(--accent); line-height: 1; }
-  .header-date { font-size: 8px; color: var(--muted2); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+  .header-date { font-size: 8px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
   .header-center { text-align: center; }
   .header-right { display: flex; align-items: center; gap: 8px; }
   .header-icon-btn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; border: none; background: rgba(0,0,0,0.05); color: var(--muted); transition: background 0.2s; }
@@ -1529,7 +1529,16 @@
     const timeStr = nowDate.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
     document.getElementById('headerDate').textContent = dateStr + ' · ' + timeStr;
     const h = nowDate.getHours();
-    document.getElementById('headerTitle').textContent = h < 12 ? 'Bonne séance' : h < 18 ? 'À toi de jouer' : 'Bonne session';
+    const phrases = h < 6
+      ? ['Déjà debout.', 'Les autres dorment.', 'Avant l\'aube.']
+      : h < 12
+      ? ['Commence fort.', 'La journée t\'appartient.', 'Premier sang.']
+      : h < 17
+      ? ['On lâche rien.', 'Fais le taf.', 'Reste focus.']
+      : h < 20
+      ? ['Vide le réservoir.', 'Finis ce que tu as commencé.', 'Tout donner.']
+      : ['Soir de guerre.', 'Les forts s\'entraînent tard.', 'Dernière rep.'];
+    document.getElementById('headerTitle').textContent = phrases[Math.floor(Math.random() * phrases.length)];
     initDark();
     // Init indicateur nav
     setTimeout(() => {
