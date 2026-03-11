@@ -4092,18 +4092,21 @@
     }
     document.getElementById('fobOverlay').style.display = 'none';
     // Marquer le daily greeting comme vu aujourd'hui (évite double popup)
-    localStorage.setItem(DAILY_GREETING_KEY, new Date().toISOString().split('T')[0]);
+    localStorage.setItem('elev_daily_greeting', new Date().toISOString().split('T')[0]);
     showToast(`Bienvenue ${profile.firstName || ''} 🎉`);
   }
 
     // ── Daily greeting ──
-  const DAILY_GREETING_KEY = 'elev_daily_greeting';
+  // Daily greeting — date stockée dans le profil Supabase pour sync multi-appareils
 
   function shouldShowDailyGreeting() {
     const profile = getUserProfile();
-    if (!profile) return false; // Pas encore d'onboarding
+    if (!profile) return false;
     const today = new Date().toISOString().split('T')[0];
-    const last = localStorage.getItem(DAILY_GREETING_KEY);
+    // Vérifier d'abord le profil (sync multi-appareils), puis localStorage en fallback offline
+    const lastFromProfile = profile.lastDailyGreeting;
+    const lastFromLocal = localStorage.getItem('elev_daily_greeting');
+    const last = lastFromProfile || lastFromLocal;
     return last !== today;
   }
 
@@ -4111,22 +4114,24 @@
     const profile = getUserProfile();
     const overlay = document.getElementById('dailyGreetingOverlay');
     if (!overlay) return;
-    // Prénom
     const name = profile?.firstName || '';
     document.getElementById('dailyGreetingName').textContent = name ? 'BONJOUR ' + name.toUpperCase() : 'BONJOUR';
-    // Date
     const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     document.getElementById('dailyGreetingDate').textContent = dateStr;
-    // Pré-remplir avec dernier poids connu
     if (bodyWeights.length) {
       document.getElementById('dailyWeightInput').placeholder = bodyWeights[bodyWeights.length - 1].kg;
     }
     overlay.style.display = 'flex';
   }
 
-  function closeDailyGreeting() {
+  async function closeDailyGreeting() {
     const today = new Date().toISOString().split('T')[0];
-    localStorage.setItem(DAILY_GREETING_KEY, today);
+    // Sauvegarder dans localStorage (immédiat, offline)
+    localStorage.setItem('elev_daily_greeting', today);
+    // Sauvegarder dans le profil Supabase (sync multi-appareils)
+    const profile = getUserProfile() || {};
+    profile.lastDailyGreeting = today;
+    await saveUserProfile(profile);
     document.getElementById('dailyGreetingOverlay').style.display = 'none';
   }
 
