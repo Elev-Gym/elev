@@ -1321,7 +1321,8 @@
     document.getElementById('headerTitle').textContent = h < 12 ? 'Bonne séance' : h < 18 ? 'À toi de jouer' : 'Bonne session';
     renderRoutinePicker();
     renderProgramsList();
-    checkWeightOnboarding();
+    // Charger le profil depuis Supabase puis vérifier l'onboarding
+    loadUserProfileFromSupabase().then(() => checkWeightOnboarding());
     // Restore any in-progress session
     restoreDraft();
   }
@@ -1345,7 +1346,7 @@
     if (tab === 'history') renderHistory();
     if (tab === 'stats') { renderCalendar(); renderStats(); renderWeeklySummary(); }
     if (tab === 'routines') { renderRoutinesList(); renderProgramsList(); }
-    if (tab === 'poids') { sbLoad('body_weights').then(data => { bodyWeights = data; bodyWeights.sort((a,b)=>a.date.localeCompare(b.date)); checkWeightOnboarding(); }); }
+    if (tab === 'poids') { sbLoad('body_weights').then(data => { bodyWeights = data; bodyWeights.sort((a,b)=>a.date.localeCompare(b.date)); loadUserProfileFromSupabase().then(() => checkWeightOnboarding()); }); }
   }
 
   // ── Session Timer ──
@@ -2922,8 +2923,32 @@
     try { return JSON.parse(localStorage.getItem(ONBOARDING_KEY)) || null; } catch { return null; }
   }
 
-  function saveUserProfile(data) {
+  async function saveUserProfile(data) {
+    // Toujours sauvegarder en local (rapide + offline)
     localStorage.setItem(ONBOARDING_KEY, JSON.stringify(data));
+    // Sync Supabase pour les autres appareils
+    if (accessToken && isOnline() && currentUser) {
+      try {
+        await supaFetch('/rest/v1/profiles', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify([{ id: currentUser.id, user_id: currentUser.id, data }])
+        });
+      } catch(e) { console.warn('profile sync failed', e); }
+    }
+  }
+
+  async function loadUserProfileFromSupabase() {
+    if (!accessToken || !isOnline() || !currentUser) return;
+    try {
+      const res = await supaFetch('/rest/v1/profiles?select=*&user_id=eq.' + currentUser.id, { returnData: true });
+      if (Array.isArray(res) && res.length > 0) {
+        const profile = res[0].data;
+        localStorage.setItem(ONBOARDING_KEY, JSON.stringify(profile));
+        return profile;
+      }
+    } catch(e) { console.warn('profile load failed', e); }
+    return null;
   }
 
   function resetOnboarding() {
@@ -3029,7 +3054,7 @@
       // Done — merge with existing profile (preserve age/height if edit mode)
       const existing = getUserProfile() || {};
       const merged = { ...existing, ..._onboardingData };
-      saveUserProfile(merged);
+      await saveUserProfile(merged);
       _onboardingEditMode = false;
       document.getElementById('weightOnboarding').style.display = 'none';
       document.getElementById('weightMain').style.display = 'block';
