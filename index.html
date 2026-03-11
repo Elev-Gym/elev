@@ -1357,18 +1357,35 @@
   // ── Network listeners ──
   // ── Correction timer quand l'app revient au premier plan ──
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && timerRunning && timerStartedAt) {
-      // Recalculer le vrai temps écoulé depuis le démarrage
-      timerSec = Math.floor((Date.now() - timerStartedAt) / 1000);
-      updateTimer();
+    if (document.visibilityState === 'visible') {
+      if (timerRunning && timerStartedAt) {
+        // Recalculer le vrai temps écoulé (setInterval tué par iOS en arrière-plan)
+        timerSec = Math.floor((Date.now() - timerStartedAt) / 1000);
+        updateTimer();
+        // Relancer le setInterval s'il a été tué
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => { timerSec++; updateTimer(); }, 1000);
+      }
+      // Corriger aussi le timer de repos
+      if (restRemaining > 0 && !restPaused && _restStartedAt) {
+        restRemaining = Math.max(0, _restTotalAtStart - Math.floor((Date.now() - _restStartedAt) / 1000));
+        if (restRemaining <= 0) { skipRest(); }
+      }
     }
     if (document.visibilityState === 'hidden') {
-      // Sauvegarder le draft avec timestamp exact
       autosaveDraft();
     }
   });
 
   window.addEventListener('pagehide', () => { autosaveDraft(); });
+  window.addEventListener('pageshow', () => {
+    if (timerRunning && timerStartedAt) {
+      timerSec = Math.floor((Date.now() - timerStartedAt) / 1000);
+      updateTimer();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => { timerSec++; updateTimer(); }, 1000);
+    }
+  });
 
   window.addEventListener('online', async () => {
     document.getElementById('offlineBanner').classList.remove('show');
@@ -1514,12 +1531,15 @@
     wrap.style.display = sel.value === 'custom' ? 'block' : 'none';
   }
   let restTotalDur = 90;
+  let _restStartedAt = null, _restTotalAtStart = 0;
   function startRest(dur, exName) {
     const d = (dur !== undefined ? dur : restDur);
     if (d === 0) return;
     clearInterval(restInterval);
     restRemaining = d;
     restTotalDur = d;
+    _restStartedAt = Date.now();
+    _restTotalAtStart = d;
     // Show exercise name
     const nameEl = document.getElementById('restExName');
     if (nameEl) nameEl.textContent = exName || '';
@@ -1548,6 +1568,7 @@
     if (restPaused) {
       // Resume
       restPaused = false;
+      _restStartedAt = Date.now() - (_restTotalAtStart - restRemaining) * 1000;
       restInterval = setInterval(() => {
         restRemaining--;
         updateRestDisplay();
@@ -1567,7 +1588,7 @@
       btn.textContent = '▶';
     }
   }
-  function skipRest() { clearInterval(restInterval); restPaused = false; document.getElementById('restOverlay').classList.remove('show'); document.getElementById('restPauseBtn').textContent = '⏸'; }
+  function skipRest() { clearInterval(restInterval); restPaused = false; _restStartedAt = null; document.getElementById('restOverlay').classList.remove('show'); document.getElementById('restPauseBtn').textContent = '⏸'; }
 
   function playBeep() {
     try {
@@ -1832,7 +1853,7 @@
     renderExercises(); renderRoutinePicker();
     showToast(`"${routine.name}" lancée ! ⏱`);
     autosaveDraft();
-    setTimeout(() => block && block.scrollIntoView({behavior:'smooth',block:'start'}), 200);
+    setTimeout(() => { const b = document.getElementById('freeSessionBlock'); if (b) b.scrollIntoView({behavior:'smooth',block:'start'}); }, 200);
   }
 
   function closeRoutineConfirm() {
