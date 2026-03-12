@@ -7,6 +7,10 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/elev/icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#F7F5F2" media="(prefers-color-scheme: light)" id="themeColorLight">
+<meta name="theme-color" content="#12100E" media="(prefers-color-scheme: dark)" id="themeColorDark">
+<meta name="theme-color" content="#F7F5F2" id="themeColorActive">
 <meta name="apple-mobile-web-app-title" content="Élev">
 <title>Élev</title>
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE4IiBmaWxsPSIjZjdmNWYyIi8+PHRleHQgeD0iNTAiIHk9IjcyIiBmb250LWZhbWlseT0iR2VvcmdpYSxzZXJpZiIgZm9udC1zaXplPSI1NiIgZm9udC13ZWlnaHQ9IjMwMCIgZmlsbD0iIzFhMWExYSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RTwvdGV4dD48L3N2Zz4=">
@@ -5415,6 +5419,8 @@
     localStorage.setItem('elev_dark', isDark ? '1' : '0');
     const btn = document.getElementById('darkToggleBtn');
     if (btn) btn.textContent = isDark ? '☀' : '☽';
+    const meta = document.getElementById('themeColorActive');
+    if (meta) meta.content = isDark ? '#12100E' : '#F7F5F2';
   }
   function initDark() {
     const saved = localStorage.getItem('elev_dark');
@@ -5422,9 +5428,13 @@
     if (saved === '1') {
       document.documentElement.classList.add('dark');
       if (btn) btn.textContent = '☀';
+      const meta = document.getElementById('themeColorActive');
+      if (meta) meta.content = '#12100E';
     } else {
       document.documentElement.classList.remove('dark');
       if (btn) btn.textContent = '☽';
+      const meta = document.getElementById('themeColorActive');
+      if (meta) meta.content = '#F7F5F2';
     }
   }
 
