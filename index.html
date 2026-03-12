@@ -1146,6 +1146,16 @@
             <input class="inp" id="kcalNote" type="text" placeholder="Note (optionnel)" style="width:100%;box-sizing:border-box"/>
           </div>
           <button class="weight-save" onclick="logKcal()" style="width:100%">Ajouter</button>
+
+          <!-- Objectif journalier -->
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <div class="label" style="margin-bottom:8px">Objectif journalier</div>
+            <div class="weight-input-row">
+              <input class="weight-inp" id="kcalTargetInput" type="number" step="50" placeholder="ex: 2200" style="flex:1"/>
+              <span style="font-family:Geist Mono,monospace;font-size:10px;color:var(--muted);align-self:center;padding:0 8px">kcal</span>
+              <button class="weight-save" onclick="saveKcalTarget()">Sauvegarder</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3888,6 +3898,17 @@
 
 
 
+  async function saveKcalTarget() {
+    const val = parseInt(document.getElementById('kcalTargetInput')?.value);
+    if (!val || val < 500 || val > 10000) { showToast('Entre une valeur entre 500 et 10000'); return; }
+    const profile = getUserProfile() || {};
+    profile.kcalTarget = val;
+    await saveUserProfile(profile);
+    showToast('Objectif calorique mis à jour ✓');
+    renderWeightTab();
+    renderHome();
+  }
+
   function switchEntryTab(tab) {
     document.getElementById('entryTabWeight').classList.toggle('active', tab === 'weight');
     document.getElementById('entryTabKcal').classList.toggle('active', tab === 'kcal');
@@ -3896,6 +3917,12 @@
     // Remettre la date à aujourd'hui si vide
     if (tab === 'kcal' && !document.getElementById('kcalDate').value)
       document.getElementById('kcalDate').value = new Date().toISOString().split('T')[0];
+    // Pré-remplir l'objectif kcal avec la valeur du profil
+    if (tab === 'kcal') {
+      const profile = getUserProfile();
+      const inp = document.getElementById('kcalTargetInput');
+      if (inp && profile?.kcalTarget) inp.value = profile.kcalTarget;
+    }
   }
 
   function toggleStatsHistory() {
