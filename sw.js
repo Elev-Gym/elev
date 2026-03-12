@@ -1,5 +1,5 @@
-// Élev — Service Worker v3
-const SW_VERSION = 'elev-sw-v3';
+// Élev — Service Worker v4
+const SW_VERSION = 'elev-sw-v4';
 
 self.addEventListener('install', e => {
   console.log('[SW] Install', SW_VERSION);
