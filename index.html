@@ -1100,7 +1100,10 @@
 
     <!-- Onboarding -->
     <div id="weightOnboarding" style="display:none">
-      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-family:Geist Mono,monospace;margin-bottom:28px;margin-top:8px">Élev · Poids</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;margin-top:8px">
+        <button id="weightOnboardingBack" onclick="cancelWeightOnboarding()" style="display:none;background:none;border:1px solid var(--border2);border-radius:8px;color:var(--muted);cursor:pointer;font-size:11px;padding:7px 12px;font-family:Geist Mono,monospace;letter-spacing:1px;white-space:nowrap">← Retour</button>
+        <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-family:Geist Mono,monospace;">Élev · Poids</div>
+      </div>
       <div class="onboarding-dots" id="onboardingDots"></div>
       <div class="onboarding-wrap" id="onboardingSteps"></div>
     </div>
@@ -1922,6 +1925,7 @@
   function switchTab(tab) {
     document.title = 'Élev | ' + (TAB_TITLES[tab] || tab);
     localStorage.setItem('elev_last_tab', tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     const bar = document.getElementById('tabLoadBar');
     if (bar) {
@@ -3725,6 +3729,17 @@
     _onboardingData = { age: profile.age, height: profile.height };
     _onboardingEditMode = true;
     showWeightOnboarding();
+    // Afficher bouton retour en mode édition
+    const backBtn = document.getElementById('weightOnboardingBack');
+    if (backBtn) backBtn.style.display = 'block';
+  }
+
+  function cancelWeightOnboarding() {
+    document.getElementById('weightOnboarding').style.display = 'none';
+    document.getElementById('weightMain').style.display = 'block';
+    const backBtn = document.getElementById('weightOnboardingBack');
+    if (backBtn) backBtn.style.display = 'none';
+    _onboardingEditMode = false;
   }
   let _onboardingEditMode = false;
 
@@ -3732,7 +3747,11 @@
     document.getElementById('weightOnboarding').style.display = 'block';
     document.getElementById('weightMain').style.display = 'none';
     _onboardingStep = 0;
-    if (!_onboardingEditMode) _onboardingData = {};
+    if (!_onboardingEditMode) {
+      _onboardingData = {};
+      const backBtn = document.getElementById('weightOnboardingBack');
+      if (backBtn) backBtn.style.display = 'none';
+    }
     renderOnboardingStep();
   }
 
