@@ -20,6 +20,7 @@
   :root {
     --bg: #F0EAE1;
     --surface: #FAF7F3;
+    --surface2: #EEF5F0;
     --border: rgba(44,95,74,0.12);
     --border2: rgba(44,95,74,0.2);
     --accent: #2C5F4A;
@@ -492,8 +493,8 @@
   .home-snap-sub { font-size: 10px; color: var(--muted); font-family: 'Geist Mono', monospace; margin-top: auto; padding-top: 8px; min-height: 13px; }
 
   /* Prochaine séance */
-  .home-next-card { background: var(--accent-light); border: 1px solid var(--border2); border-radius: 12px; padding: 16px; margin: 0; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.18s; min-height: 120px; box-shadow: var(--card-shadow); }
-  .home-next-card:hover { border-color: var(--accent); }
+  .home-next-card { background: var(--surface2, var(--surface)); border: 1px solid var(--border2); border-radius: 12px; padding: 16px; margin: 0; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.18s; min-height: 120px; box-shadow: var(--card-shadow); }
+  .home-next-card:hover { border-color: var(--accent); background: var(--accent-light); }
   .home-next-card:active { background: var(--border); }
   .home-next-inner { flex: 1; min-width: 0; }
   .home-next-eyebrow { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--terra); font-family: 'Geist Mono', monospace; margin-bottom: 6px; }
