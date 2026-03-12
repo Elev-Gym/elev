@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#F0EAE1" media="(prefers-color-scheme: light)" id="themeColorLight">
-<meta name="theme-color" content="#111410" media="(prefers-color-scheme: dark)" id="themeColorDark">
+<meta name="theme-color" content="#0D0D0D" media="(prefers-color-scheme: dark)" id="themeColorDark">
 <meta name="theme-color" content="#F0EAE1" id="themeColorActive">
 <meta name="apple-mobile-web-app-title" content="Élev">
 <title>Élev</title>
@@ -71,7 +71,7 @@
 
   /* Header — Option C */
   header { padding: calc(env(safe-area-inset-top) + 12px) 24px 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(240,234,225,0.96); backdrop-filter: blur(12px); z-index: 100; transition: background 0.3s; display: flex; align-items: center; justify-content: space-between; }
-  html.dark header { background: rgba(17,20,16,0.97); border-bottom-color: rgba(44,95,74,0.15); }
+  html.dark header { background: rgba(13,13,13,0.97); border-bottom-color: var(--border); }
   .logo { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 300; letter-spacing: 9px; text-transform: uppercase; color: var(--text); line-height: 1; }
   .header-title { font-family: 'DM Serif Display', serif; font-size: 15px; font-weight: 400; font-style: italic; color: var(--terra); line-height: 1; }
   .header-date { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
@@ -492,15 +492,15 @@
   .home-snap-sub { font-size: 10px; color: var(--muted); font-family: 'Geist Mono', monospace; margin-top: auto; padding-top: 8px; min-height: 13px; }
 
   /* Prochaine séance */
-  .home-next-card { background: #1A2E22; border: 1px solid rgba(44,95,74,0.25); border-radius: 12px; padding: 16px; margin: 0; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.18s; min-height: 120px; box-shadow: 0 4px 20px rgba(26,46,34,0.25); }
-  .home-next-card:hover { border-color: rgba(44,95,74,0.5); box-shadow: 0 6px 24px rgba(26,46,34,0.35); }
+  .home-next-card { background: var(--accent-light); border: 1px solid var(--border2); border-radius: 12px; padding: 16px; margin: 0; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.18s; min-height: 120px; box-shadow: var(--card-shadow); }
+  .home-next-card:hover { border-color: var(--accent); }
   .home-next-card:active { background: var(--border); }
   .home-next-inner { flex: 1; min-width: 0; }
-  .home-next-eyebrow { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: rgba(200,169,110,0.65); font-family: 'Geist Mono', monospace; margin-bottom: 6px; }
-  .home-next-name { font-family: 'DM Serif Display', serif; font-size: 21px; font-weight: 400; color: #F0EAE1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .home-next-meta { font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240,234,225,0.25); font-family: 'Geist Mono', monospace; margin-top: 4px; }
+  .home-next-eyebrow { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--terra); font-family: 'Geist Mono', monospace; margin-bottom: 6px; }
+  .home-next-name { font-family: 'DM Serif Display', serif; font-size: 21px; font-weight: 400; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .home-next-meta { font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-family: 'Geist Mono', monospace; margin-top: 4px; }
   .home-next-muscles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-  .home-next-arrow { color: rgba(240,234,225,0.2); font-size: 16px; padding-left: 12px; flex-shrink: 0; }
+  .home-next-arrow { color: var(--muted2); font-size: 16px; padding-left: 12px; flex-shrink: 0; }
 
   /* CTA */
   .home-cta { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; margin-bottom: 24px; transition: background 0.15s, box-shadow 0.15s; box-shadow: 0 4px 16px rgba(44,95,74,0.3); }
@@ -5569,7 +5569,7 @@
     const btn = document.getElementById('darkToggleBtn');
     if (btn) btn.textContent = isDark ? '☀' : '☽';
     const meta = document.getElementById('themeColorActive');
-    if (meta) meta.content = isDark ? '#111410' : '#F0EAE1';
+    if (meta) meta.content = isDark ? '#0D0D0D' : '#F0EAE1';
   }
   function initDark() {
     const saved = localStorage.getItem('elev_dark');
@@ -5578,7 +5578,7 @@
       document.documentElement.classList.add('dark');
       if (btn) btn.textContent = '☀';
       const meta = document.getElementById('themeColorActive');
-      if (meta) meta.content = '#111410';
+      if (meta) meta.content = '#0D0D0D';
     } else {
       document.documentElement.classList.remove('dark');
       if (btn) btn.textContent = '☽';
