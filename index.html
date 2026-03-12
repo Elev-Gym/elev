@@ -10,15 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#F0EAE1" id="themeColorActive">
 <meta name="apple-mobile-web-app-title" content="Élev">
-<script>
-  (function(){
-    var d = localStorage.getItem('elev_dark');
-    if (d === '1') {
-      document.documentElement.classList.add('dark');
-      document.querySelector('meta[id="themeColorActive"]').content = '#0D0D0D';
-    }
-  })();
-</script>
+<script>if(localStorage.getItem('elev_dark')==='1')document.documentElement.classList.add('dark');</script>
 <title>Élev</title>
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE4IiBmaWxsPSIjZjdmNWYyIi8+PHRleHQgeD0iNTAiIHk9IjcyIiBmb250LWZhbWlseT0iR2VvcmdpYSxzZXJpZiIgZm9udC1zaXplPSI1NiIgZm9udC13ZWlnaHQ9IjMwMCIgZmlsbD0iIzFhMWExYSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RTwvdGV4dD48L3N2Zz4=">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Serif+Display:ital@0;1&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -73,10 +65,9 @@
   html.dark input, html.dark textarea { color-scheme: dark; }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { background: #F0EAE1; }
-  html.dark { background: #0D0D0D; }
   input, textarea, select { touch-action: auto; }
-  body { background: var(--bg); color: var(--text); font-family: 'Geist Mono', monospace; min-height: 100vh; font-weight: 400; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: 'Geist Mono', monospace; min-height: 100vh; font-weight: 400; }
   .app { max-width: 460px; margin: 0 auto; padding-bottom: 100px; }
 
   /* Header — Option C */
