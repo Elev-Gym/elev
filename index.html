@@ -5976,35 +5976,39 @@
   function openSessionFullscreen() {
     _sessionFsOpen = true;
     try { renderSessionFs(); } catch(e) { console.error('renderSessionFs error:', e); }
-    // Masquer le contenu de l'onglet séance derrière l'overlay
     const blocks = ['sessionRoutineBlock', 'freeSessionBlock'];
     blocks.forEach(id => { const el = document.getElementById(id); if (el) el.style.visibility = 'hidden'; });
     const overlay = document.getElementById('sessionFsOverlay');
-    if (overlay) overlay.classList.add('open');
-    // Sync timer display
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('open')));
     syncFsTimer();
     if (_minibarTimerInterval) clearInterval(_minibarTimerInterval);
-    _minibarTimerInterval = setInterval(() => {
-      syncFsTimer();
-      syncMinibarTimer();
-    }, 1000);
+    _minibarTimerInterval = setInterval(() => { syncFsTimer(); syncMinibarTimer(); }, 1000);
   }
 
   function reduceSession() {
     _sessionFsOpen = false;
-    document.getElementById('sessionFsOverlay').classList.remove('open');
+    const overlay = document.getElementById('sessionFsOverlay');
+    overlay.classList.remove('open');
+    setTimeout(() => { overlay.style.display = 'none'; }, 400);
     showMinibar();
   }
 
   function expandSession() {
     hideMinibar();
-    openSessionFullscreen();
+    _sessionFsOpen = true;
+    try { renderSessionFs(); } catch(e) { console.error('renderSessionFs error:', e); }
+    const overlay = document.getElementById('sessionFsOverlay');
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('open')));
+    syncFsTimer();
+    if (_minibarTimerInterval) clearInterval(_minibarTimerInterval);
+    _minibarTimerInterval = setInterval(() => { syncFsTimer(); syncMinibarTimer(); }, 1000);
   }
 
   function showMinibar() {
-    if (!exercises.length) return; // Pas de séance active = pas de minibar
+    if (!exercises.length) return;
     _sessionMinibarVisible = true;
-    // Garder les blocs de l'onglet cachés tant que la séance est active
     const blocks = ['sessionRoutineBlock', 'freeSessionBlock'];
     blocks.forEach(id => { const el = document.getElementById(id); if (el) el.style.visibility = 'hidden'; });
     const name = loadedRoutineId
@@ -6012,12 +6016,17 @@
       : 'Séance libre';
     document.getElementById('minibarName').textContent = name;
     syncMinibarTimer();
-    document.getElementById('sessionMinibar').classList.add('show');
+    const mb = document.getElementById('sessionMinibar');
+    mb.style.display = 'flex';
+    // Force reflow then animate
+    requestAnimationFrame(() => requestAnimationFrame(() => mb.classList.add('show')));
   }
 
   function hideMinibar() {
     _sessionMinibarVisible = false;
-    document.getElementById('sessionMinibar').classList.remove('show');
+    const mb = document.getElementById('sessionMinibar');
+    mb.classList.remove('show');
+    setTimeout(() => { mb.style.display = 'none'; }, 350);
   }
 
   function syncFsTimer() {
@@ -6236,9 +6245,11 @@
   function closeSessionFs() {
     _sessionFsOpen = false;
     _sessionMinibarVisible = false;
-    document.getElementById('sessionFsOverlay').classList.remove('open');
+    const overlay = document.getElementById('sessionFsOverlay');
+    overlay.classList.remove('open');
+    setTimeout(() => { overlay.style.display = 'none'; }, 400);
     document.getElementById('sessionMinibar').classList.remove('show');
-    // Restaurer la visibilité de l'onglet séance
+    setTimeout(() => { document.getElementById('sessionMinibar').style.display = 'none'; }, 350);
     const blocks = ['sessionRoutineBlock', 'freeSessionBlock'];
     blocks.forEach(id => { const el = document.getElementById(id); if (el) el.style.visibility = ''; });
     if (_minibarTimerInterval) { clearInterval(_minibarTimerInterval); _minibarTimerInterval = null; }
@@ -6577,7 +6588,7 @@
 </div>
 
 <!-- ══ FULLSCREEN SESSION ══ -->
-<div class="session-fs-overlay" id="sessionFsOverlay">
+<div class="session-fs-overlay" id="sessionFsOverlay" style="display:none">
   <div class="session-fs-header">
     <button class="session-fs-reduce" onclick="reduceSession()" title="Réduire">↓</button>
     <div class="session-fs-meta">
@@ -6593,7 +6604,7 @@
 </div>
 
 <!-- ══ MINI-BAR SÉANCE ══ -->
-<div class="session-minibar" id="sessionMinibar" onclick="expandSession()">
+<div class="session-minibar" id="sessionMinibar" onclick="expandSession()" style="display:none">
   <div class="session-minibar-dot"></div>
   <div class="session-minibar-info">
     <div class="session-minibar-name" id="minibarName">Séance en cours</div>
