@@ -5691,55 +5691,67 @@
     const body = document.getElementById('nutriAddBody');
     if (!body || !q || q.length < 2) return;
 
-    // Essayer d'abord l'API FR, puis monde si peu de résultats
-    const tryFetch = async (lang) => {
-      const url = `https://${lang}.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,product_name_fr,brands,nutriments`;
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 8000);
-      try {
-        const res = await fetch(url, { signal: ctrl.signal });
-        clearTimeout(timeout);
-        return await res.json();
-      } catch(e) {
-        clearTimeout(timeout);
-        throw e;
-      }
-    };
+    // API v2 world.openfoodfacts.org — seule URL qui accepte CORS
+    // lc=fr pour prioriser noms français, cc=fr pour produits français en premier
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=10&lc=fr&cc=fr&fields=product_name,product_name_fr,brands,nutriments`;
+
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => {
+      ctrl.abort();
+      body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Délai dépassé.<br>Réessaie dans un instant.</div>`;
+    }, 10000);
 
     try {
-      let data = await tryFetch('fr');
-      let products = (data.products || []).filter(p => (p.product_name_fr || p.product_name) && p.nutriments);
-      if (products.length < 3) {
-        try { const d2 = await tryFetch('world'); products = [...products, ...(d2.products || []).filter(p => (p.product_name_fr || p.product_name) && p.nutriments)]; } catch(e) {}
-      }
-      // Dédupliq
+      const res = await fetch(url, {
+        signal: ctrl.signal,
+        headers: { 'Accept': 'application/json' }
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+
+      let products = (data.products || []).filter(p =>
+        (p.product_name_fr || p.product_name) && p.nutriments
+      );
+
+      // Dédoublonner par nom
       const seen = new Set();
-      products = products.filter(p => { const n = (p.product_name_fr || p.product_name || '').toLowerCase(); if (seen.has(n)) return false; seen.add(n); return true; });
+      products = products.filter(p => {
+        const n = (p.product_name_fr || p.product_name || '').toLowerCase().trim();
+        if (!n || seen.has(n)) return false;
+        seen.add(n); return true;
+      });
 
       if (!products.length) {
-        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour <em>${q}</em>.<br>Essaie un terme différent.</div>`;
+        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour «&nbsp;${q}&nbsp;».<br>Essaie un terme plus simple.</div>`;
         return;
       }
 
       body.innerHTML = `<div class="card" style="padding:4px 14px;margin-top:8px">${products.map(p => {
         const name = (p.product_name_fr || p.product_name || '—').slice(0, 60);
-        const brand = p.brands ? `<span style="color:var(--muted)"> · ${p.brands.split(',')[0]}</span>` : '';
+        const brand = p.brands ? `<span style="color:var(--muted)"> · ${p.brands.split(',')[0].trim()}</span>` : '';
         const n = p.nutriments || {};
         const kcal = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || (n['energy_100g'] || 0) / 4.184 || 0);
         const prot = Math.round((n.proteins_100g || 0) * 10) / 10;
         const gluc = Math.round((n.carbohydrates_100g || 0) * 10) / 10;
         const lip  = Math.round((n.fat_100g || 0) * 10) / 10;
         if (!kcal && !prot && !gluc && !lip) return '';
+        const enc = encodeURIComponent(name);
         return `<div class="nutri-search-item">
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${brand}</div>
             <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${prot}P · ${gluc}G · ${lip}L · ${kcal} kcal/100g</div>
           </div>
-          <button class="nutri-add-btn" onclick="openNutriQtyModal('${encodeURIComponent(name)}',${kcal},${prot},${gluc},${lip})">+</button>
+          <button class="nutri-add-btn" onclick="openNutriQtyModal('${enc}',${kcal},${prot},${gluc},${lip})">+</button>
         </div>`;
       }).filter(Boolean).join('')}</div>`;
+
     } catch(e) {
-      body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Erreur réseau.<br>Vérifie ta connexion.</div>`;
+      clearTimeout(timeout);
+      if (e.name === 'AbortError') return; // timeout déjà géré
+      console.error('OFF search error:', e);
+      body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Impossible de joindre Open Food Facts.<br><small style="font-family:'Geist Mono',monospace;font-size:10px">${e.message}</small></div>`;
     }
   }
 
@@ -5747,9 +5759,11 @@
     const body = document.getElementById('nutriAddBody');
     if (body) body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;font-family:'Geist Mono',monospace">SCAN EN COURS…</div>`;
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}?fields=product_name,product_name_fr,brands,nutriments&lc=fr`, {
+        headers: { 'Accept': 'application/json' }
+      });
       const data = await res.json();
-      if (data.status !== 1) { showToast('Produit non trouvé'); renderNutriAddBody(); return; }
+      if (data.status !== 1 || !data.product) { showToast('Produit non trouvé'); renderNutriAddBody(); return; }
       const p = data.product;
       const name = p.product_name_fr || p.product_name || '—';
       const n = p.nutriments || {};
