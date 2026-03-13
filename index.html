@@ -2591,14 +2591,32 @@
       routine.exercises.length + ' exercice' + (routine.exercises.length > 1 ? 's' : '') +
       (muscles.length ? ' · ' + muscles.join(', ') : '');
     document.getElementById('rpExercises').innerHTML = routine.exercises.map(ex => {
-      const nSets = Array.isArray(ex.sets) ? ex.sets.length : (parseInt(ex.sets) || 3);
-      const label = nSets + ' série' + (nSets > 1 ? 's' : '');
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
-        <div>
-          <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px">${ex.name}</div>
-          ${ex.muscle ? `<div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:0.5px;text-transform:uppercase">${ex.muscle}</div>` : ''}
+      const sets = Array.isArray(ex.sets)
+        ? ex.sets
+        : Array.from({ length: parseInt(ex.sets) || 3 }, () => ({ w: '', r: '' }));
+      const workSets = sets.filter(s => !s.warmup);
+      const setsHtml = workSets.map((s, i) => {
+        const w = s.w || s.weight || '';
+        const r = s.r || s.reps || (ex.repsTarget ? ex.repsTarget : '');
+        const wLabel = w ? `${w} kg` : '—';
+        const rLabel = r ? `${r} reps` : '—';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;width:18px;flex-shrink:0">${i + 1}</span>
+          <span style="font-size:11px;color:var(--muted)">—</span>
+          <span style="font-size:12px;color:var(--text);font-family:'Geist Mono',monospace">${wLabel}</span>
+          <span style="font-size:10px;color:var(--muted)">·</span>
+          <span style="font-size:12px;color:var(--text);font-family:'Geist Mono',monospace">${rLabel}</span>
+        </div>`;
+      }).join('');
+      return `<div style="padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${workSets.length ? '10px' : '0'}">
+          <div>
+            <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px">${ex.name}</div>
+            ${ex.muscle ? `<div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:0.5px;text-transform:uppercase">${ex.muscle}</div>` : ''}
+          </div>
+          <div style="font-size:10px;color:var(--accent);font-family:'Geist Mono',monospace;letter-spacing:1px;font-weight:600;white-space:nowrap;margin-left:12px">${workSets.length} série${workSets.length > 1 ? 's' : ''}</div>
         </div>
-        <div style="font-size:11px;color:var(--accent);font-family:'Geist Mono',monospace;letter-spacing:1px;font-weight:600;white-space:nowrap;margin-left:12px">${label}</div>
+        ${setsHtml}
       </div>`;
     }).join('');
     const modal = document.getElementById('routinePreviewModal');
