@@ -5922,10 +5922,18 @@
       ZXing.BarcodeFormat.UPC_A,  ZXing.BarcodeFormat.UPC_E,
       ZXing.BarcodeFormat.CODE_128
     ]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
     const reader = new ZXing.MultiFormatReader();
     reader.setHints(hints);
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    // Demander haute résolution pour mieux lire les codes-barres
+    navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'environment',
+        width:  { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    })
       .then(stream => {
         _barcodeStream = stream;
         const video = document.getElementById('barcodeVideo');
@@ -5933,13 +5941,18 @@
         video.srcObject = stream;
         if (statusEl) statusEl.textContent = 'Cherche un code-barres…';
         let scanning = true;
+        let lastScan = 0;
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const scan = () => {
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const scan = (ts) => {
           if (!scanning || !document.getElementById('barcodeOverlay')) { stopBarcodeStream(); return; }
+          // Limiter à ~15fps pour laisser la caméra faire la mise au point
+          if (ts - lastScan < 66) { requestAnimationFrame(scan); return; }
+          lastScan = ts;
           if (video.readyState === video.HAVE_ENOUGH_DATA) {
             canvas.width = video.videoWidth; canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0);
+            // Essai 1 : image normale
             try {
               const lum = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
               const result = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum)));
@@ -5948,6 +5961,21 @@
                 stopBarcodeStream();
                 document.getElementById('barcodeOverlay')?.remove();
                 searchByBarcode(result.getText());
+                return;
+              }
+            } catch(e) {}
+            // Essai 2 : image avec contraste augmenté
+            try {
+              ctx.filter = 'contrast(1.8) brightness(1.1)';
+              ctx.drawImage(video, 0, 0);
+              ctx.filter = 'none';
+              const lum2 = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+              const result2 = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum2)));
+              if (result2) {
+                scanning = false;
+                stopBarcodeStream();
+                document.getElementById('barcodeOverlay')?.remove();
+                searchByBarcode(result2.getText());
                 return;
               }
             } catch(e) {}
