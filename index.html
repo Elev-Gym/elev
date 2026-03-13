@@ -5876,32 +5876,88 @@
     } catch(e) { showToast('Erreur de scan'); renderNutriAddBody(); }
   }
 
-  let _barcodeStream = null;
+  let _html5QrScanner = null;
+
   function stopBarcodeStream() {
-    if (_barcodeStream) { _barcodeStream.getTracks().forEach(t => t.stop()); _barcodeStream = null; }
+    if (_html5QrScanner) {
+      _html5QrScanner.stop().catch(()=>{});
+      _html5QrScanner.clear();
+      _html5QrScanner = null;
+    }
   }
 
   function startBarcodeScanner() {
+    // Créer overlay
     const overlay = document.createElement('div');
     overlay.id = 'barcodeOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0';
     overlay.innerHTML = `
-      <div style="position:relative;width:100%;max-width:420px">
-        <video id="barcodeVideo" style="width:100%;border-radius:0" playsinline autoplay muted></video>
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-          <div style="width:240px;height:140px;border:2px solid rgba(255,255,255,0.85);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.55)"></div>
-        </div>
-      </div>
-      <div style="color:rgba(255,255,255,0.7);font-family:Geist Mono,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:20px">Pointez vers un code-barres</div>
-      <button onclick="document.getElementById('barcodeOverlay').remove();stopBarcodeStream()" style="margin-top:20px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:10px;padding:12px 28px;font-family:Geist Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer">ANNULER</button>
-      <div id="barcodeScanStatus" style="color:rgba(255,255,255,0.45);font-family:Geist Mono,monospace;font-size:10px;margin-top:10px">Chargement du scanner…</div>
+      <div id="barcodeScannerContainer" style="width:100%;max-width:480px;position:relative"></div>
+      <div style="color:rgba(255,255,255,0.75);font-family:Geist Mono,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:16px">Pointez vers un code-barres</div>
+      <button id="barcodeCancelBtn" style="margin-top:16px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:10px;padding:12px 28px;font-family:Geist Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer">ANNULER</button>
+      <div id="barcodeScanStatus" style="color:rgba(255,255,255,0.4);font-family:Geist Mono,monospace;font-size:10px;margin-top:10px">Chargement…</div>
     `;
     document.body.appendChild(overlay);
+    document.getElementById('barcodeCancelBtn').onclick = () => {
+      stopBarcodeStream();
+      overlay.remove();
+    };
 
-    if (!window.ZXing) {
+    const loadAndInit = () => {
+      const statusEl = document.getElementById('barcodeScanStatus');
+      if (statusEl) statusEl.textContent = 'Accès caméra…';
+
+      _html5QrScanner = new Html5Qrcode('barcodeScannerContainer');
+
+      const config = {
+        fps: 15,
+        qrbox: { width: 280, height: 160 },
+        aspectRatio: 1.5,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+        ],
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+      };
+
+      _html5QrScanner.start(
+        { facingMode: 'environment' },
+        config,
+        (decodedText) => {
+          // Succès !
+          stopBarcodeStream();
+          document.getElementById('barcodeOverlay')?.remove();
+          searchByBarcode(decodedText);
+        },
+        () => { /* scan en cours, pas d'erreur à afficher */ }
+      ).then(() => {
+        // Masquer les éléments UI par défaut de html5-qrcode
+        const style = document.createElement('style');
+        style.textContent = `
+          #barcodeScannerContainer img { display:none!important; }
+          #barcodeScannerContainer select { display:none!important; }
+          #barcodeScannerContainer button { display:none!important; }
+          #barcodeScannerContainer { background:#000; }
+        `;
+        document.head.appendChild(style);
+        if (statusEl) statusEl.textContent = 'Cherche un code-barres…';
+      }).catch(err => {
+        stopBarcodeStream();
+        overlay.remove();
+        const code = prompt('Caméra non disponible. Saisissez le code-barres :');
+        if (code && code.trim()) searchByBarcode(code.trim());
+      });
+    };
+
+    // Charger html5-qrcode si pas encore chargé
+    if (!window.Html5Qrcode) {
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
-      script.onload = () => initZXing(overlay);
+      script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+      script.onload = loadAndInit;
       script.onerror = () => {
         overlay.remove();
         const code = prompt('Code-barres du produit :');
@@ -5909,86 +5965,8 @@
       };
       document.head.appendChild(script);
     } else {
-      initZXing(overlay);
+      loadAndInit();
     }
-  }
-
-  function initZXing(overlay) {
-    const statusEl = document.getElementById('barcodeScanStatus');
-    if (statusEl) statusEl.textContent = 'Accès caméra…';
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A,  ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.CODE_128
-    ]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    const reader = new ZXing.MultiFormatReader();
-    reader.setHints(hints);
-
-    // Demander haute résolution pour mieux lire les codes-barres
-    navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: 'environment',
-        width:  { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    })
-      .then(stream => {
-        _barcodeStream = stream;
-        const video = document.getElementById('barcodeVideo');
-        if (!video) { stopBarcodeStream(); return; }
-        video.srcObject = stream;
-        if (statusEl) statusEl.textContent = 'Cherche un code-barres…';
-        let scanning = true;
-        let lastScan = 0;
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const scan = (ts) => {
-          if (!scanning || !document.getElementById('barcodeOverlay')) { stopBarcodeStream(); return; }
-          // Limiter à ~15fps pour laisser la caméra faire la mise au point
-          if (ts - lastScan < 66) { requestAnimationFrame(scan); return; }
-          lastScan = ts;
-          if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
-            // Essai 1 : image normale
-            try {
-              const lum = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-              const result = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum)));
-              if (result) {
-                scanning = false;
-                stopBarcodeStream();
-                document.getElementById('barcodeOverlay')?.remove();
-                searchByBarcode(result.getText());
-                return;
-              }
-            } catch(e) {}
-            // Essai 2 : image avec contraste augmenté
-            try {
-              ctx.filter = 'contrast(1.8) brightness(1.1)';
-              ctx.drawImage(video, 0, 0);
-              ctx.filter = 'none';
-              const lum2 = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-              const result2 = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum2)));
-              if (result2) {
-                scanning = false;
-                stopBarcodeStream();
-                document.getElementById('barcodeOverlay')?.remove();
-                searchByBarcode(result2.getText());
-                return;
-              }
-            } catch(e) {}
-          }
-          requestAnimationFrame(scan);
-        };
-        video.onloadedmetadata = () => requestAnimationFrame(scan);
-      })
-      .catch(() => {
-        overlay.remove();
-        const code = prompt('Caméra non disponible. Saisissez le code-barres :');
-        if (code && code.trim()) searchByBarcode(code.trim());
-      });
   }
 
   function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, defaultQty) {
