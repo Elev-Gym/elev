@@ -106,7 +106,7 @@
   .btn-sm.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
   /* Rest overlay */
-  .rest-overlay { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 16px 20px 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); z-index: 200; opacity: 0; pointer-events: none; transition: all 0.25s ease; width: 280px; max-width: calc(100vw - 32px); }
+  .rest-overlay { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 16px 20px 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); z-index: 950; opacity: 0; pointer-events: none; transition: all 0.25s ease; width: 280px; max-width: calc(100vw - 32px); }
   .rest-overlay.show { opacity: 1; pointer-events: all; }
   .rest-progress-track { width: 100%; height: 3px; background: var(--border); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
   .rest-progress-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 1s linear; }
@@ -3046,7 +3046,14 @@
     }
     _rerender();
   }
-  function getSelectedMuscles() { return [...document.querySelectorAll('.chip.on')].map(c=>c.textContent); }
+  function getSelectedMuscles() {
+    // Si le fullscreen est ouvert, lire les chips du FS (les chips de l'onglet sont visibility:hidden)
+    const container = _sessionFsOpen
+      ? document.getElementById('sessionFsBody')
+      : document;
+    if (!container) return [];
+    return [...container.querySelectorAll('.chip.on')].map(c => c.textContent);
+  }
 
   // ── Save session ──
   function saveSession() {
@@ -6320,13 +6327,18 @@
     if (_minibarTimerInterval) { clearInterval(_minibarTimerInterval); _minibarTimerInterval = null; }
   }
 
-  // Sync notes depuis FS vers le vrai champ avant save
+  // Sync notes + flush inputs depuis FS vers le state avant save
   const _origSaveSession = saveSession;
   function saveSession() {
+    // 1. Flush toutes les valeurs des inputs non sauvegardées
+    flushFsInputs();
+    // 2. Sync les notes FS → champ principal
     const notesFs = document.getElementById('sessionNotesFs');
     const notesMain = document.getElementById('sessionNotes');
     if (notesFs && notesMain) notesMain.value = notesFs.value;
+    // 3. Fermer l'overlay (ne remet pas exercises à zéro)
     closeSessionFs();
+    // 4. Sauvegarder
     _origSaveSession();
   }
 
