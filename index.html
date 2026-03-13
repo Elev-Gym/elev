@@ -1092,32 +1092,35 @@
       <div class="label" style="margin-bottom:14px">Nouvelle séance</div>
       <div class="form-row"><input class="inp" id="routineName" placeholder="Nom (ex: Push A, Legs...)" type="text"/></div>
       <div id="routineExList" class="routine-ex-list"></div>
-      <div class="form-row">
-        <div style="position:relative;flex:1">
-          <input class="inp" id="rExName" placeholder="Exercice" type="text" oninput="filterRoutineExSuggestions()" autocomplete="off" style="width:100%;box-sizing:border-box"/>
-          <div class="ex-suggestions ex-add-suggestions" id="rExSuggestions"></div>
+      <button class="btn-add" id="rExToggleBtn" style="width:100%;margin-bottom:8px;background:none;border:1px dashed var(--border2);color:var(--muted)" onclick="toggleRExPanel()">+ Ajouter un exercice</button>
+      <div id="rExPanel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div class="form-row">
+          <div style="position:relative;flex:1">
+            <input class="inp" id="rExName" placeholder="Nom de l'exercice" type="text" oninput="filterRoutineExSuggestions()" autocomplete="off" style="width:100%;box-sizing:border-box"/>
+            <div class="ex-suggestions ex-add-suggestions" id="rExSuggestions"></div>
+          </div>
+          <select class="inp" id="rExMuscle">
+            <option value="">Muscle</option>
+            <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
+            <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+            <option>Abdos</option><option>Fessiers</option><option>Autre</option>
+          </select>
         </div>
-        <select class="inp" id="rExMuscle">
-          <option value="">Muscle</option>
-          <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-          <option>Biceps</option><option>Triceps</option><option>Jambes</option>
-          <option>Abdos</option><option>Fessiers</option><option>Autre</option>
-        </select>
+        <div class="form-row" style="margin-bottom:10px">
+          <input class="inp" id="rExSets" placeholder="Séries (ex: 4)" type="number" style="max-width:90px"/>
+          <input class="inp" id="rExReps" placeholder="Reps (ex: 8-10)" type="text" style="max-width:90px" maxlength="8"/>
+          <select class="inp" id="rExRest" style="max-width:145px" onchange="toggleCustomRest(this)">
+            <option value="60">Repos 1 min</option>
+            <option value="90" selected>Repos 1 min 30</option>
+            <option value="120">Repos 2 min</option>
+            <option value="180">Repos 3 min</option>
+            <option value="0">Pas de repos</option>
+            <option value="custom">Personnalisé...</option>
+          </select>
+          <input class="inp" id="rExRestCustom" type="number" placeholder="Sec." style="max-width:70px;display:none;" min="5" max="600"/>
+        </div>
+        <button class="btn-add" style="width:100%" onclick="addRoutineEx();toggleRExPanel()">Confirmer ↵</button>
       </div>
-      <div class="form-row" style="margin-bottom:12px">
-        <input class="inp" id="rExSets" placeholder="Séries (ex: 4)" type="number" style="max-width:90px"/>
-        <input class="inp" id="rExReps" placeholder="Reps (ex: 8-10)" type="text" style="max-width:90px" maxlength="8"/>
-        <select class="inp" id="rExRest" style="max-width:145px" onchange="toggleCustomRest(this)">
-          <option value="60">Repos 1 min</option>
-          <option value="90" selected>Repos 1 min 30</option>
-          <option value="120">Repos 2 min</option>
-          <option value="180">Repos 3 min</option>
-          <option value="0">Pas de repos</option>
-          <option value="custom">Personnalisé...</option>
-        </select>
-        <input class="inp" id="rExRestCustom" type="number" placeholder="Sec." style="max-width:70px;display:none;" min="5" max="600"/>
-      </div>
-      <button class="btn-add" style="width:100%;margin-bottom:12px" onclick="addRoutineEx()">+ Ajouter un exercice</button>
       <div style="display:flex;gap:10px">
         <button class="btn-add" id="saveRoutineBtn" onclick="saveRoutine()" style="flex:1">Enregistrer la séance</button>
         <button class="btn-ghost" id="cancelEditRoutineBtn" onclick="cancelEditRoutine()" style="display:none">Annuler</button>
@@ -3331,6 +3334,24 @@
   }
 
   // ── Routines ──
+  function toggleRExPanel() {
+    const panel = document.getElementById('rExPanel');
+    const btn = document.getElementById('rExToggleBtn');
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    btn.textContent = isOpen ? '+ Ajouter un exercice' : '✕ Fermer';
+    if (!isOpen) setTimeout(() => document.getElementById('rExName')?.focus(), 50);
+  }
+
+  function toggleInlineRExPanel(routineId) {
+    const panel = document.getElementById('inlineRExPanel-' + routineId);
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) setTimeout(() => document.getElementById('inlineRExName-' + routineId)?.focus(), 50);
+  }
+
   function addRoutineEx() {
     const name = document.getElementById('rExName').value.trim();
     if (!name) { showToast('Entre un nom'); return; }
@@ -3338,6 +3359,11 @@
     const restVal = restSel.value === 'custom' ? parseInt(document.getElementById('rExRestCustom').value)||90 : parseInt(restSel.value);
     draftRoutineExs.push({ name, muscle: document.getElementById('rExMuscle').value, sets: parseInt(document.getElementById('rExSets').value)||3, repsTarget: document.getElementById('rExReps').value.trim(), restTime: restVal });
     document.getElementById('rExName').value=''; document.getElementById('rExMuscle').value=''; document.getElementById('rExSets').value=''; document.getElementById('rExReps').value=''; restSel.value='90'; document.getElementById('rExRestCustom').style.display='none'; document.getElementById('rExRestCustom').value='';
+    // Refermer le panel et remettre le label du bouton
+    const panel = document.getElementById('rExPanel');
+    if (panel) panel.style.display = 'none';
+    const btn = document.getElementById('rExToggleBtn');
+    if (btn) btn.textContent = '+ Ajouter un exercice';
     renderDraftRoutineExs();
   }
   function renderDraftRoutineExs() {
@@ -3459,10 +3485,11 @@
       </div>
       <div class="label" style="margin-bottom:8px">Exercices</div>
       <div id="inlineDraftExList-${routineId}"></div>
-      <div style="margin-bottom:12px">
+      <button style="width:100%;margin-bottom:8px;padding:11px;background:none;border:1px dashed var(--border2);border-radius:20px;font-family:Geist Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer" onclick="toggleInlineRExPanel('${routineId}')">+ Ajouter un exercice</button>
+      <div id="inlineRExPanel-${routineId}" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
         <div class="form-row">
           <div style="position:relative;flex:1">
-            <input class="inp" id="inlineRExName-${routineId}" placeholder="Exercice" type="text"
+            <input class="inp" id="inlineRExName-${routineId}" placeholder="Nom de l'exercice" type="text"
               oninput="filterInlineExSug('${routineId}', this.value)" autocomplete="off" style="width:100%;box-sizing:border-box"/>
             <div class="ex-suggestions ex-add-suggestions" id="inlineRExSug-${routineId}"></div>
           </div>
@@ -3473,7 +3500,7 @@
             <option>Abdos</option><option>Fessiers</option><option>Autre</option>
           </select>
         </div>
-        <div class="form-row" style="margin-top:8px">
+        <div class="form-row" style="margin-bottom:10px">
           <input class="inp" id="inlineRExSets-${routineId}" placeholder="Séries" type="number" style="max-width:80px"/>
           <select class="inp" id="inlineRExRest-${routineId}" onchange="document.getElementById('inlineRExRestCustom-${routineId}').style.display=this.value==='custom'?'block':'none'">
             <option value="60">1 min</option><option value="90" selected>1m30</option>
@@ -3482,7 +3509,7 @@
           </select>
           <input class="inp" id="inlineRExRestCustom-${routineId}" type="number" placeholder="Sec." style="max-width:70px;display:none" min="5" max="600"/>
         </div>
-        <button class="btn-add" style="width:100%;margin-top:10px" onclick="addInlineRoutineEx('${routineId}')">+ Ajouter un exercice</button>
+        <button class="btn-add" style="width:100%" onclick="addInlineRoutineEx('${routineId}');toggleInlineRExPanel('${routineId}')">Confirmer ↵</button>
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn-add" onclick="saveInlineRoutine('${routineId}')" style="flex:1">💾 Sauvegarder</button>
