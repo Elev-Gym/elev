@@ -5715,25 +5715,27 @@
     const body = document.getElementById('nutriAddBody');
     if (!body || !q || q.length < 2) return;
 
-    // Recherche par mots-clés — chaque mot doit être présent (ordre libre)
-    const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const words = norm(q).split(/\s+/).filter(w => w.length > 1);
-    const localMatches = NUTRI_LOCAL.filter(f => {
-      const n = norm(f.name);
-      return words.every(w => n.includes(w));
-    }).slice(0, 15);
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    const renderResults = (items, fromApi) => {
+    // Fonction de rendu commune
+    const renderResults = (items, source) => {
       if (!items.length) {
-        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour «&nbsp;${q}&nbsp;».</div>`;
+        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
         return;
       }
-      const src = fromApi ? '' : `<div style="font-size:9px;color:var(--muted);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">BASE LOCALE · API EN COURS…</div>`;
-      body.innerHTML = src + `<div class="card" style="padding:4px 14px;margin-top:4px">${items.map(f => {
+      const srcLabel = source === 'local'
+        ? `<div style="font-size:9px;color:var(--muted);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">BASE LOCALE · RECHERCHE EN LIGNE…</div>`
+        : source === 'supabase'
+        ? `<div style="font-size:9px;color:var(--muted);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">BASE OFFLINE (${items.length} résultats) · RECHERCHE EN LIGNE…</div>`
+        : '';
+      body.innerHTML = srcLabel + `<div class="card" style="padding:4px 14px;margin-top:4px">${items.map(f => {
         const enc = encodeURIComponent(f.name);
+        const brand = f.brand ? `<span style="color:var(--muted2)"> · ${f.brand}</span>` : '';
+        const img = f.image_url ? `<img src="${f.image_url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;margin-right:10px;flex-shrink:0" onerror="this.style.display='none'"/>` : '';
         return `<div class="nutri-search-item">
+          ${img}
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
+            <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}${brand}</div>
             <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${f.prot}P · ${f.gluc}G · ${f.lip}L · ${f.kcal} kcal/100g</div>
           </div>
           <button class="nutri-add-btn" onclick="openNutriQtyModal('${enc}',${f.kcal},${f.prot},${f.gluc},${f.lip})">+</button>
@@ -5741,45 +5743,82 @@
       }).join('')}</div>`;
     };
 
-    // Afficher résultats locaux immédiatement
-    if (localMatches.length) renderResults(localMatches, false);
-
-    // 2. Requête API en parallèle (sans bloquer l'UI)
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 12000);
+    // ── 1. Recherche offline : Supabase (top 100k) ──
+    let offlineResults = [];
     try {
-      const url = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=8&lc=fr&fields=product_name,product_name_fr,brands,nutriments`;
+      const supaRes = await fetch(
+        `${SUPA_URL}/rest/v1/foods?select=id,name,brand,image_url,kcal,proteins,carbs,fat&search_vector=phfts(french).${encodeURIComponent(q)}&order=scan_count.desc&limit=15`,
+        { headers: { 'apikey': SUPA_KEY, 'Accept': 'application/json' } }
+      );
+      if (supaRes.ok) {
+        const rows = await supaRes.json();
+        offlineResults = (rows || []).map(r => ({
+          name:      r.name,
+          brand:     r.brand || null,
+          image_url: r.image_url || null,
+          kcal:      Math.round(r.kcal || 0),
+          prot:      Math.round((r.proteins || 0) * 10) / 10,
+          gluc:      Math.round((r.carbs    || 0) * 10) / 10,
+          lip:       Math.round((r.fat      || 0) * 10) / 10,
+        }));
+      }
+    } catch(e) {
+      // Supabase inaccessible — fallback sur base locale CIQUAL
+      const words = norm(q).split(/\s+/).filter(w => w.length > 1);
+      offlineResults = NUTRI_LOCAL.filter(f => {
+        const n = norm(f.name);
+        return words.every(w => n.includes(w));
+      }).slice(0, 15).map(f => ({ name: f.name, brand: null, image_url: null, kcal: f.kcal, prot: f.prot, gluc: f.gluc, lip: f.lip }));
+    }
+
+    // Afficher résultats offline immédiatement
+    if (offlineResults.length) renderResults(offlineResults, isOnline() ? 'supabase' : 'local');
+
+    // ── 2. Recherche online : API Open Food Facts (si réseau) ──
+    if (!isOnline()) {
+      if (!offlineResults.length) {
+        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat hors-ligne pour « ${q} ».</div>`;
+      }
+      return;
+    }
+
+    const ctrl = new AbortController();
+    const apiTimeout = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const url = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=15&lc=fr&cc=fr&fields=code,product_name,product_name_fr,brands,image_front_small_url,nutriments`;
       const res = await fetch(url, { signal: ctrl.signal, headers: { 'Accept': 'application/json' } });
-      clearTimeout(timeout);
+      clearTimeout(apiTimeout);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
 
-      let products = (data.products || data.hits || []).filter(p =>
-        (p.product_name_fr || p.product_name) && p.nutriments
-      );
-      const seen = new Set(localMatches.map(f => f.name.toLowerCase()));
-      const apiItems = products.map(p => {
-        const name = (p.product_name_fr || p.product_name || '').slice(0, 60);
-        const n = p.nutriments || {};
-        return {
-          name,
-          kcal: Math.round(n['energy-kcal_100g'] || (n['energy_100g']||0)/4.184 || 0),
-          prot: Math.round((n.proteins_100g||0)*10)/10,
-          gluc: Math.round((n.carbohydrates_100g||0)*10)/10,
-          lip:  Math.round((n.fat_100g||0)*10)/10,
-        };
-      }).filter(f => f.name && (f.kcal||f.prot) && !seen.has(f.name.toLowerCase()));
+      // Dédupliquer avec les résultats offline
+      const seen = new Set(offlineResults.map(f => norm(f.name)));
+      const apiItems = (data.products || [])
+        .filter(p => (p.product_name_fr || p.product_name) && p.nutriments)
+        .map(p => {
+          const name = (p.product_name_fr || p.product_name || '').trim().slice(0, 80);
+          const n = p.nutriments || {};
+          return {
+            name,
+            brand:     (p.brands || '').split(',')[0].trim().slice(0, 40) || null,
+            image_url: p.image_front_small_url || null,
+            kcal: Math.round(n['energy-kcal_100g'] || (n['energy_100g'] || 0) / 4.184 || 0),
+            prot: Math.round((n.proteins_100g      || 0) * 10) / 10,
+            gluc: Math.round((n.carbohydrates_100g || 0) * 10) / 10,
+            lip:  Math.round((n.fat_100g           || 0) * 10) / 10,
+          };
+        })
+        .filter(f => f.name && (f.kcal || f.prot) && !seen.has(norm(f.name)));
 
       // Vérifier que la recherche est toujours pertinente
       const currentQ = document.getElementById('nutriSearch')?.value.trim();
       if (currentQ !== q) return;
 
-      renderResults([...localMatches, ...apiItems], true);
+      renderResults([...offlineResults, ...apiItems], 'api');
     } catch(e) {
-      clearTimeout(timeout);
-      // Si on avait des résultats locaux, pas d'erreur affichée
-      if (!localMatches.length) {
-        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat local.<br><span style="font-size:11px">L'API Open Food Facts est inaccessible.</span></div>`;
+      clearTimeout(apiTimeout);
+      if (!offlineResults.length) {
+        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat.<br><span style="font-size:11px;opacity:0.6">Vérifie ta connexion.</span></div>`;
       }
     }
   }
