@@ -6321,20 +6321,51 @@
   }
 
   function abandonSessionFs() {
-    if (exercises.length && !confirm('Annuler la séance en cours ?')) return;
-    // Fermer l'overlay + minibar
+    showAbandonConfirm();
+  }
+
+  function abandonFromMinibar() {
+    showAbandonConfirm();
+  }
+
+  function showAbandonConfirm() {
+    const modal = document.getElementById('abandonConfirmModal');
+    if (modal) { modal.style.display = 'flex'; return; }
+    // Créer le modal dynamiquement
+    const el = document.createElement('div');
+    el.id = 'abandonConfirmModal';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px';
+    el.innerHTML = `
+      <div style="background:var(--surface);border-radius:16px;padding:28px 24px;width:100%;max-width:320px;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
+        <div style="font-size:28px;text-align:center;margin-bottom:12px">🗑️</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);text-align:center;margin-bottom:8px">Abandonner la séance ?</div>
+        <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.5">Ta progression ne sera pas sauvegardée.</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="confirmAbandon()" style="width:100%;background:#c0392b;color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:600">Abandonner</button>
+          <button onclick="closeAbandonConfirm()" style="width:100%;background:none;border:1px solid var(--border2);border-radius:12px;padding:14px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:var(--muted)">Continuer la séance</button>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+  }
+
+  function closeAbandonConfirm() {
+    const modal = document.getElementById('abandonConfirmModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function confirmAbandon() {
+    closeAbandonConfirm();
     closeSessionFs();
-    // Nettoyer tout l'état de séance
+    hideMinibar();
     exercises = []; loadedRoutineId = null; timerSec = 0; resetTimer(); skipRest(); clearDraft();
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
     const notesEl = document.getElementById('sessionNotes');
     if (notesEl) notesEl.value = '';
-    // Remettre l'onglet session en état initial
     hideSessionContent();
     renderExercises();
     renderRoutinePicker();
-    // Retourner sur l'accueil
     switchTab('home');
+    showToast('Séance abandonnée');
   }
 
   function closeSessionFs() {
@@ -6681,11 +6712,14 @@
 <!-- ══ MINI-BAR SÉANCE ══ -->
 <div class="session-minibar" id="sessionMinibar" onclick="expandSession()" style="display:none">
   <div class="session-minibar-dot"></div>
-  <div class="session-minibar-info">
+  <div class="session-minibar-info" onclick="expandSession()" style="flex:1;cursor:pointer">
     <div class="session-minibar-name" id="minibarName">Séance en cours</div>
     <div class="session-minibar-timer" id="minibarTimer">Entraînement · 00:00</div>
   </div>
-  <div class="session-minibar-expand">↑</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button onclick="event.stopPropagation();abandonFromMinibar()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0" title="Abandonner la séance">🗑️</button>
+    <div class="session-minibar-expand" onclick="expandSession()">↑</div>
+  </div>
 </div>
 </body>
 </html>
