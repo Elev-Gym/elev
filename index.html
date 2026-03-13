@@ -4968,7 +4968,7 @@
       const daysAgo = Math.floor((new Date() - d2) / 86400000);
       document.getElementById('homeLastMeta').textContent = daysAgo === 0 ? "Aujourd'hui" : daysAgo === 1 ? 'Hier' : ('Il y a ' + daysAgo + ' jours');
       const exNames = (last.exercises || []).slice(0, 5).map(e => e.name).filter(Boolean);
-      document.getElementById('homeLastExercises').innerHTML = exNames.map(n => `<span class="rpc-chip">${n}</span>`).join('');
+      document.getElementById('homeLastExercises').innerHTML = exNames.map(n => `<span class="rpc-chip" style="background:rgba(44,95,74,0.18);border-color:rgba(44,95,74,0.45);color:var(--accent)">${n}</span>`).join('');
     } else {
       document.getElementById('homeLastName').textContent = 'Aucune séance encore';
       document.getElementById('homeLastMeta').textContent = 'Lance ta première séance !';
