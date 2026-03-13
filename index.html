@@ -2912,9 +2912,10 @@
     showToast(`Exercice remplacé par "${newName}"`);
   }
 
-  function delEx(ei) { exercises.splice(ei,1); renderExercises(); autosaveDraft(); }
-  function addSet(ei) { exercises[ei].sets.push({w:'',r:'',done:false}); renderExercises(); autosaveDraft(); }
-  function delSet(ei, si) { if (exercises[ei].sets.length <= 1) { showToast('Minimum 1 série'); return; } exercises[ei].sets.splice(si, 1); renderExercises(); autosaveDraft(); }
+  function _rerender() { if (_sessionFsOpen) { renderSessionFs(); syncFsTimer(); } else { renderExercises(); } autosaveDraft(); }
+  function delEx(ei) { exercises.splice(ei,1); _rerender(); }
+  function addSet(ei) { exercises[ei].sets.push({w:'',r:'',done:false}); _rerender(); }
+  function delSet(ei, si) { if (exercises[ei].sets.length <= 1) { showToast('Minimum 1 série'); return; } exercises[ei].sets.splice(si, 1); _rerender(); }
 
   function toggleWarmup(ei) {
     const ex = exercises[ei];
@@ -2953,8 +2954,7 @@
       ex.sets = [...wu, ...ex.sets];
       showToast('🔥 Échauffement ajouté');
     }
-    renderExercises();
-    autosaveDraft();
+    _rerender();
   }
   function upd(ei,si,f,v) {
     exercises[ei].sets[si][f]=v;
@@ -6159,8 +6159,8 @@
         <div class="sets-head"><div>#</div><div>Poids kg</div><div>Reps</div><div>Dernière</div><div>✓</div></div>
         ${setsHtml}
         <div class="ex-actions-row">
-          <button class="add-set" onclick="addSet(${ei});renderSessionFs()">+ Série</button>
-          <button class="add-set wu-btn${ex.sets.some(s=>s.warmup)?' wu-active':''}" onclick="toggleWarmup(${ei});renderSessionFs()">${ex.sets.some(s=>s.warmup)?'🔥 Retirer':'🔥 Échauff.'}</button>
+          <button class="add-set" onclick="addSet(${ei})">+ Série</button>
+          <button class="add-set wu-btn${ex.sets.some(s=>s.warmup)?' wu-active':''}" onclick="toggleWarmup(${ei})">${ex.sets.some(s=>s.warmup)?'🔥 Retirer':'🔥 Échauff.'}</button>
         </div>
         ${ex.note !== undefined ? `<textarea class="ex-note-area" placeholder="Note sur l'exercice..." oninput="exercises[${ei}].note=this.value">${ex.note||''}</textarea>` : ''}
       </div>`;
@@ -6241,8 +6241,7 @@
     const restSel = document.getElementById('exRestFs');
     const restTime = restSel.value === 'custom' ? parseInt(document.getElementById('exRestCustomFs').value)||90 : parseInt(restSel.value);
     exercises.push({ id: Date.now() + Math.random(), name, muscle, restTime, sets: Array.from({length: nSets}, () => ({w:'',r:'',done:false})) });
-    renderExercises();
-    renderSessionFs(); // re-render fs body
+    renderSessionFs();
     autosaveDraft();
     showToast(`"${name}" ajouté ✓`);
   }
@@ -6287,16 +6286,6 @@
     _origSaveSession();
   }
 
-  // Re-render le FS quand renderExercises est appelé
-  const _origRenderExercises = renderExercises;
-  function renderExercises() {
-    _origRenderExercises();
-    if (_sessionFsOpen) {
-      renderSessionFs();
-      syncFsTimer();
-    }
-    if (_sessionMinibarVisible) syncMinibarTimer();
-  }
 
   // ══ PROFILE OVERLAY ══
   let _selectedProfileGoal = null;
