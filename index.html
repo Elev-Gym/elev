@@ -2764,7 +2764,9 @@
   function upd(ei,si,f,v) {
     exercises[ei].sets[si][f]=v;
     autosaveDraft();
-    if (f==='w'&&v) { const w=parseFloat(v); if(w>0&&checkNewPR(exercises[ei].name,w)){const card=document.getElementById(`excard-${ei}`);if(card)card.classList.add('pr-flash');setTimeout(()=>card&&card.classList.remove('pr-flash'),1500);showToast(`🏆 Nouveau PR sur ${exercises[ei].name} !`);if(navigator.vibrate)navigator.vibrate([80,40,120]);} }
+    // Ne pas détecter de PR sur les séries warmup
+    const isWarmup = exercises[ei].sets[si].warmup;
+    if (f==='w'&&v&&!isWarmup) { const w=parseFloat(v); if(w>0&&checkNewPR(exercises[ei].name,w)){const card=document.getElementById(`excard-${ei}`);if(card)card.classList.add('pr-flash');setTimeout(()=>card&&card.classList.remove('pr-flash'),1500);showToast(`🏆 Nouveau PR sur ${exercises[ei].name} !`);if(navigator.vibrate)navigator.vibrate([80,40,120]);} }
   }
   function updWU(ei, wi, f, v) {
     // wi = index dans les séries warmup uniquement
@@ -2786,12 +2788,19 @@
       // Superset: only start rest after BOTH exercises' set is done
       if (ex.supersetWith !== undefined) {
         const partnerIdx = exercises.findIndex(e => e.id === ex.supersetWith);
-        const partnerSetDone = partnerIdx >= 0 && exercises[partnerIdx].sets[si] && exercises[partnerIdx].sets[si].done;
-        if (partnerSetDone) {
-          const restTime = Math.max(ex.restTime || restDur, exercises[partnerIdx].restTime || restDur);
-          startRest(restTime, ex.name + (exercises[partnerIdx] ? ' + ' + exercises[partnerIdx].name : ''));
+        if (partnerIdx >= 0) {
+          // Trouver l'index réel dans les work sets (hors warmup) pour comparer avec le partenaire
+          const myWorkSets = ex.sets.filter(s => !s.warmup);
+          const myWorkIdx = myWorkSets.indexOf(ex.sets[si]);
+          const partnerWorkSets = exercises[partnerIdx].sets.filter(s => !s.warmup);
+          const partnerSet = partnerWorkSets[myWorkIdx];
+          const partnerSetDone = partnerSet && partnerSet.done;
+          if (partnerSetDone) {
+            const restTime = Math.max(ex.restTime || restDur, exercises[partnerIdx].restTime || restDur);
+            startRest(restTime, ex.name + ' + ' + exercises[partnerIdx].name);
+          }
+          // else wait for partner set
         }
-        // else wait for partner set
       } else {
         startRest(ex.restTime !== undefined ? ex.restTime : restDur, ex.name);
       }
@@ -2934,6 +2943,7 @@
   }
 
   function toggleNewSessionForDay(day) {
+    day = parseInt(day);
     _progNewSessionDays[day] = !_progNewSessionDays[day];
     renderProgSessionAssign();
     if (_progNewSessionDays[day]) {
@@ -2942,6 +2952,7 @@
   }
 
   function addExToNewSess(day) {
+    day = parseInt(day);
     const name = document.getElementById('newSessExName-' + day)?.value.trim();
     if (!name) { showToast("Donne un nom à l'exercice"); return; }
     const muscle = document.getElementById('newSessExMuscle-' + day)?.value || '';
@@ -2962,6 +2973,7 @@
   }
 
   async function createSessionFromProg(day) {
+    day = parseInt(day);
     const nameEl = document.getElementById('newSessName-' + day);
     const name = nameEl?.value.trim();
     if (!name) { showToast('Donne un nom à la séance'); return; }
@@ -3732,7 +3744,12 @@
     touchDragRi = null; touchDragEl = null;
   }
 
-  document.addEventListener('touchmove', e => { if (touchDragRi !== null && e.touches.length === 1) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', e => {
+    // Bloquer le scroll uniquement quand un drag routine OU exercise est en cours
+    // Ne pas interférer avec le swipe-to-delete des séances
+    const isDragging = (touchDragRi !== null) || (exTouchDragEi !== null);
+    if (isDragging && e.touches.length === 1) e.preventDefault();
+  }, { passive: false });
   document.addEventListener('touchend', onRoutineTouchEnd);
   async function deleteRoutine(ri) {
     const r = routines[ri];
@@ -3762,16 +3779,7 @@
     showToast('Poids enregistré ✓'); renderWeightTab();
   }
 
-  function updateWeightClock() {
-    const el = document.getElementById('headerDate') && false && document.getElementById('headerDate');
-    if (!el) return;
-    const now = new Date();
-    const h = String(now.getHours()).padStart(2,'0');
-    const m = String(now.getMinutes()).padStart(2,'0');
-    el.textContent = h + ':' + m;
-  }
-  setInterval(updateWeightClock, 10000);
-  updateWeightClock();
+  // updateWeightClock supprimé — dead code (condition && false toujours fausse)
 
   // ── Onboarding poids ──
   // Clé dynamique par user — isolée par compte
@@ -3815,7 +3823,7 @@
         localStorage.removeItem(ONBOARDING_KEY);
         return JSON.parse(generic);
       }
-      return JSON.parse(generic) || null;
+      return generic ? JSON.parse(generic) : null;
     } catch { return null; }
   }
 
@@ -3948,8 +3956,24 @@
     const steps = getActiveSteps();
     const step = steps[_onboardingStep];
     _onboardingData[step.key] = null;
-    if (_onboardingStep < steps.length - 1) { _onboardingStep++; renderOnboardingStep(); }
-    else nextOnboardingStep();
+    if (_onboardingStep < steps.length - 1) {
+      _onboardingStep++;
+      renderOnboardingStep();
+    } else {
+      // Dernier step passé — finaliser directement sans revalider
+      finishOnboarding();
+    }
+  }
+
+  async function finishOnboarding() {
+    const existing = getUserProfile() || {};
+    const merged = { ...existing, ..._onboardingData };
+    await saveUserProfile(merged);
+    _onboardingEditMode = false;
+    document.getElementById('weightOnboarding').style.display = 'none';
+    document.getElementById('weightMain').style.display = 'block';
+    renderWeightTab();
+    showToast('Profil enregistré ✓');
   }
 
   function selectOnboardingChoice(key, value) {
@@ -3980,15 +4004,7 @@
       _onboardingStep++;
       renderOnboardingStep();
     } else {
-      // Done — merge with existing profile (preserve age/height if edit mode)
-      const existing = getUserProfile() || {};
-      const merged = { ...existing, ..._onboardingData };
-      await saveUserProfile(merged);
-      _onboardingEditMode = false;
-      document.getElementById('weightOnboarding').style.display = 'none';
-      document.getElementById('weightMain').style.display = 'block';
-      renderWeightTab();
-      showToast('Profil enregistré ✓');
+      await finishOnboarding();
     }
   }
 
