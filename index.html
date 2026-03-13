@@ -5345,6 +5345,7 @@
     const hq = (document.getElementById('historySearch')?.value||'').trim().toLowerCase();
     const dateQ = document.getElementById('historyDateSearch')?.value||'';
     const muscleQ = document.getElementById('historyMuscleSearch')?.value||'';
+    const hasFilters = hq || dateQ || muscleQ;
     const filteredSessions = sessions.filter(s => {
       if (hq && !s.exercises.some(e=>e.name.toLowerCase().includes(hq)) && !(s.routineName||'').toLowerCase().includes(hq)) return false;
       if (dateQ && !s.date.startsWith(dateQ)) return false;
@@ -5352,9 +5353,50 @@
       return true;
     });
     if(!filteredSessions.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Aucun résultat</div></div>`;return;}
-    el.innerHTML=filteredSessions.map(s=>{
+
+    // Sans filtre : afficher seulement les 3 dernières + bouton "Voir tout"
+    const showAll = hasFilters || _historyShowAll;
+    const displayedSessions = showAll ? filteredSessions : filteredSessions.slice(0, 3);
+
+    el.innerHTML = displayedSessions.map(s=>{
       const d=new Date(s.date),dateStr=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}),dur=s.duration>0?fmt(s.duration):'—';
       const isOpen = openHistoryIds.has(s.id);
+
+      // Calcul kg total soulevé
+      const totalKg = s.exercises.reduce((total, ex) => {
+        return total + ex.sets.reduce((sum, set) => {
+          const w = parseFloat(set.w||set.weight||0);
+          const r = parseFloat(set.r||set.reps||0);
+          return sum + (w * r);
+        }, 0);
+      }, 0);
+
+      // Calcul PRs battus (comparer avec sessions précédentes)
+      const sessionDate = s.date;
+      let prsCount = 0;
+      s.exercises.forEach(ex => {
+        const bestVol = ex.sets.filter(s=>!s.warmup).reduce((max, set) => {
+          const vol = parseFloat(set.w||0) * (parseFloat(set.r||0)||1);
+          return vol > max ? vol : max;
+        }, 0);
+        if (bestVol <= 0) return;
+        // Chercher si une session antérieure avait mieux
+        const prevBest = sessions
+          .filter(prev => prev.date < sessionDate)
+          .flatMap(prev => prev.exercises.filter(e => e.name.toLowerCase() === ex.name.toLowerCase()))
+          .flatMap(e => e.sets.filter(s=>!s.warmup))
+          .reduce((max, set) => {
+            const vol = parseFloat(set.w||0) * (parseFloat(set.r||0)||1);
+            return vol > max ? vol : max;
+          }, 0);
+        if (bestVol > prevBest) prsCount++;
+      });
+
+      const recapHtml = `<div style="display:flex;gap:12px;margin-top:6px;margin-bottom:4px">
+        ${totalKg > 0 ? `<span style="font-size:10px;font-family:'Geist Mono',monospace;color:var(--muted);letter-spacing:0.5px">🏋️ <strong style="color:var(--text)">${Math.round(totalKg).toLocaleString('fr-FR')}</strong> kg</span>` : ''}
+        ${prsCount > 0 ? `<span style="font-size:10px;font-family:'Geist Mono',monospace;color:var(--accent);letter-spacing:0.5px">🏆 <strong>${prsCount}</strong> PR${prsCount > 1 ? 's' : ''}</span>` : ''}
+      </div>`;
+
       const detail = isOpen ? `<div class="h-detail open">
         ${s.exercises.map(ex => `<div class="h-detail-ex">
           <div class="h-detail-ex-name">${ex.name}${ex.muscle?` <span style="font-size:11px;color:var(--muted)">${ex.muscle}</span>`:''}</div>
@@ -5365,6 +5407,7 @@
         </div>`).join('')}
         ${s.notes?`<div class="h-note" style="margin-top:8px">${s.notes}</div>`:''}
       </div>` : '';
+
       return `<div class="h-card-wrap" id="hwrap-${s.id}">
         <div class="h-swipe-del" id="hswipedel-${s.id}">🗑</div>
         <div class="h-card" id="hcard-${s.id}"
@@ -5376,6 +5419,7 @@
             <div>
               ${s.routineName ? `<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:3px">📌 ${s.routineName}</div>` : ''}
               <div class="h-date">${dateStr}</div>
+              ${recapHtml}
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <div class="h-dur">${dur}</div>
@@ -5390,9 +5434,19 @@
         </div>
       </div>`;
     }).join('');
-    // Init swipe state
+
+    // Bouton "Voir tout" si pas de filtre et plus de 3 séances
+    if (!hasFilters && filteredSessions.length > 3) {
+      el.innerHTML += `<div style="text-align:center;margin-top:12px">
+        <button onclick="_historyShowAll=!_historyShowAll;renderHistory()" style="background:none;border:1px solid var(--border2);border-radius:20px;padding:8px 20px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);cursor:pointer">
+          ${_historyShowAll ? '▲ Réduire' : `Voir tout · ${filteredSessions.length} séances`}
+        </button>
+      </div>`;
+    }
+
     swipeSessions = {};
   }
+  let _historyShowAll = false;
 
   async function deleteSession(id) {
     if (!confirm('Supprimer cette séance ?')) return;
