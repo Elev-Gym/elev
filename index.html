@@ -684,7 +684,9 @@
 
   /* ── Mini-bar séance réduite ── */
   .session-minibar {
-    position: fixed; bottom: 70px; left: 50%; margin-left: -218px;
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom) + 68px);
+    left: 50%; translate: -50% 0;
     width: calc(100% - 24px); max-width: 436px;
     background: var(--accent); color: #fff;
     border-radius: 14px;
@@ -692,8 +694,8 @@
     display: flex; align-items: center; gap: 12px;
     cursor: pointer;
     box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-    z-index: 890;
-    transform: translateY(120%);
+    z-index: 896;
+    transform: translateY(200%);
     transition: transform 0.3s cubic-bezier(0.34, 1.1, 0.64, 1);
   }
   .session-minibar.show { transform: translateY(0); }
@@ -2045,6 +2047,10 @@
   let restDur = 90, restRemaining = 0, restInterval = null;
   let calYear, calMonth;
   let selectedProgEx = null;
+  // Fullscreen session state (déclaré tôt pour éviter TDZ)
+  let _sessionFsOpen = false;
+  let _sessionMinibarVisible = false;
+  let _minibarTimerInterval = null;
 
   function cancelSWTimer() {
     if ('serviceWorker' in navigator) {
@@ -2610,7 +2616,8 @@
     renderExercises(); renderRoutinePicker();
     showToast(`"${routine.name}" lancée ! ⏱`);
     autosaveDraft();
-    openSessionFullscreen();
+    // Ouvrir le fullscreen — setTimeout pour laisser le DOM se stabiliser
+    setTimeout(() => openSessionFullscreen(), 50);
   }
 
   function closeRoutineConfirm() {
@@ -4873,8 +4880,8 @@
 
   function homeLoadNextSession() {
     const id = parseInt(document.getElementById('homeNextSession').dataset.routineId);
-    if (id) { loadRoutine(id); switchTab('session'); }
-    else switchTab('session');
+    if (id) { loadRoutine(id); }
+    else { switchTab('session'); }
   }
 
     function checkWeightOnboarding() {
@@ -5965,17 +5972,14 @@
   }
 
   // ══ FULLSCREEN SESSION ══
-  let _sessionFsOpen = false;
-  let _sessionMinibarVisible = false;
-  let _minibarTimerInterval = null;
-
   function openSessionFullscreen() {
     _sessionFsOpen = true;
-    renderSessionFs();
+    try { renderSessionFs(); } catch(e) { console.error('renderSessionFs error:', e); }
     // Masquer le contenu de l'onglet séance derrière l'overlay
     const blocks = ['sessionRoutineBlock', 'freeSessionBlock'];
     blocks.forEach(id => { const el = document.getElementById(id); if (el) el.style.visibility = 'hidden'; });
-    document.getElementById('sessionFsOverlay').classList.add('open');
+    const overlay = document.getElementById('sessionFsOverlay');
+    if (overlay) overlay.classList.add('open');
     // Sync timer display
     syncFsTimer();
     if (_minibarTimerInterval) clearInterval(_minibarTimerInterval);
