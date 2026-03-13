@@ -5701,8 +5701,7 @@
     clearTimeout(_nutriSearchTimer);
     const q = document.getElementById('nutriSearch')?.value.trim();
     if (!q || q.length < 2) { renderNutriAddBody(); return; }
-    _nutriSearchTimer = setTimeout(doNutriSearch, 500);
-    // Afficher "Recherche..." immédiatement
+    _nutriSearchTimer = setTimeout(doNutriSearch, 400);
     const body = document.getElementById('nutriAddBody');
     if (body) body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;font-family:'Geist Mono',monospace;letter-spacing:1px">RECHERCHE EN COURS…</div>`;
   }
@@ -5717,21 +5716,21 @@
 
     const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    // Fonction de rendu commune
+    // ── Rendu commun ──
     const renderResults = (items, source) => {
       if (!items.length) {
         body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
         return;
       }
       const srcLabel = source === 'local'
-        ? `<div style="font-size:9px;color:var(--muted);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">BASE LOCALE · RECHERCHE EN LIGNE…</div>`
+        ? `<div style="font-size:9px;color:var(--muted2);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">BASE LOCALE · RECHERCHE EN LIGNE…</div>`
         : source === 'supabase'
-        ? `<div style="font-size:9px;color:var(--muted);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">BASE OFFLINE (${items.length} résultats) · RECHERCHE EN LIGNE…</div>`
-        : '';
+        ? `<div style="font-size:9px;color:var(--muted2);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">${items.length} RÉSULTATS · BASE OFF</div>`
+        : `<div style="font-size:9px;color:var(--muted2);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">${items.length} RÉSULTATS</div>`;
       body.innerHTML = srcLabel + `<div class="card" style="padding:4px 14px;margin-top:4px">${items.map(f => {
         const enc = encodeURIComponent(f.name);
-        const brand = f.brand ? `<span style="color:var(--muted2)"> · ${f.brand}</span>` : '';
-        const img = f.image_url ? `<img src="${f.image_url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;margin-right:10px;flex-shrink:0" onerror="this.style.display='none'"/>` : '';
+        const brand = f.brand ? `<span style="color:var(--muted2);font-size:11px"> · ${f.brand}</span>` : '';
+        const img = f.image_url ? `<img src="${f.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;margin-right:10px;flex-shrink:0" onerror="this.style.display='none'"/>` : '';
         return `<div class="nutri-search-item">
           ${img}
           <div style="flex:1;min-width:0">
@@ -5743,16 +5742,26 @@
       }).join('')}</div>`;
     };
 
-    // ── 1. Recherche offline : Supabase (top 100k) ──
-    let offlineResults = [];
+    // ── 1. Supabase via fonction search_foods (FTS sur 100k aliments OFF) ──
+    let supaResults = [];
     try {
+      const ftsQuery = q.trim().split(/\s+/).filter(w=>w.length>1).map(w => w + ':*').join(' & ') || q + ':*';
       const supaRes = await fetch(
-        `${SUPA_URL}/rest/v1/foods?select=id,name,brand,image_url,kcal,proteins,carbs,fat&search_vector=phfts(french).${encodeURIComponent(q)}&order=scan_count.desc&limit=15`,
-        { headers: { 'apikey': SUPA_KEY, 'Accept': 'application/json' } }
+        `${SUPA_URL}/rest/v1/rpc/search_foods`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': SUPA_KEY,
+            'Authorization': `Bearer ${SUPA_KEY}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ query: ftsQuery, lim: 20 })
+        }
       );
       if (supaRes.ok) {
         const rows = await supaRes.json();
-        offlineResults = (rows || []).map(r => ({
+        supaResults = (rows || []).map(r => ({
           name:      r.name,
           brand:     r.brand || null,
           image_url: r.image_url || null,
@@ -5762,37 +5771,33 @@
           lip:       Math.round((r.fat      || 0) * 10) / 10,
         }));
       }
-    } catch(e) {
-      // Supabase inaccessible — fallback sur base locale CIQUAL
+    } catch(e) { /* Supabase inaccessible */ }
+
+    // Fallback local CIQUAL si Supabase vide
+    if (!supaResults.length) {
       const words = norm(q).split(/\s+/).filter(w => w.length > 1);
-      offlineResults = NUTRI_LOCAL.filter(f => {
+      supaResults = NUTRI_LOCAL.filter(f => {
         const n = norm(f.name);
         return words.every(w => n.includes(w));
       }).slice(0, 15).map(f => ({ name: f.name, brand: null, image_url: null, kcal: f.kcal, prot: f.prot, gluc: f.gluc, lip: f.lip }));
+      if (supaResults.length) renderResults(supaResults, 'local');
+    } else {
+      renderResults(supaResults, 'supabase');
     }
 
-    // Afficher résultats offline immédiatement
-    if (offlineResults.length) renderResults(offlineResults, isOnline() ? 'supabase' : 'local');
-
-    // ── 2. Recherche online : API Open Food Facts (si réseau) ──
-    if (!isOnline()) {
-      if (!offlineResults.length) {
-        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat hors-ligne pour « ${q} ».</div>`;
-      }
-      return;
-    }
+    // ── 2. API Open Food Facts (enrichissement si réseau dispo) ──
+    if (!isOnline()) return;
 
     const ctrl = new AbortController();
-    const apiTimeout = setTimeout(() => ctrl.abort(), 10000);
+    const apiTimeout = setTimeout(() => ctrl.abort(), 8000);
     try {
-      const url = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=15&lc=fr&cc=fr&fields=code,product_name,product_name_fr,brands,image_front_small_url,nutriments`;
+      const url = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=10&lc=fr&cc=fr&fields=code,product_name,product_name_fr,brands,image_front_small_url,nutriments`;
       const res = await fetch(url, { signal: ctrl.signal, headers: { 'Accept': 'application/json' } });
       clearTimeout(apiTimeout);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
 
-      // Dédupliquer avec les résultats offline
-      const seen = new Set(offlineResults.map(f => norm(f.name)));
+      const seen = new Set(supaResults.map(f => norm(f.name)));
       const apiItems = (data.products || [])
         .filter(p => (p.product_name_fr || p.product_name) && p.nutriments)
         .map(p => {
@@ -5802,22 +5807,22 @@
             name,
             brand:     (p.brands || '').split(',')[0].trim().slice(0, 40) || null,
             image_url: p.image_front_small_url || null,
-            kcal: Math.round(n['energy-kcal_100g'] || (n['energy_100g'] || 0) / 4.184 || 0),
-            prot: Math.round((n.proteins_100g      || 0) * 10) / 10,
-            gluc: Math.round((n.carbohydrates_100g || 0) * 10) / 10,
-            lip:  Math.round((n.fat_100g           || 0) * 10) / 10,
+            kcal:  Math.round(n['energy-kcal_100g'] || (n['energy_100g'] || 0) / 4.184 || 0),
+            prot:  Math.round((n.proteins_100g      || 0) * 10) / 10,
+            gluc:  Math.round((n.carbohydrates_100g || 0) * 10) / 10,
+            lip:   Math.round((n.fat_100g           || 0) * 10) / 10,
           };
         })
         .filter(f => f.name && (f.kcal || f.prot) && !seen.has(norm(f.name)));
 
-      // Vérifier que la recherche est toujours pertinente
       const currentQ = document.getElementById('nutriSearch')?.value.trim();
       if (currentQ !== q) return;
 
-      renderResults([...offlineResults, ...apiItems], 'api');
+      const merged = [...supaResults, ...apiItems];
+      if (merged.length) renderResults(merged, 'api');
     } catch(e) {
       clearTimeout(apiTimeout);
-      if (!offlineResults.length) {
+      if (!supaResults.length) {
         body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat.<br><span style="font-size:11px;opacity:0.6">Vérifie ta connexion.</span></div>`;
       }
     }
@@ -5826,26 +5831,136 @@
   async function searchByBarcode(code) {
     const body = document.getElementById('nutriAddBody');
     if (body) body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;font-family:'Geist Mono',monospace">SCAN EN COURS…</div>`;
+
+    // 1. Lookup dans Supabase d'abord (barcode = id)
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}?fields=product_name,product_name_fr,brands,nutriments&lc=fr`, {
-        headers: { 'Accept': 'application/json' }
-      });
+      const supaRes = await fetch(
+        `${SUPA_URL}/rest/v1/foods?select=name,brand,image_url,kcal,proteins,carbs,fat&id=eq.${code}`,
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Accept': 'application/json' } }
+      );
+      if (supaRes.ok) {
+        const rows = await supaRes.json();
+        if (rows && rows.length > 0) {
+          const r = rows[0];
+          const name = r.brand ? `${r.name} — ${r.brand}` : r.name;
+          openNutriQtyModal(
+            encodeURIComponent(name),
+            Math.round(r.kcal || 0),
+            Math.round((r.proteins || 0) * 10) / 10,
+            Math.round((r.carbs    || 0) * 10) / 10,
+            Math.round((r.fat      || 0) * 10) / 10
+          );
+          return;
+        }
+      }
+    } catch(e) { /* fallback OFF API */ }
+
+    // 2. Fallback : API Open Food Facts
+    try {
+      const res = await fetch(
+        `https://world.openfoodfacts.org/api/v2/product/${code}?fields=product_name,product_name_fr,brands,nutriments&lc=fr`,
+        { headers: { 'Accept': 'application/json' } }
+      );
       const data = await res.json();
       if (data.status !== 1 || !data.product) { showToast('Produit non trouvé'); renderNutriAddBody(); return; }
       const p = data.product;
       const name = p.product_name_fr || p.product_name || '—';
       const n = p.nutriments || {};
-      const kcal = Math.round(n['energy-kcal_100g'] || 0);
-      const prot = Math.round((n.proteins_100g || 0) * 10) / 10;
-      const gluc = Math.round((n.carbohydrates_100g || 0) * 10) / 10;
-      const lip  = Math.round((n.fat_100g || 0) * 10) / 10;
-      openNutriQtyModal(encodeURIComponent(name), kcal, prot, gluc, lip);
+      openNutriQtyModal(
+        encodeURIComponent(name),
+        Math.round(n['energy-kcal_100g'] || 0),
+        Math.round((n.proteins_100g      || 0) * 10) / 10,
+        Math.round((n.carbohydrates_100g || 0) * 10) / 10,
+        Math.round((n.fat_100g           || 0) * 10) / 10
+      );
     } catch(e) { showToast('Erreur de scan'); renderNutriAddBody(); }
   }
 
+  let _barcodeStream = null;
+  function stopBarcodeStream() {
+    if (_barcodeStream) { _barcodeStream.getTracks().forEach(t => t.stop()); _barcodeStream = null; }
+  }
+
   function startBarcodeScanner() {
-    const code = prompt('Code-barres du produit :');
-    if (code && code.trim()) searchByBarcode(code.trim());
+    const overlay = document.createElement('div');
+    overlay.id = 'barcodeOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center';
+    overlay.innerHTML = `
+      <div style="position:relative;width:100%;max-width:420px">
+        <video id="barcodeVideo" style="width:100%;border-radius:0" playsinline autoplay muted></video>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <div style="width:240px;height:140px;border:2px solid rgba(255,255,255,0.85);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.55)"></div>
+        </div>
+      </div>
+      <div style="color:rgba(255,255,255,0.7);font-family:Geist Mono,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:20px">Pointez vers un code-barres</div>
+      <button onclick="document.getElementById('barcodeOverlay').remove();stopBarcodeStream()" style="margin-top:20px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:10px;padding:12px 28px;font-family:Geist Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer">ANNULER</button>
+      <div id="barcodeScanStatus" style="color:rgba(255,255,255,0.45);font-family:Geist Mono,monospace;font-size:10px;margin-top:10px">Chargement du scanner…</div>
+    `;
+    document.body.appendChild(overlay);
+
+    if (!window.ZXing) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
+      script.onload = () => initZXing(overlay);
+      script.onerror = () => {
+        overlay.remove();
+        const code = prompt('Code-barres du produit :');
+        if (code && code.trim()) searchByBarcode(code.trim());
+      };
+      document.head.appendChild(script);
+    } else {
+      initZXing(overlay);
+    }
+  }
+
+  function initZXing(overlay) {
+    const statusEl = document.getElementById('barcodeScanStatus');
+    if (statusEl) statusEl.textContent = 'Accès caméra…';
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,  ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128
+    ]);
+    const reader = new ZXing.MultiFormatReader();
+    reader.setHints(hints);
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        _barcodeStream = stream;
+        const video = document.getElementById('barcodeVideo');
+        if (!video) { stopBarcodeStream(); return; }
+        video.srcObject = stream;
+        if (statusEl) statusEl.textContent = 'Cherche un code-barres…';
+        let scanning = true;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const scan = () => {
+          if (!scanning || !document.getElementById('barcodeOverlay')) { stopBarcodeStream(); return; }
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            try {
+              const lum = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+              const result = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum)));
+              if (result) {
+                scanning = false;
+                stopBarcodeStream();
+                document.getElementById('barcodeOverlay')?.remove();
+                searchByBarcode(result.getText());
+                return;
+              }
+            } catch(e) {}
+          }
+          requestAnimationFrame(scan);
+        };
+        video.onloadedmetadata = () => requestAnimationFrame(scan);
+      })
+      .catch(() => {
+        overlay.remove();
+        const code = prompt('Caméra non disponible. Saisissez le code-barres :');
+        if (code && code.trim()) searchByBarcode(code.trim());
+      });
   }
 
   function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, defaultQty) {
