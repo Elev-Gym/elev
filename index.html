@@ -1478,31 +1478,35 @@
     <!-- Bilan carte principale -->
     <div class="card" id="nutriSummaryCard" style="margin-bottom:24px;padding:20px 18px">
 
-      <!-- Demi-anneau + chiffres -->
+      <!-- Anneau complet + chiffres -->
       <div style="display:flex;align-items:center;justify-content:space-around;margin-bottom:20px">
-        <div style="text-align:center">
+
+        <!-- Colonne gauche -->
+        <div style="text-align:center;flex:1">
           <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--muted);line-height:1" id="nutriKcalConsumed">0</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px">Mangées</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:5px">Mangées</div>
         </div>
 
-        <!-- Demi-anneau SVG — plus grand -->
-        <div style="position:relative;width:140px;height:80px;flex-shrink:0">
-          <svg width="140" height="90" viewBox="0 0 140 90">
-            <path d="M 10 80 A 60 60 0 0 1 130 80" fill="none" stroke="var(--border2)" stroke-width="11" stroke-linecap="round"/>
-            <path d="M 10 80 A 60 60 0 0 1 130 80" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round"
+        <!-- Anneau complet SVG centré — r=52, circumference=326.7 -->
+        <div style="position:relative;width:130px;height:130px;flex-shrink:0">
+          <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg)">
+            <circle cx="65" cy="65" r="52" fill="none" stroke="var(--border2)" stroke-width="10"/>
+            <circle cx="65" cy="65" r="52" fill="none" stroke="var(--accent)" stroke-width="10"
+              stroke-linecap="round"
               id="nutriSemiRing"
-              stroke-dasharray="188.5"
-              stroke-dashoffset="188.5"/>
+              stroke-dasharray="326.7"
+              stroke-dashoffset="326.7"/>
           </svg>
-          <div style="position:absolute;bottom:2px;left:0;right:0;text-align:center">
-            <div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--text);line-height:1" id="nutriKcalRemaining">—</div>
-            <div style="font-size:9px;color:var(--muted);letter-spacing:0.5px;margin-top:2px">Restantes</div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-family:'DM Serif Display',serif;font-size:32px;color:var(--text);line-height:1" id="nutriKcalRemaining">—</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:0.5px;margin-top:4px;text-transform:uppercase">Restantes</div>
           </div>
         </div>
 
-        <div style="text-align:center">
+        <!-- Colonne droite -->
+        <div style="text-align:center;flex:1">
           <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--muted);line-height:1" id="nutriKcalGoal">—</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px">Objectif</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:5px">Objectif</div>
         </div>
       </div>
 
@@ -5923,16 +5927,18 @@
       window._nutriSuggCache = items;
       return items.map((f, i) => {
         const isFav = _nutriFavorites.some(fv => fv.name === f.name);
-        const brand = f.brand ? `<span style="color:var(--muted)"> · ${f.brand}</span>` : '';
+        const brand = f.brand ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${f.brand}</div>` : '';
         const qty = f.qty ? `${f.qty}g · ` : '';
-        return `<div style="display:flex;align-items:center;padding:13px 0;border-bottom:0.5px solid var(--border)">
+        return `<div style="display:flex;align-items:center;padding:14px 0;border-bottom:0.5px solid var(--border)">
           <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}${brand}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">${qty}${f.kcal} kcal</div>
+            <div style="font-size:15px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
+            ${brand}
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${qty}${f.kcal} kcal</div>
           </div>
           <button onclick="toggleNutriFavorite('${f.name.replace(/'/g,"\\'")}',${f.kcal},${f.prot},${f.gluc},${f.lip})"
-            style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 8px;color:${isFav?'#f5c518':'var(--muted)'}">${isFav?'★':'☆'}</button>
-          <button class="nutri-add-btn" onclick="openNutriFromCache(${i})">+</button>
+            style="background:none;border:none;font-size:20px;cursor:pointer;padding:0 10px;color:${isFav?'#f5c518':'var(--muted)'};flex-shrink:0">${isFav?'★':'☆'}</button>
+          <button onclick="openNutriFromCache(${i})"
+            style="background:var(--accent);color:#fff;border:none;border-radius:10px;width:34px;height:34px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">+</button>
         </div>`;
       }).join('');
     };
@@ -6036,18 +6042,20 @@
         ? `<div style="font-size:9px;color:var(--muted2);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">${items.length} RÉSULTATS · BASE OFF</div>`
         : `<div style="font-size:9px;color:var(--muted2);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">${items.length} RÉSULTATS</div>`;
 
-      body.innerHTML = srcLabel + `<div class="card" style="padding:4px 14px;margin-top:4px">${items.map((f, i) => {
-        const brand = f.brand ? `<span style="color:var(--muted2);font-size:11px"> · ${f.brand}</span>` : '';
-        const img = f.image_url ? `<img src="${f.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;margin-right:10px;flex-shrink:0" onerror="this.style.display='none'"/>` : '';
-        return `<div class="nutri-search-item">
-          ${img}
+      // Stocker dans cache
+      window._nutriSearchCache = items;
+      body.innerHTML = srcLabel + items.map((f, i) => {
+        const brand = f.brand ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${f.brand}</div>` : '';
+        return `<div style="display:flex;align-items:center;padding:14px 0;border-bottom:0.5px solid var(--border)">
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}${brand}</div>
-            <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${f.prot}P · ${f.gluc}G · ${f.lip}L${f.fib ? ' · ' + f.fib + 'F' : ''} · ${f.kcal} kcal/100g</div>
+            <div style="font-size:15px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
+            ${brand}
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${f.kcal} kcal · ${f.prot}P ${f.gluc}G ${f.lip}L</div>
           </div>
-          <button class="nutri-add-btn" onclick="openNutriFromSearchCache(${i})">+</button>
+          <button onclick="openNutriFromSearchCache(${i})"
+            style="background:var(--accent);color:#fff;border:none;border-radius:10px;width:34px;height:34px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;margin-left:10px">+</button>
         </div>`;
-      }).join('')}</div>`;
+      }).join('');
     };
 
     // ── 1. Supabase via fonction search_foods (FTS sur 100k aliments OFF) ──
@@ -6438,7 +6446,7 @@
     const remaining = Math.max(goalKcal - totalKcal, 0);
 
     // Demi-anneau : stroke-dasharray 141.4 = demi-cercle r=45 * π ≈ 141.4
-    const semiLen = 188.5;
+    const semiLen = 326.7;
     const semiOffset = semiLen - Math.min(totalKcal / goalKcal, 1) * semiLen;
     const ring = document.getElementById('nutriSemiRing');
     if (ring) {
