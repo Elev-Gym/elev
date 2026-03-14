@@ -6041,14 +6041,13 @@
       window._nutriSuggCache = items;
       return items.map((f, i) => {
         const isFav = isNutriFavorite(f.name);
-        const sub = [f.brand, f.qty ? f.qty + 'g' : ''].filter(Boolean).join(' · ');
         return `<div style="display:flex;align-items:center;padding:13px 0;border-bottom:0.5px solid var(--border)">
           <div style="flex:1;min-width:0">
             <div style="font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
-            ${sub ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:'Geist Mono',monospace">${sub}</div>` : ''}
-            <div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:'Geist Mono',monospace">${f.prot}P · ${f.gluc}G · ${f.lip}L${f.fib ? ' · ' + f.fib + 'F' : ''} · ${f.kcal} kcal</div>
+            ${f.brand ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;font-family:'Geist Mono',monospace">${f.brand}</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+            <span style="font-size:13px;color:var(--muted);font-family:'Geist Mono',monospace">${f.kcal} kcal</span>
             <button onclick="toggleNutriFavorite('${f.name.replace(/'/g,"\\'")}',${f.kcal},${f.prot||0},${f.gluc||0},${f.lip||0},${f.fib||0})"
               style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px;color:${isFav ? 'var(--gold)' : 'var(--muted2)'}">${isFav ? '★' : '☆'}</button>
             <button onclick="openNutriFromCache(${i})"
