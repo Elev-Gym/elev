@@ -6407,43 +6407,58 @@
 
     const modal = document.createElement('div');
     modal.id = 'editNutriModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:980;display:flex;align-items:flex-end;justify-content:center';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:24px';
     modal.onclick = e => { if (e.target === modal) { confirmEditNutriEntry(id,kcal100,prot100,gluc100,lip100,fib100,name,brand); modal.remove(); } };
 
     modal.innerHTML = `
-      <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;overflow:hidden" onclick="event.stopPropagation()">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:360px;overflow:hidden" onclick="event.stopPropagation()">
         <!-- Header -->
-        <div style="background:var(--surface2);padding:22px 20px 16px;position:relative;text-align:center">
-          <button onclick="confirmEditNutriEntry(${id},'${kcal100}','${prot100}','${gluc100}','${lip100}','${fib100}','${name.replace(/'/g,"\\'")}','${brand.replace(/'/g,"\\'")}');document.getElementById('editNutriModal').remove()" style="position:absolute;top:16px;left:16px;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:1;display:flex;align-items:center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <div style="background:var(--surface2);padding:16px 16px 14px;position:relative;text-align:center">
+          <button onclick="confirmEditNutriEntry(${id},'${kcal100}','${prot100}','${gluc100}','${lip100}','${fib100}','${name.replace(/'/g,"\\'")}','${brand.replace(/'/g,"\\'")}');document.getElementById('editNutriModal').remove()" style="position:absolute;top:14px;left:12px;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:1;display:flex;align-items:center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text)">${name}</div>
-          ${brand ? `<div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:3px">${brand}</div>` : ''}
+          <div style="font-family:'DM Serif Display',serif;font-size:17px;color:var(--text)">${name}</div>
+          ${brand ? `<div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:2px">${brand}</div>` : ''}
         </div>
 
-        <div style="padding:20px 20px calc(env(safe-area-inset-bottom)+20px)">
-          <!-- Quantité -->
-          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px">Quantité (g)</div>
-          <input class="inp" id="editNutriQty" type="number" value="${defaultQty}" min="1" max="5000"
-            style="width:100%;text-align:center;font-size:30px;font-family:'DM Serif Display',serif;margin-bottom:16px"
-            oninput="updateEditNutriPreview(${kcal100},${prot100},${gluc100},${lip100},${fib100})"/>
+        <div style="padding:18px 16px 20px">
+          <!-- Champ quantité + menu déroulant unité -->
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px">Quantité</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+            <input class="inp" id="editNutriQty" type="number" value="${defaultQty}" min="0.1" max="5000" step="any"
+              style="flex:1;text-align:center;font-size:28px;font-family:'DM Serif Display',serif"
+              oninput="updateEditNutriPreview(${kcal100},${prot100},${gluc100},${lip100},${fib100})"/>
+            <select id="editNutriUnit"
+              style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 10px;font-family:'Geist Mono',monospace;font-size:12px;color:var(--text);cursor:pointer;flex-shrink:0"
+              onchange="onEditUnitChange(${kcal100},${prot100},${gluc100},${lip100},${fib100})">
+              <option value="g" selected>Gramme</option>
+              <option value="portion">Portion</option>
+            </select>
+          </div>
+          <!-- Taille de portion (visible uniquement si "Portion" sélectionné) -->
+          <div id="portionSizeRow" style="display:none;margin-bottom:14px">
+            <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:6px">1 portion = <span id="portionGLabel">100</span> g</div>
+            <input class="inp" id="portionGrams" type="number" value="100" min="1" max="2000" placeholder="ex: 150"
+              style="width:100%;text-align:center;font-size:18px;font-family:'DM Serif Display',serif"
+              oninput="updateEditNutriPreview(${kcal100},${prot100},${gluc100},${lip100},${fib100})"/>
+          </div>
 
           <!-- Aperçu macros -->
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
-            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
-              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="enKcal">${entry ? entry.kcal : Math.round(kcal100)}</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;text-align:center">
+            <div style="background:var(--surface2);border-radius:8px;padding:9px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enKcal">${entry ? entry.kcal : Math.round(kcal100)}</div>
               <div style="font-size:8px;color:var(--muted);margin-top:2px">kcal</div>
             </div>
-            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
-              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--accent)" id="enProt">${entry ? entry.prot : prot100}g</div>
+            <div style="background:var(--surface2);border-radius:8px;padding:9px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--accent)" id="enProt">${entry ? entry.prot : prot100}g</div>
               <div style="font-size:8px;color:var(--muted);margin-top:2px">prot</div>
             </div>
-            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
-              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="enGluc">${entry ? entry.gluc : gluc100}g</div>
+            <div style="background:var(--surface2);border-radius:8px;padding:9px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enGluc">${entry ? entry.gluc : gluc100}g</div>
               <div style="font-size:8px;color:var(--muted);margin-top:2px">gluc</div>
             </div>
-            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
-              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="enLip">${entry ? entry.lip : lip100}g</div>
+            <div style="background:var(--surface2);border-radius:8px;padding:9px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enLip">${entry ? entry.lip : lip100}g</div>
               <div style="font-size:8px;color:var(--muted);margin-top:2px">lip</div>
             </div>
           </div>
@@ -6453,9 +6468,22 @@
     setTimeout(() => document.getElementById('editNutriQty')?.focus(), 200);
   }
 
+  function onEditUnitChange(kcal100, prot100, gluc100, lip100, fib100) {
+    const unit = document.getElementById('editNutriUnit')?.value;
+    const row = document.getElementById('portionSizeRow');
+    if (row) row.style.display = unit === 'portion' ? 'block' : 'none';
+    updateEditNutriPreview(kcal100, prot100, gluc100, lip100, fib100);
+  }
+
   function updateEditNutriPreview(kcal100, prot100, gluc100, lip100, fib100) {
-    const qty = parseFloat(document.getElementById('editNutriQty')?.value) || 100;
-    const r = qty / 100;
+    const qtyRaw = parseFloat(document.getElementById('editNutriQty')?.value) || 0;
+    const unit = document.getElementById('editNutriUnit')?.value || 'g';
+    const portionG = parseFloat(document.getElementById('portionGrams')?.value) || 100;
+    // Mettre à jour le label "1 portion = X g"
+    const lbl = document.getElementById('portionGLabel');
+    if (lbl) lbl.textContent = portionG;
+    // Calcul du ratio
+    const r = unit === 'portion' ? (qtyRaw * portionG) / 100 : qtyRaw / 100;
     const k = document.getElementById('enKcal'); if (k) k.textContent = Math.round(kcal100*r);
     const p = document.getElementById('enProt'); if (p) p.textContent = Math.round(prot100*r*10)/10 + 'g';
     const g = document.getElementById('enGluc'); if (g) g.textContent = Math.round(gluc100*r*10)/10 + 'g';
@@ -6463,9 +6491,13 @@
   }
 
   async function confirmEditNutriEntry(id, kcal100, prot100, gluc100, lip100, fib100, name, brand) {
-    const qty = parseFloat(document.getElementById('editNutriQty')?.value) || 100;
-    if (qty <= 0) return;
+    const qtyRaw = parseFloat(document.getElementById('editNutriQty')?.value) || 100;
+    const unit = document.getElementById('editNutriUnit')?.value || 'g';
+    const portionG = parseFloat(document.getElementById('portionGrams')?.value) || 100;
+    // Convertir en grammes réels
+    const qty = unit === 'portion' ? Math.round(qtyRaw * portionG) : Math.round(qtyRaw);
     const r = qty / 100;
+    if (qtyRaw <= 0) return;
     kcal100 = parseFloat(kcal100) || 0;
     prot100 = parseFloat(prot100) || 0;
     gluc100 = parseFloat(gluc100) || 0;
@@ -7228,30 +7260,21 @@
     const btn = document.getElementById('cfSaveBtn');
     if (btn) { btn.textContent = 'Enregistrement…'; btn.disabled = true; }
 
-    // Générer un id unique si pas de barcode
     const id = barcode || ('custom_' + Date.now());
-
     const food = { id, name, brand, image_url: null, kcal, proteins: prot, carbs: gluc, fat: lip, fiber: fib, scan_count: 0 };
 
     try {
-      const res = await fetch(`${SUPA_URL}/rest/v1/foods`, {
+      const res = await supaFetch('/rest/v1/foods', {
         method: 'POST',
-        headers: {
-          'apikey': SUPA_KEY,
-          'Authorization': `Bearer ${SUPA_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
-        },
+        headers: { 'Prefer': 'resolution=merge-duplicates' },
         body: JSON.stringify(food)
       });
       if (!res.ok) throw new Error(await res.text());
 
       showToast(`« ${name} » enregistré ✓`);
       closeCustomFoodModal();
-
-      // Proposer directement d'ajouter au repas si overlay ouvert
       if (_nutriActiveMeal) {
-        openNutriQtyModal(encodeURIComponent(name), kcal, prot, gluc, lip, fib);
+        openNutriQtyModal(encodeURIComponent(name), kcal, prot, gluc, lip, fib, undefined, brand);
       }
     } catch(e) {
       showToast('Erreur d\'enregistrement');
