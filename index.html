@@ -6308,13 +6308,13 @@
   function openNutriFromCache(i) {
     const f = (window._nutriSuggCache || [])[i];
     if (!f) return;
-    openNutriQtyModal(encodeURIComponent(f.name), f.kcal, f.prot, f.gluc, f.lip, f.fib || 0);
+    openNutriQtyModal(encodeURIComponent(f.name), f.kcal, f.prot, f.gluc, f.lip, f.fib || 0, undefined, f.brand || null);
   }
 
   function openNutriFromSearchCache(i) {
     const f = (window._nutriSearchCache || [])[i];
     if (!f) return;
-    openNutriQtyModal(encodeURIComponent(f.name), f.kcal, f.prot, f.gluc, f.lip, f.fib || 0);
+    openNutriQtyModal(encodeURIComponent(f.name), f.kcal, f.prot, f.gluc, f.lip, f.fib || 0, undefined, f.brand || null);
   }
 
   async function reuseNutriEntry(sourceId) {
@@ -6708,9 +6708,9 @@
     }
   }
 
-  function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, fib100, defaultQty) {
+  function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, fib100, defaultQty, brand) {
     const name = decodeURIComponent(encodedName);
-    _nutriPendingFood = { name, kcal100, prot100, gluc100, lip100, fib100: fib100 || 0 };
+    _nutriPendingFood = { name, brand: brand || null, kcal100, prot100, gluc100, lip100, fib100: fib100 || 0 };
     const qty0 = defaultQty || 100;
 
     const existing = document.getElementById('nutriQtyModal');
@@ -6721,22 +6721,90 @@
     modal.id = 'nutriQtyModal';
     modal.onclick = e => { if (e.target === modal) modal.remove(); };
     const ratio0 = qty0 / 100;
+
+    // Notation nutritionnelle auto
+    const tags = [];
+    if (prot100 >= 15) tags.push({ label: 'Bonne source de protéines', color: '#2C5F4A', bg: '#E4EDE8', icon: '💚' });
+    if (gluc100 <= 10) tags.push({ label: 'Faible en glucides', color: '#2C5F4A', bg: '#E4EDE8', icon: '💚' });
+    if ((fib100||0) >= 3) tags.push({ label: 'Riche en fibres', color: '#2C5F4A', bg: '#E4EDE8', icon: '💚' });
+    if (lip100 <= 3) tags.push({ label: 'Faible en matières grasses', color: '#2C5F4A', bg: '#E4EDE8', icon: '💚' });
+    if (kcal100 >= 400) tags.push({ label: 'Très riche en calories', color: '#c0392b', bg: '#fdf0ef', icon: '❗' });
+    if (gluc100 >= 50) tags.push({ label: 'Riche en glucides', color: '#b8860b', bg: '#fdf6e3', icon: '⚠️' });
+
     modal.innerHTML = `
-      <div class="nutri-qty-sheet">
-        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:4px">${name}</div>
-        <div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:20px">${prot100}P · ${gluc100}G · ${lip100}L · ${fib100||0}F · ${kcal100} kcal/100g</div>
-        <div style="margin-bottom:16px">
-          <div class="label" style="margin-bottom:6px">Quantité (g)</div>
-          <input class="inp" id="nutriQtyInput" type="number" value="${qty0}" min="1" max="2000" style="width:100%;text-align:center;font-size:24px;font-family:'DM Serif Display',serif" oninput="updateNutriPreview()"/>
+      <div class="nutri-qty-sheet" style="padding:0;border-radius:20px 20px 0 0;overflow:hidden;max-height:90vh;display:flex;flex-direction:column">
+
+        <!-- Header sombre -->
+        <div style="background:var(--surface2);padding:28px 22px 22px;text-align:center;flex-shrink:0">
+          <button onclick="document.getElementById('nutriQtyModal').remove()" style="position:absolute;top:16px;left:16px;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1">←</button>
+          <div style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--text);line-height:1.2">${name}</div>
+          ${brand ? `<div style="font-size:13px;color:var(--muted);margin-top:4px;font-family:'Geist Mono',monospace">${brand}</div>` : ''}
         </div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:20px;text-align:center">
-          <div class="card" style="padding:10px 4px"><div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="previewKcal">${Math.round(kcal100*ratio0)}</div><div style="font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:3px">kcal</div></div>
-          <div class="card" style="padding:10px 4px"><div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--accent)" id="previewProt">${Math.round(prot100*ratio0*10)/10}</div><div style="font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:3px">prot.</div></div>
-          <div class="card" style="padding:10px 4px"><div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="previewGluc">${Math.round(gluc100*ratio0*10)/10}</div><div style="font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:3px">gluc.</div></div>
-          <div class="card" style="padding:10px 4px"><div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="previewLip">${Math.round(lip100*ratio0*10)/10}</div><div style="font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:3px">lip.</div></div>
-          <div class="card" style="padding:10px 4px"><div style="font-family:'DM Serif Display',serif;font-size:16px;color:#7ab893" id="previewFib">${Math.round((fib100||0)*ratio0*10)/10}</div><div style="font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:3px">fibres</div></div>
+
+        <!-- Macros grille -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border);flex-shrink:0">
+          <div style="text-align:center;padding:16px 8px;border-right:1px solid var(--border)">
+            <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text)" id="previewKcal">${Math.round(kcal100*ratio0)}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Calories</div>
+          </div>
+          <div style="text-align:center;padding:16px 8px;border-right:1px solid var(--border)">
+            <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text)" id="previewGluc">${Math.round(gluc100*ratio0*10)/10} g</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Glucides</div>
+          </div>
+          <div style="text-align:center;padding:16px 8px;border-right:1px solid var(--border)">
+            <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent)" id="previewProt">${Math.round(prot100*ratio0*10)/10} g</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Protéines</div>
+          </div>
+          <div style="text-align:center;padding:16px 8px">
+            <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text)" id="previewLip">${Math.round(lip100*ratio0*10)/10} g</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Lipides</div>
+          </div>
         </div>
-        <button onclick="confirmNutriEntry()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:15px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:600">Ajouter →</button>
+
+        <!-- Contenu scrollable -->
+        <div style="flex:1;overflow-y:auto;padding:18px 20px">
+
+          ${tags.length ? `
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Notation des aliments</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+            ${tags.map(t => `<span style="background:${t.bg};color:${t.color};border-radius:20px;padding:5px 12px;font-size:12px;display:flex;align-items:center;gap:4px">${t.icon} ${t.label}</span>`).join('')}
+          </div>` : ''}
+
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Valeurs nutritives</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:18px">
+            <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border)">
+              <span style="font-size:14px;font-weight:600;color:var(--text)">Calories</span>
+              <span style="font-size:14px;font-weight:600;color:var(--text)" id="previewKcalDetail">${Math.round(kcal100*ratio0)} kcal</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border)">
+              <span style="font-size:14px;color:var(--text)">Protéines</span>
+              <span style="font-size:14px;color:var(--text)" id="previewProtDetail">${Math.round(prot100*ratio0*10)/10} g</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border)">
+              <span style="font-size:14px;color:var(--text)">Glucides</span>
+              <span style="font-size:14px;color:var(--text)" id="previewGlucDetail">${Math.round(gluc100*ratio0*10)/10} g</span>
+            </div>
+            ${(fib100||0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:10px 14px 10px 28px;border-bottom:0.5px solid var(--border)">
+              <span style="font-size:13px;color:var(--muted)">Fibres alimentaires</span>
+              <span style="font-size:13px;color:var(--muted)" id="previewFibDetail">${Math.round((fib100||0)*ratio0*10)/10} g</span>
+            </div>` : ''}
+            <div style="display:flex;justify-content:space-between;padding:10px 14px">
+              <span style="font-size:14px;color:var(--text)">Lipides</span>
+              <span style="font-size:14px;color:var(--text)" id="previewLipDetail">${Math.round(lip100*ratio0*10)/10} g</span>
+            </div>
+          </div>
+
+          <!-- Quantité -->
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Quantité (g)</div>
+          <input class="inp" id="nutriQtyInput" type="number" value="${qty0}" min="1" max="2000"
+            style="width:100%;text-align:center;font-size:24px;font-family:'DM Serif Display',serif;margin-bottom:14px"
+            oninput="updateNutriPreview()"/>
+        </div>
+
+        <!-- Bouton bas -->
+        <div style="padding:12px 20px calc(env(safe-area-inset-bottom)+12px);flex-shrink:0;border-top:1px solid var(--border)">
+          <button onclick="confirmNutriEntry()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer;font-weight:400">Ajouter</button>
+        </div>
       </div>`;
     document.body.appendChild(modal);
   }
@@ -6746,11 +6814,31 @@
     const qty = parseFloat(document.getElementById('nutriQtyInput')?.value) || 100;
     const f = _nutriPendingFood;
     const ratio = qty / 100;
-    document.getElementById('previewKcal').textContent = Math.round(f.kcal100 * ratio);
-    document.getElementById('previewProt').textContent = Math.round(f.prot100 * ratio * 10) / 10;
-    document.getElementById('previewGluc').textContent = Math.round(f.gluc100 * ratio * 10) / 10;
-    document.getElementById('previewLip').textContent  = Math.round(f.lip100  * ratio * 10) / 10;
-    document.getElementById('previewFib').textContent  = Math.round((f.fib100 || 0) * ratio * 10) / 10;
+    const kcal = Math.round(f.kcal100 * ratio);
+    const prot = Math.round(f.prot100 * ratio * 10) / 10;
+    const gluc = Math.round(f.gluc100 * ratio * 10) / 10;
+    const lip  = Math.round(f.lip100  * ratio * 10) / 10;
+    const fib  = Math.round((f.fib100 || 0) * ratio * 10) / 10;
+    // Grille macros
+    const kEl = document.getElementById('previewKcal');
+    const pEl = document.getElementById('previewProt');
+    const gEl = document.getElementById('previewGluc');
+    const lEl = document.getElementById('previewLip');
+    if (kEl) kEl.textContent = kcal;
+    if (pEl) pEl.textContent = prot + ' g';
+    if (gEl) gEl.textContent = gluc + ' g';
+    if (lEl) lEl.textContent = lip + ' g';
+    // Tableau détaillé
+    const kdEl = document.getElementById('previewKcalDetail');
+    const pdEl = document.getElementById('previewProtDetail');
+    const gdEl = document.getElementById('previewGlucDetail');
+    const ldEl = document.getElementById('previewLipDetail');
+    const fdEl = document.getElementById('previewFibDetail');
+    if (kdEl) kdEl.textContent = kcal + ' kcal';
+    if (pdEl) pdEl.textContent = prot + ' g';
+    if (gdEl) gdEl.textContent = gluc + ' g';
+    if (ldEl) ldEl.textContent = lip + ' g';
+    if (fdEl) fdEl.textContent = fib + ' g';
   }
 
   async function confirmNutriEntry() {
