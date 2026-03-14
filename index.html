@@ -1481,29 +1481,27 @@
       <!-- Demi-anneau + chiffres -->
       <div style="display:flex;align-items:center;justify-content:space-around;margin-bottom:20px">
         <div style="text-align:center">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);line-height:1" id="nutriKcalConsumed">0</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--muted);line-height:1" id="nutriKcalConsumed">0</div>
           <div style="font-size:10px;color:var(--muted);margin-top:4px">Mangées</div>
         </div>
 
-        <!-- Demi-anneau SVG -->
-        <div style="position:relative;width:110px;height:60px;flex-shrink:0">
-          <svg width="110" height="70" viewBox="0 0 110 70">
-            <!-- Track -->
-            <path d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--border2)" stroke-width="9" stroke-linecap="round"/>
-            <!-- Progress -->
-            <path d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round"
+        <!-- Demi-anneau SVG — plus grand -->
+        <div style="position:relative;width:140px;height:80px;flex-shrink:0">
+          <svg width="140" height="90" viewBox="0 0 140 90">
+            <path d="M 10 80 A 60 60 0 0 1 130 80" fill="none" stroke="var(--border2)" stroke-width="11" stroke-linecap="round"/>
+            <path d="M 10 80 A 60 60 0 0 1 130 80" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round"
               id="nutriSemiRing"
-              stroke-dasharray="141.4"
-              stroke-dashoffset="141.4"/>
+              stroke-dasharray="188.5"
+              stroke-dashoffset="188.5"/>
           </svg>
-          <div style="position:absolute;bottom:0;left:0;right:0;text-align:center">
-            <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);line-height:1" id="nutriKcalRemaining">—</div>
-            <div style="font-size:9px;color:var(--muted);letter-spacing:0.5px">Restantes</div>
+          <div style="position:absolute;bottom:2px;left:0;right:0;text-align:center">
+            <div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--text);line-height:1" id="nutriKcalRemaining">—</div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:0.5px;margin-top:2px">Restantes</div>
           </div>
         </div>
 
         <div style="text-align:center">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);line-height:1" id="nutriKcalGoal">—</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--muted);line-height:1" id="nutriKcalGoal">—</div>
           <div style="font-size:10px;color:var(--muted);margin-top:4px">Objectif</div>
         </div>
       </div>
@@ -1596,21 +1594,52 @@
 
   <!-- OVERLAY AJOUT ALIMENT -->
   <div id="nutriAddOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:960;flex-direction:column;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
-      <button onclick="closeNutriAdd()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:0;line-height:1">&#8592;</button>
-      <div>
-        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text)" id="nutriAddMealTitle">Ajouter</div>
-        <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace" id="nutriAddMealSub"></div>
-      </div>
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 16px 14px;flex-shrink:0">
+      <button onclick="closeNutriAdd()" style="background:var(--surface);border:1px solid var(--border);border-radius:50%;width:34px;height:34px;font-size:16px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">←</button>
+      <div style="font-size:16px;font-weight:500;color:var(--text)" id="nutriAddMealTitle">Ajouter</div>
+      <div style="width:34px"></div>
     </div>
-    <div style="padding:12px 16px;flex-shrink:0">
+
+    <!-- Barre de recherche -->
+    <div style="padding:0 16px 12px;flex-shrink:0">
       <div style="position:relative">
-        <input class="inp" id="nutriSearch" placeholder="Rechercher un aliment…" oninput="nutriSearchDebounce()" autocomplete="off" style="width:100%;padding-left:36px;padding-right:44px"/>
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);pointer-events:none">&#9901;</span>
-        <button onclick="startBarcodeScanner()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);padding:4px" title="Scanner">&#9638;</button>
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);pointer-events:none">🔍</span>
+        <input id="nutriSearch"
+          placeholder="Qu'avez-vous mangé ?"
+          oninput="nutriSearchDebounce()"
+          autocomplete="off"
+          style="width:100%;box-sizing:border-box;padding:13px 44px 13px 42px;background:var(--surface);border:1.5px solid var(--accent);border-radius:12px;color:var(--text);font-size:14px;font-family:'DM Serif Display',serif;outline:none"/>
+        <button onclick="startBarcodeScanner()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:4px" title="Scanner code-barres">⬚</button>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:0 16px 24px" id="nutriAddBody"></div>
+
+    <!-- Onglets Fréquents / Récents / Favoris -->
+    <div style="display:flex;gap:0;padding:0 16px 12px;flex-shrink:0" id="nutriAddTabs">
+      <button onclick="setNutriTab('frequent')" id="ntab-frequent"
+        style="flex:1;padding:8px 0;border:none;border-radius:8px 0 0 8px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;background:var(--accent);color:#fff">
+        Fréquents
+      </button>
+      <button onclick="setNutriTab('recent')" id="ntab-recent"
+        style="flex:1;padding:8px 0;border:none;border-radius:0;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-left:none;border-right:none">
+        Récents
+      </button>
+      <button onclick="setNutriTab('favorite')" id="ntab-favorite"
+        style="flex:1;padding:8px 0;border:none;border-radius:0 8px 8px 0;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-left:none">
+        Favoris
+      </button>
+    </div>
+
+    <!-- Contenu scrollable -->
+    <div style="flex:1;overflow-y:auto;padding:0 16px 100px" id="nutriAddBody"></div>
+
+    <!-- Bouton Terminé -->
+    <div style="padding:16px;flex-shrink:0;background:var(--bg);border-top:1px solid var(--border)">
+      <button onclick="closeNutriAdd()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Serif Display',serif">
+        Terminé
+      </button>
+    </div>
   </div>
 
   <div class="section" id="tab-stats">
@@ -5790,6 +5819,8 @@
   let _nutriPendingFood = null;
   let _nutriActiveMeal = null;
   let _nutriAccordionOpen = {};
+  let _nutriActiveTab = 'frequent'; // 'frequent' | 'recent' | 'favorite'
+  let _nutriFavorites = JSON.parse(localStorage.getItem('elev_nutri_fav') || '[]');
   const MEALS = ['Petit-déjeuner', 'Déjeuner', 'En-cas', 'Dîner'];
   const MEAL_ICONS = { 'Petit-déjeuner': '☀️', 'Déjeuner': '🍽️', 'En-cas': '🍎', 'Dîner': '🌙' };
 
@@ -5821,21 +5852,56 @@
   // ── Overlay ajout ──
   function openNutriAdd(meal) {
     _nutriActiveMeal = meal;
+    _nutriActiveTab = 'frequent';
     const overlay = document.getElementById('nutriAddOverlay');
     const titleEl = document.getElementById('nutriAddMealTitle');
-    const subEl = document.getElementById('nutriAddMealSub');
     const searchEl = document.getElementById('nutriSearch');
-    if (titleEl) titleEl.textContent = (MEAL_ICONS[meal] || '') + ' ' + meal;
-    const todayEntries = getTodayNutri().filter(e => e.meal === meal);
-    const mealKcal = todayEntries.reduce((s, e) => s + e.kcal, 0);
-    if (subEl) subEl.textContent = mealKcal ? mealKcal + ' kcal enregistrés' : 'Aucun aliment encore';
-    if (searchEl) { searchEl.value = ''; }
+    if (titleEl) titleEl.textContent = meal;
+    // Placeholder adapté au repas
+    const PLACEHOLDERS = {
+      'Petit-déjeuner': "Qu'avez-vous mangé ce matin ?",
+      'Déjeuner': "Qu'avez-vous mangé à midi ?",
+      'En-cas': "Qu'avez-vous grignoté ?",
+      'Dîner': "Qu'avez-vous mangé ce soir ?",
+    };
+    if (searchEl) {
+      searchEl.value = '';
+      searchEl.placeholder = PLACEHOLDERS[meal] || "Rechercher un aliment…";
+    }
+    setNutriTab('frequent');
     overlay.style.display = 'flex';
     requestAnimationFrame(() => {
-      overlay.style.opacity = '1';
       renderNutriAddBody();
-      setTimeout(() => searchEl && searchEl.focus(), 150);
+      setTimeout(() => searchEl && searchEl.focus(), 200);
     });
+  }
+
+  function setNutriTab(tab) {
+    _nutriActiveTab = tab;
+    // Mettre à jour le style des onglets
+    ['frequent','recent','favorite'].forEach(t => {
+      const btn = document.getElementById('ntab-' + t);
+      if (!btn) return;
+      if (t === tab) {
+        btn.style.background = 'var(--accent)';
+        btn.style.color = '#fff';
+      } else {
+        btn.style.background = 'var(--surface)';
+        btn.style.color = 'var(--muted)';
+      }
+    });
+    // Vider la recherche
+    const searchEl = document.getElementById('nutriSearch');
+    if (searchEl) searchEl.value = '';
+    renderNutriAddBody();
+  }
+
+  function toggleNutriFavorite(name, kcal, prot, gluc, lip) {
+    const idx = _nutriFavorites.findIndex(f => f.name === name);
+    if (idx >= 0) _nutriFavorites.splice(idx, 1);
+    else _nutriFavorites.push({ name, kcal, prot, gluc, lip });
+    localStorage.setItem('elev_nutri_fav', JSON.stringify(_nutriFavorites));
+    renderNutriAddBody();
   }
 
   function closeNutriAdd() {
@@ -5849,53 +5915,63 @@
     const body = document.getElementById('nutriAddBody');
     if (!body) return;
     const q = document.getElementById('nutriSearch')?.value.trim();
-    if (q && q.length >= 2) return;
+    if (q && q.length >= 2) return; // résultats gérés par doNutriSearch
 
-    const recent = getYesterdayNutriByMeal(_nutriActiveMeal);
-    const todayNames = new Set(getTodayNutri().filter(e => e.meal === _nutriActiveMeal).map(e => e.name));
     const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-
-    const SUGGESTIONS = {
-      'Petit-déjeuner': ['flocons','yaourt','oeuf','lait','pain','banane','skyr'],
-      'Déjeuner': ['poulet','riz','pates','thon','saumon','lentilles','boeuf'],
-      'En-cas': ['amandes','banane','pomme','whey','barre','yaourt','noix'],
-      'Diner': ['saumon','boeuf','poulet','pates','riz','tofu'],
+    const renderList = (items, emptyMsg) => {
+      if (!items.length) return `<div style="text-align:center;padding:48px 0;color:var(--muted);font-size:13px">${emptyMsg}</div>`;
+      window._nutriSuggCache = items;
+      return items.map((f, i) => {
+        const isFav = _nutriFavorites.some(fv => fv.name === f.name);
+        const brand = f.brand ? `<span style="color:var(--muted)"> · ${f.brand}</span>` : '';
+        const qty = f.qty ? `${f.qty}g · ` : '';
+        return `<div style="display:flex;align-items:center;padding:13px 0;border-bottom:0.5px solid var(--border)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}${brand}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${qty}${f.kcal} kcal</div>
+          </div>
+          <button onclick="toggleNutriFavorite('${f.name.replace(/'/g,"\\'")}',${f.kcal},${f.prot},${f.gluc},${f.lip})"
+            style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 8px;color:${isFav?'#f5c518':'var(--muted)'}">${isFav?'★':'☆'}</button>
+          <button class="nutri-add-btn" onclick="openNutriFromCache(${i})">+</button>
+        </div>`;
+      }).join('');
     };
-    const kwList = SUGGESTIONS[_nutriActiveMeal] || [];
-    const suggestions = kwList
-      .flatMap(kw => NUTRI_LOCAL.filter(f => norm(f.name).includes(kw)).slice(0,1))
-      .slice(0, 6);
-
-    // Stocker les aliments suggestions dans un cache pour éviter les problèmes d'encodage dans les onclick
-    window._nutriSuggCache = suggestions;
 
     let html = '';
-    if (recent.length) {
-      html += `<div class="label" style="margin:12px 0 8px">Repris d'hier</div><div class="card" style="padding:4px 14px;margin-bottom:12px">` +
-        recent.map(e => {
-          const already = todayNames.has(e.name);
-          return `<div class="nutri-search-item">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
-              <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${e.qty}g · ${e.kcal} kcal · ${e.prot}P ${e.gluc}G ${e.lip}L</div>
-            </div>
-            <button class="nutri-add-btn" style="${already?'background:var(--border2);':''}" onclick="reuseNutriEntry(${e.id})">${already?'✓':'+'}</button>
+    if (_nutriActiveTab === 'frequent') {
+      const SUGGESTIONS = {
+        'Petit-déjeuner': ['flocons','yaourt','oeuf','lait','pain','banane','skyr','whey'],
+        'Déjeuner': ['poulet','riz','pates','thon','saumon','lentilles','boeuf','quinoa'],
+        'En-cas': ['amandes','banane','pomme','whey','barre','yaourt','noix','cottage'],
+        'Dîner': ['saumon','boeuf','poulet','pates','riz','tofu','cabillaud'],
+      };
+      const kwList = SUGGESTIONS[_nutriActiveMeal] || [];
+      const items = kwList
+        .flatMap(kw => NUTRI_LOCAL.filter(f => norm(f.name).includes(kw)).slice(0,1))
+        .slice(0, 10);
+      html = renderList(items, 'Aucun aliment fréquent.');
+
+    } else if (_nutriActiveTab === 'recent') {
+      // Tous les aliments distincts enregistrés les 7 derniers jours
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+      const cutoffStr = cutoff.toISOString().split('T')[0];
+      const seen = new Set();
+      const items = [...nutriEntries]
+        .filter(e => e.date >= cutoffStr)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .filter(e => { if (seen.has(e.name)) return false; seen.add(e.name); return true; })
+        .slice(0, 15)
+        .map(e => ({ name: e.name, brand: e.brand || '', kcal: e.kcal, prot: e.prot, gluc: e.gluc, lip: e.lip, qty: e.qty }));
+      html = renderList(items, 'Aucun aliment récent (7 derniers jours).');
+
+    } else { // favorite
+      html = _nutriFavorites.length
+        ? renderList(_nutriFavorites, '')
+        : `<div style="text-align:center;padding:48px 0;color:var(--muted);font-size:13px">
+            Appuie sur ☆ pour ajouter un favori.
           </div>`;
-        }).join('') + `</div>`;
     }
-    if (suggestions.length) {
-      html += `<div class="label" style="margin:4px 0 8px">Suggestions</div><div class="card" style="padding:4px 14px">` +
-        suggestions.map((f, i) => {
-          return `<div class="nutri-search-item">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
-              <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${f.prot}P · ${f.gluc}G · ${f.lip}L${f.fib ? ' · ' + f.fib + 'F' : ''} · ${f.kcal} kcal/100g</div>
-            </div>
-            <button class="nutri-add-btn" onclick="openNutriFromCache(${i})">+</button>
-          </div>`;
-        }).join('') + `</div>`;
-    }
-    if (!html) html = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;font-style:italic">Recherche un aliment ci-dessus.</div>`;
+
     body.innerHTML = html;
   }
 
@@ -6362,7 +6438,7 @@
     const remaining = Math.max(goalKcal - totalKcal, 0);
 
     // Demi-anneau : stroke-dasharray 141.4 = demi-cercle r=45 * π ≈ 141.4
-    const semiLen = 141.4;
+    const semiLen = 188.5;
     const semiOffset = semiLen - Math.min(totalKcal / goalKcal, 1) * semiLen;
     const ring = document.getElementById('nutriSemiRing');
     if (ring) {
