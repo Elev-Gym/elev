@@ -6384,62 +6384,73 @@
   }
 
   // Éditer un aliment loggé (quantité + portion)
-  function openEditNutriEntry(id) {
-    const entry = nutriEntries.find(e => e.id === id);
-    if (!entry) return;
-    const kcal100 = entry.kcal100 || Math.round(entry.kcal / (entry.qty||100) * 100);
-    const prot100 = entry.prot100 || Math.round(entry.prot / (entry.qty||100) * 1000) / 10;
-    const gluc100 = entry.gluc100 || Math.round(entry.gluc / (entry.qty||100) * 1000) / 10;
-    const lip100  = entry.lip100  || Math.round(entry.lip  / (entry.qty||100) * 1000) / 10;
-    const fib100  = entry.fib100  || Math.round((entry.fib||0) / (entry.qty||100) * 1000) / 10;
+  function openEditNutriEntry(id, encodedName, kcal100, prot100, gluc100, lip100, fib100, brandStr) {
+    // Appelé depuis le journal (id existant) ou depuis la fiche produit (id=null, on crée)
+    let entry = id ? nutriEntries.find(e => e.id === id) : null;
+    const name = entry ? entry.name : (encodedName ? decodeURIComponent(encodedName) : '');
+    const brand = entry ? (entry.brand || '') : (brandStr || '');
+    if (!entry) {
+      // Depuis fiche produit → recalculer les /100g depuis les params
+      kcal100 = kcal100 || 0; prot100 = prot100 || 0;
+      gluc100 = gluc100 || 0; lip100 = lip100 || 0; fib100 = fib100 || 0;
+    } else {
+      kcal100 = entry.kcal100 || Math.round(entry.kcal / (entry.qty||100) * 100);
+      prot100 = entry.prot100 || Math.round(entry.prot / (entry.qty||100) * 1000) / 10;
+      gluc100 = entry.gluc100 || Math.round(entry.gluc / (entry.qty||100) * 1000) / 10;
+      lip100  = entry.lip100  || Math.round(entry.lip  / (entry.qty||100) * 1000) / 10;
+      fib100  = entry.fib100  || Math.round((entry.fib||0) / (entry.qty||100) * 1000) / 10;
+    }
+    const defaultQty = entry ? entry.qty : 100;
 
     const existing = document.getElementById('editNutriModal');
     if (existing) existing.remove();
 
     const modal = document.createElement('div');
     modal.id = 'editNutriModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:975;display:flex;align-items:flex-end;justify-content:center';
-    modal.onclick = e => { if (e.target === modal) modal.remove(); };
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:980;display:flex;align-items:flex-end;justify-content:center';
+    modal.onclick = e => { if (e.target === modal) { confirmEditNutriEntry(id,kcal100,prot100,gluc100,lip100,fib100,name,brand); modal.remove(); } };
 
     modal.innerHTML = `
-      <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(env(safe-area-inset-bottom)+20px)">
-        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:2px">${entry.name}</div>
-        ${entry.brand ? `<div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:16px">${entry.brand}</div>` : '<div style="margin-bottom:16px"></div>'}
-
-        <!-- Quantité libre -->
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:6px">Quantité (g)</div>
-        <input class="inp" id="editNutriQty" type="number" value="${entry.qty}" min="1" max="5000"
-          style="width:100%;text-align:center;font-size:26px;font-family:'DM Serif Display',serif;margin-bottom:16px"
-          oninput="updateEditNutriPreview(${kcal100},${prot100},${gluc100},${lip100},${fib100})"/>
-
-        <!-- Aperçu macros -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px;text-align:center">
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
-            <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enKcal">${entry.kcal}</div>
-            <div style="font-size:8px;color:var(--muted);margin-top:2px">kcal</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
-            <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--accent)" id="enProt">${entry.prot}g</div>
-            <div style="font-size:8px;color:var(--muted);margin-top:2px">prot</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
-            <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enGluc">${entry.gluc}g</div>
-            <div style="font-size:8px;color:var(--muted);margin-top:2px">gluc</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
-            <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enLip">${entry.lip}g</div>
-            <div style="font-size:8px;color:var(--muted);margin-top:2px">lip</div>
-          </div>
+      <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;overflow:hidden" onclick="event.stopPropagation()">
+        <!-- Header -->
+        <div style="background:var(--surface2);padding:22px 20px 16px;position:relative;text-align:center">
+          <button onclick="confirmEditNutriEntry(${id},'${kcal100}','${prot100}','${gluc100}','${lip100}','${fib100}','${name.replace(/'/g,"\\'")}','${brand.replace(/'/g,"\\'")}');document.getElementById('editNutriModal').remove()" style="position:absolute;top:16px;left:16px;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:1;display:flex;align-items:center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text)">${name}</div>
+          ${brand ? `<div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:3px">${brand}</div>` : ''}
         </div>
 
-        <div style="display:flex;gap:10px">
-          <button onclick="document.getElementById('editNutriModal').remove()"
-            style="flex:1;background:none;border:1px solid var(--border);border-radius:12px;padding:13px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);cursor:pointer">Annuler</button>
-          <button onclick="confirmEditNutriEntry(${id},${kcal100},${prot100},${gluc100},${lip100},${fib100})"
-            style="flex:2;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-family:'DM Serif Display',serif;font-size:15px;cursor:pointer">Mettre à jour</button>
+        <div style="padding:20px 20px calc(env(safe-area-inset-bottom)+20px)">
+          <!-- Quantité -->
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px">Quantité (g)</div>
+          <input class="inp" id="editNutriQty" type="number" value="${defaultQty}" min="1" max="5000"
+            style="width:100%;text-align:center;font-size:30px;font-family:'DM Serif Display',serif;margin-bottom:16px"
+            oninput="updateEditNutriPreview(${kcal100},${prot100},${gluc100},${lip100},${fib100})"/>
+
+          <!-- Aperçu macros -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
+            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="enKcal">${entry ? entry.kcal : Math.round(kcal100)}</div>
+              <div style="font-size:8px;color:var(--muted);margin-top:2px">kcal</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--accent)" id="enProt">${entry ? entry.prot : prot100}g</div>
+              <div style="font-size:8px;color:var(--muted);margin-top:2px">prot</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="enGluc">${entry ? entry.gluc : gluc100}g</div>
+              <div style="font-size:8px;color:var(--muted);margin-top:2px">gluc</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:10px 4px">
+              <div style="font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)" id="enLip">${entry ? entry.lip : lip100}g</div>
+              <div style="font-size:8px;color:var(--muted);margin-top:2px">lip</div>
+            </div>
+          </div>
         </div>
       </div>`;
     document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('editNutriQty')?.focus(), 200);
   }
 
   function updateEditNutriPreview(kcal100, prot100, gluc100, lip100, fib100) {
@@ -6451,26 +6462,49 @@
     const l = document.getElementById('enLip');  if (l) l.textContent = Math.round(lip100*r*10)/10 + 'g';
   }
 
-  async function confirmEditNutriEntry(id, kcal100, prot100, gluc100, lip100, fib100) {
+  async function confirmEditNutriEntry(id, kcal100, prot100, gluc100, lip100, fib100, name, brand) {
     const qty = parseFloat(document.getElementById('editNutriQty')?.value) || 100;
+    if (qty <= 0) return;
     const r = qty / 100;
-    const idx = nutriEntries.findIndex(e => e.id === id);
-    if (idx === -1) return;
-    nutriEntries[idx] = {
-      ...nutriEntries[idx], qty: Math.round(qty),
-      kcal: Math.round(kcal100*r),
-      prot: Math.round(prot100*r*10)/10,
-      gluc: Math.round(gluc100*r*10)/10,
-      lip:  Math.round(lip100*r*10)/10,
-      fib:  Math.round(fib100*r*10)/10,
-      kcal100, prot100, gluc100, lip100, fib100,
-    };
-    try { await sbSave('nutrition_entries', [nutriEntries[idx]]); } catch(e) {}
-    try { const c = JSON.parse(localStorage.getItem(CACHE_KEYS.nutrition_entries)||'[]'); const ci = c.findIndex(e=>String(e.id)===String(id)); if(ci>=0){c[ci]=nutriEntries[idx];localStorage.setItem(CACHE_KEYS.nutrition_entries,JSON.stringify(c));} } catch(e){}
-    document.getElementById('editNutriModal')?.remove();
+    kcal100 = parseFloat(kcal100) || 0;
+    prot100 = parseFloat(prot100) || 0;
+    gluc100 = parseFloat(gluc100) || 0;
+    lip100  = parseFloat(lip100)  || 0;
+    fib100  = parseFloat(fib100)  || 0;
+
+    if (id) {
+      // Modifier une entrée existante
+      const idx = nutriEntries.findIndex(e => e.id === id);
+      if (idx === -1) return;
+      nutriEntries[idx] = {
+        ...nutriEntries[idx], qty: Math.round(qty),
+        kcal: Math.round(kcal100*r), prot: Math.round(prot100*r*10)/10,
+        gluc: Math.round(gluc100*r*10)/10, lip: Math.round(lip100*r*10)/10,
+        fib: Math.round(fib100*r*10)/10, kcal100, prot100, gluc100, lip100, fib100,
+      };
+      try { await sbSave('nutrition_entries', [nutriEntries[idx]]); } catch(e) {}
+      try {
+        const c = JSON.parse(localStorage.getItem(CACHE_KEYS.nutrition_entries)||'[]');
+        const ci = c.findIndex(e=>String(e.id)===String(id));
+        if(ci>=0){c[ci]=nutriEntries[idx];localStorage.setItem(CACHE_KEYS.nutrition_entries,JSON.stringify(c));}
+      } catch(e) {}
+    } else if (name) {
+      // Nouvel ajout depuis la fiche produit
+      const entry = {
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        meal: _nutriActiveMeal || 'Déjeuner',
+        name, brand: brand || null, qty: Math.round(qty),
+        kcal: Math.round(kcal100*r), prot: Math.round(prot100*r*10)/10,
+        gluc: Math.round(gluc100*r*10)/10, lip: Math.round(lip100*r*10)/10,
+        fib: Math.round(fib100*r*10)/10, kcal100, prot100, gluc100, lip100, fib100,
+      };
+      await saveNutriEntry(entry);
+      _nutriAccordionOpen[entry.meal] = true;
+    }
     renderNutritionTab();
     renderHomeNutriWidget();
-    showToast('Modifié ✓');
+    showToast('Enregistré ✓');
   }
 
   async function reuseNutriEntry(sourceId) {
@@ -6889,9 +6923,16 @@
     modal.innerHTML = `
       <div class="nutri-qty-sheet" style="padding:0;border-radius:20px 20px 0 0;overflow:hidden;max-height:90vh;display:flex;flex-direction:column">
 
-        <!-- Header sombre -->
-        <div style="background:var(--surface2);padding:28px 22px 22px;text-align:center;flex-shrink:0">
-          <button onclick="document.getElementById('nutriQtyModal').remove()" style="position:absolute;top:16px;left:16px;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1">←</button>
+        <!-- Header -->
+        <div style="background:var(--surface2);padding:28px 22px 22px;text-align:center;flex-shrink:0;position:relative">
+          <!-- Flèche fermer -->
+          <button onclick="document.getElementById('nutriQtyModal').remove()" style="position:absolute;top:16px;left:16px;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:1;display:flex;align-items:center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <!-- Crayon édition quantité -->
+          <button onclick="document.getElementById('nutriQtyModal').remove();openEditNutriEntry(null,'${encodeURIComponent(name)}',${kcal100},${prot100},${gluc100},${lip100},${fib100||0},'${brand||''}')" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:1;display:flex;align-items:center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
           <div style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--text);line-height:1.2">${name}</div>
           ${brand ? `<div style="font-size:13px;color:var(--muted);margin-top:4px;font-family:'Geist Mono',monospace">${brand}</div>` : ''}
         </div>
