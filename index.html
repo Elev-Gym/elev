@@ -6144,9 +6144,14 @@
       if (merged.length) renderResults(merged, 'api');
     } catch(e) {
       clearTimeout(apiTimeout);
-      if (!supaResults.length) {
-        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat.<br><span style="font-size:11px;opacity:0.6">Vérifie ta connexion.</span></div>`;
+      // Ne pas écraser les résultats Supabase si l'API OFF timeout
+      // Vérifier que la recherche est encore d'actualité
+      const currentQ2 = document.getElementById('nutriSearch')?.value.trim();
+      if (currentQ2 !== q) return;
+      if (!supaResults.length && body.innerHTML.includes('RECHERCHE')) {
+        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
       }
+      // Si Supabase avait déjà rendu des résultats → on les garde, pas d'erreur
     }
   }
 
@@ -6485,62 +6490,59 @@
     const MEAL_GOAL_PCT = { 'Petit-déjeuner': 0.30, 'Déjeuner': 0.29, 'En-cas': 0.12, 'Dîner': 0.29 };
     const MEAL_ICON_BG  = { 'Petit-déjeuner': '#c8956c', 'Déjeuner': '#7ab893', 'En-cas': '#e05c4b', 'Dîner': '#5b8ccc' };
 
-    journal.innerHTML = MEALS.map(meal => {
-      const items = todayEntries.filter(e => e.meal === meal);
-      const mealKcal = items.reduce((s, e) => s + e.kcal, 0);
-      const mealGoal = Math.round(goalKcal * (MEAL_GOAL_PCT[meal] || 0.25));
-      const mealPct  = Math.min(mealKcal / mealGoal, 1);
-      const isOpen   = !!_nutriAccordionOpen[meal];
-      const icon     = MEAL_ICONS[meal] || '🍽️';
-      const iconBg   = MEAL_ICON_BG[meal] || 'var(--border2)';
-      const preview  = items.slice(0, 3).map(e => e.name).join(', ');
-      const circumference = 2 * Math.PI * 18; // r=18 → ~113
-      const dashOffset = circumference - mealPct * circumference;
+    // Un seul bloc carte qui englobe tous les repas
+    const circumference = 2 * Math.PI * 18;
+    journal.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--card-shadow)">` +
+      MEALS.map((meal, mi) => {
+        const items = todayEntries.filter(e => e.meal === meal);
+        const mealKcal = items.reduce((s, e) => s + e.kcal, 0);
+        const mealGoal = Math.round(goalKcal * (MEAL_GOAL_PCT[meal] || 0.25));
+        const mealPct  = Math.min(mealKcal / mealGoal, 1);
+        const isOpen   = !!_nutriAccordionOpen[meal];
+        const icon     = MEAL_ICONS[meal] || '🍽️';
+        const iconBg   = MEAL_ICON_BG[meal] || 'var(--border2)';
+        const preview  = items.slice(0, 3).map(e => e.name).join(', ');
+        const dashOffset = circumference - mealPct * circumference;
+        const isLast = mi === MEALS.length - 1;
 
-      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:var(--card-shadow)">
-        <div style="display:flex;align-items:center;gap:14px;padding:14px 14px;cursor:pointer" onclick="toggleNutriAccordion('${meal}')">
-
-          <!-- Icône avec anneau de progression -->
-          <div style="position:relative;width:48px;height:48px;flex-shrink:0">
-            <svg width="48" height="48" viewBox="0 0 48 48" style="position:absolute;inset:0;transform:rotate(-90deg)">
-              <circle cx="24" cy="24" r="18" fill="none" stroke="var(--border2)" stroke-width="3"/>
-              <circle cx="24" cy="24" r="18" fill="none" stroke="${iconBg}" stroke-width="3"
-                stroke-linecap="round"
-                stroke-dasharray="${circumference.toFixed(1)}"
-                stroke-dashoffset="${dashOffset.toFixed(1)}"/>
-            </svg>
-            <div style="position:absolute;inset:5px;background:var(--warm);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">${icon}</div>
-          </div>
-
-          <!-- Texte -->
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-              <div style="font-size:14px;font-weight:500;color:var(--text)">${meal}</div>
-              <span style="font-size:11px;color:var(--muted)">→</span>
+        return `<div>
+          <div style="display:flex;align-items:center;gap:14px;padding:14px;cursor:pointer" onclick="toggleNutriAccordion('${meal}')">
+            <div style="position:relative;width:48px;height:48px;flex-shrink:0">
+              <svg width="48" height="48" viewBox="0 0 48 48" style="position:absolute;inset:0;transform:rotate(-90deg)">
+                <circle cx="24" cy="24" r="18" fill="none" stroke="var(--border2)" stroke-width="3"/>
+                <circle cx="24" cy="24" r="18" fill="none" stroke="${iconBg}" stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-dasharray="${circumference.toFixed(1)}"
+                  stroke-dashoffset="${dashOffset.toFixed(1)}"/>
+              </svg>
+              <div style="position:absolute;inset:5px;background:var(--warm);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">${icon}</div>
             </div>
-            <div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace">${mealKcal} / ${mealGoal} kcal</div>
-            ${preview ? `<div style="font-size:10px;color:var(--muted2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${items.length > 3 ? '…' : ''}</div>` : ''}
-          </div>
-
-          <!-- Bouton + -->
-          <button onclick="event.stopPropagation();openNutriAdd('${meal}')"
-            style="background:var(--surface);border:2px solid var(--border2);border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text);line-height:1">+</button>
-        </div>
-
-        ${isOpen ? `<div style="border-top:1px solid var(--border);padding:2px 14px 12px">
-          ${items.length ? items.map(e => `
-            <div style="display:flex;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border)">
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
-                <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${e.qty}g · ${e.prot}P ${e.gluc}G ${e.lip}L</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+                <div style="font-size:14px;font-weight:600;color:var(--text)">${meal}</div>
+                <span style="font-size:11px;color:var(--muted)">→</span>
               </div>
-              <div style="font-size:13px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace;margin-left:10px;flex-shrink:0">${e.kcal} kcal</div>
-              <button onclick="deleteNutriEntry(${e.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 0 0 10px">✕</button>
-            </div>`).join('')
-          : `<div style="padding:12px 0;text-align:center;font-size:12px;color:var(--muted)">Aucun aliment — appuie sur + pour ajouter.</div>`}
-        </div>` : ''}
-      </div>`;
-    }).join('');
+              <div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace">${mealKcal} / ${mealGoal} kcal</div>
+              ${preview ? `<div style="font-size:10px;color:var(--muted2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${items.length > 3 ? '…' : ''}</div>` : ''}
+            </div>
+            <button onclick="event.stopPropagation();openNutriAdd('${meal}')"
+              style="background:var(--surface2,var(--warm));border:2px solid var(--border2);border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text);line-height:1">+</button>
+          </div>
+          ${isOpen ? `<div style="border-top:1px solid var(--border);padding:2px 14px 12px">
+            ${items.length ? items.map(e => `
+              <div style="display:flex;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border)">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+                  <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${e.qty}g · ${e.prot}P ${e.gluc}G ${e.lip}L</div>
+                </div>
+                <div style="font-size:13px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace;margin-left:10px;flex-shrink:0">${e.kcal} kcal</div>
+                <button onclick="deleteNutriEntry(${e.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 0 0 10px">✕</button>
+              </div>`).join('')
+            : `<div style="padding:12px 0;text-align:center;font-size:12px;color:var(--muted)">Aucun aliment — appuie sur + pour ajouter.</div>`}
+          </div>` : ''}
+          ${!isLast ? `<div style="height:1px;background:var(--border);margin:0 14px"></div>` : ''}
+        </div>`;
+      }).join('') + `</div>`;
   }
 
   // ── Réglages nutrition ──
