@@ -1608,14 +1608,27 @@
 
     <!-- Barre de recherche -->
     <div style="padding:0 16px 12px;flex-shrink:0">
-      <div style="position:relative">
-        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);pointer-events:none">🔍</span>
-        <input id="nutriSearch"
-          placeholder="Qu'avez-vous mangé ?"
-          oninput="nutriSearchDebounce()"
-          autocomplete="off"
-          style="width:100%;box-sizing:border-box;padding:13px 44px 13px 42px;background:var(--surface);border:1.5px solid var(--accent);border-radius:12px;color:var(--text);font-size:14px;font-family:'DM Serif Display',serif;outline:none"/>
-        <button onclick="startBarcodeScanner()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:4px" title="Scanner code-barres">⬚</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="position:relative;flex:1">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);pointer-events:none">🔍</span>
+          <input id="nutriSearch"
+            placeholder="Qu'avez-vous mangé ?"
+            oninput="nutriSearchDebounce()"
+            autocomplete="off"
+            style="width:100%;box-sizing:border-box;padding:13px 44px 13px 42px;background:var(--surface);border:1.5px solid var(--accent);border-radius:12px;color:var(--text);font-size:14px;font-family:'DM Serif Display',serif;outline:none"/>
+          <!-- Icône scan code-barre SVG réelle -->
+          <button onclick="startBarcodeScanner()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center;justify-content:center" title="Scanner code-barres">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 5v2M3 19v-2M21 5v2M21 19v-2M3 7V5h2M3 17v2h2M19 5h2v2M19 19h2v-2"/>
+              <line x1="7" y1="5" x2="7" y2="19"/><line x1="10" y1="5" x2="10" y2="19"/>
+              <line x1="13" y1="5" x2="13" y2="19"/><line x1="16" y1="5" x2="16" y2="8"/>
+              <line x1="16" y1="11" x2="16" y2="19"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Bouton + ajouter aliment personnalisé -->
+        <button onclick="openCustomFoodModal()" title="Ajouter un aliment personnalisé"
+          style="background:var(--accent);color:#fff;border:none;border-radius:12px;width:46px;height:46px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:300">+</button>
       </div>
     </div>
 
@@ -6156,6 +6169,15 @@
   }
 
   async function searchByBarcode(code) {
+    // Mode scan pour aliment custom → juste remplir le champ barcode
+    if (window._scanForCustomFood) {
+      window._scanForCustomFood = false;
+      const el = document.getElementById('cfBarcode');
+      if (el) el.value = code;
+      document.getElementById('customFoodModal').style.display = 'flex';
+      showToast('Code-barres scanné ✓');
+      return;
+    }
     // Afficher "recherche en cours" dans l'overlay scanner si encore ouvert, sinon dans nutriAddBody
     const scanOverlay = document.getElementById('barcodeOverlay');
     const statusEl = document.getElementById('barcodeScanStatus');
@@ -6543,6 +6565,77 @@
           ${!isLast ? `<div style="height:1px;background:var(--border);margin:0 14px"></div>` : ''}
         </div>`;
       }).join('') + `</div>`;
+  }
+
+  // ── Aliment personnalisé ──
+  function openCustomFoodModal() {
+    // Vider les champs
+    ['cfName','cfBrand','cfBarcode','cfKcal','cfProt','cfGluc','cfLip','cfFib'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    const modal = document.getElementById('customFoodModal');
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('cfName')?.focus(), 200);
+  }
+
+  function closeCustomFoodModal() {
+    document.getElementById('customFoodModal').style.display = 'none';
+  }
+
+  function scanCustomFoodBarcode() {
+    // Réutiliser le scanner mais remplir cfBarcode au lieu de chercher
+    window._scanForCustomFood = true;
+    startBarcodeScanner();
+  }
+
+  async function saveCustomFood() {
+    const name    = document.getElementById('cfName')?.value.trim();
+    const brand   = document.getElementById('cfBrand')?.value.trim() || null;
+    const barcode = document.getElementById('cfBarcode')?.value.trim() || null;
+    const kcal    = parseFloat(document.getElementById('cfKcal')?.value) || 0;
+    const prot    = parseFloat(document.getElementById('cfProt')?.value) || 0;
+    const gluc    = parseFloat(document.getElementById('cfGluc')?.value) || 0;
+    const lip     = parseFloat(document.getElementById('cfLip')?.value)  || 0;
+    const fib     = parseFloat(document.getElementById('cfFib')?.value)  || 0;
+
+    if (!name) { showToast('Le nom est obligatoire'); return; }
+    if (!kcal && !prot && !gluc && !lip) { showToast('Remplis au moins une valeur nutritionnelle'); return; }
+
+    const btn = document.getElementById('cfSaveBtn');
+    if (btn) { btn.textContent = 'Enregistrement…'; btn.disabled = true; }
+
+    // Générer un id unique si pas de barcode
+    const id = barcode || ('custom_' + Date.now());
+
+    const food = { id, name, brand, image_url: null, kcal, proteins: prot, carbs: gluc, fat: lip, fiber: fib, scan_count: 0 };
+
+    try {
+      const res = await fetch(`${SUPA_URL}/rest/v1/foods`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPA_KEY,
+          'Authorization': `Bearer ${SUPA_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(food)
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      showToast(`« ${name} » enregistré ✓`);
+      closeCustomFoodModal();
+
+      // Proposer directement d'ajouter au repas si overlay ouvert
+      if (_nutriActiveMeal) {
+        openNutriQtyModal(encodeURIComponent(name), kcal, prot, gluc, lip, fib);
+      }
+    } catch(e) {
+      showToast('Erreur d\'enregistrement');
+      console.error(e);
+    } finally {
+      if (btn) { btn.textContent = 'Enregistrer l\'aliment'; btn.disabled = false; }
+    }
   }
 
   // ── Réglages nutrition ──
@@ -7990,5 +8083,84 @@
     <div class="session-minibar-expand" onclick="expandSession()">↑</div>
   </div>
 </div>
+
+<!-- ══ MODAL ALIMENT PERSONNALISÉ ══ -->
+<div id="customFoodModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:980;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeCustomFoodModal()">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 44px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text)">Nouvel aliment</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-top:2px">CRÉER & ENREGISTRER</div>
+      </div>
+      <button onclick="closeCustomFoodModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:50%;width:34px;height:34px;font-size:16px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <!-- Nom -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-family:'Geist Mono',monospace">Nom *</div>
+      <input class="inp" id="cfName" type="text" placeholder="ex: Poulet rôti maison" maxlength="100" style="width:100%;font-size:15px"/>
+    </div>
+
+    <!-- Marque -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-family:'Geist Mono',monospace">Marque (optionnel)</div>
+      <input class="inp" id="cfBrand" type="text" placeholder="ex: Picard, Fleury Michon…" maxlength="80" style="width:100%"/>
+    </div>
+
+    <!-- Code barre -->
+    <div style="margin-bottom:18px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-family:'Geist Mono',monospace">Code-barres (optionnel)</div>
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="cfBarcode" type="text" placeholder="ex: 3017620422003" maxlength="20" style="flex:1"/>
+        <button onclick="scanCustomFoodBarcode()" style="background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:0 12px;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:6px;font-size:11px;font-family:'Geist Mono',monospace;white-space:nowrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5v2M3 19v-2M21 5v2M21 19v-2M3 7V5h2M3 17v2h2M19 5h2v2M19 19h2v-2"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="10" y1="5" x2="10" y2="19"/><line x1="13" y1="5" x2="13" y2="19"/><line x1="16" y1="5" x2="16" y2="8"/><line x1="16" y1="11" x2="16" y2="19"/></svg>
+          Scanner
+        </button>
+      </div>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin-bottom:18px"></div>
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-family:'Geist Mono',monospace">Valeurs pour 100g *</div>
+
+    <!-- Grid macros -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:5px;font-family:'Geist Mono',monospace">🔥 Calories (kcal)</div>
+        <input class="inp" id="cfKcal" type="number" min="0" max="1000" step="1" placeholder="0" style="width:100%;text-align:center;font-size:16px;font-family:'DM Serif Display',serif"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--accent);margin-bottom:5px;font-family:'Geist Mono',monospace">💪 Protéines (g)</div>
+        <input class="inp" id="cfProt" type="number" min="0" max="100" step="0.1" placeholder="0" style="width:100%;text-align:center;font-size:16px;font-family:'DM Serif Display',serif"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#7ab893;margin-bottom:5px;font-family:'Geist Mono',monospace">🌾 Glucides (g)</div>
+        <input class="inp" id="cfGluc" type="number" min="0" max="100" step="0.1" placeholder="0" style="width:100%;text-align:center;font-size:16px;font-family:'DM Serif Display',serif"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#b5cfc3;margin-bottom:5px;font-family:'Geist Mono',monospace">🥑 Lipides (g)</div>
+        <input class="inp" id="cfLip" type="number" min="0" max="100" step="0.1" placeholder="0" style="width:100%;text-align:center;font-size:16px;font-family:'DM Serif Display',serif"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#7ab893;margin-bottom:5px;font-family:'Geist Mono',monospace">🌿 Fibres (g)</div>
+        <input class="inp" id="cfFib" type="number" min="0" max="100" step="0.1" placeholder="0" style="width:100%;text-align:center;font-size:16px;font-family:'DM Serif Display',serif"/>
+      </div>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin-bottom:18px"></div>
+
+    <!-- Boutons -->
+    <button onclick="saveCustomFood()" id="cfSaveBtn"
+      style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:600;margin-bottom:10px">
+      Enregistrer l'aliment
+    </button>
+    <button onclick="closeCustomFoodModal()"
+      style="width:100%;background:none;border:1px solid var(--border);border-radius:14px;padding:13px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:var(--muted)">
+      Annuler
+    </button>
+  </div>
+</div>
+
 </body>
 </html>
