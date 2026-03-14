@@ -6029,14 +6029,15 @@
     clearTimeout(_nutriSearchTimer);
   }
 
+  function getBlacklist() { try { return JSON.parse(localStorage.getItem('elev_nutri_blacklist') || '[]'); } catch(e) { return []; } }
+  function addToBlacklist(name) { const b = getBlacklist(); if (!b.includes(name)) { b.push(name); localStorage.setItem('elev_nutri_blacklist', JSON.stringify(b)); } }
+
   async function renderNutriAddBody() {
     const body = document.getElementById('nutriAddBody');
     if (!body) return;
     const q = document.getElementById('nutriSearch')?.value.trim();
     if (q && q.length >= 2) return;
 
-    const getBlacklist = () => { try { return JSON.parse(localStorage.getItem('elev_nutri_blacklist') || '[]'); } catch(e) { return []; } };
-    const addToBlacklist = name => { const b = getBlacklist(); if (!b.includes(name)) { b.push(name); localStorage.setItem('elev_nutri_blacklist', JSON.stringify(b)); } };
     const blacklist = getBlacklist();
 
     const renderList = (items, emptyMsg) => {
