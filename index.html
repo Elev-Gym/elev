@@ -1114,7 +1114,7 @@
 
     <!-- Dernière séance -->
     <div class="home-section-title">Dernière séance</div>
-    <div id="homeLastSession" class="home-last-session" onclick="switchTab('stats')">
+    <div id="homeLastSession" class="home-last-session" onclick="openLastSessionDetail()">
       <div class="home-last-title" id="homeLastName">—</div>
       <div class="home-last-meta" id="homeLastMeta"></div>
       <div class="home-last-exercises" id="homeLastExercises"></div>
@@ -5614,6 +5614,27 @@
     if (openHistoryIds.has(id)) openHistoryIds.delete(id);
     else openHistoryIds.add(id);
     renderHistory();
+  }
+
+  function openLastSessionDetail() {
+    if (!sessions.length) { switchTab('stats'); return; }
+    const last = sessions[0]; // déjà trié par date décroissante
+    // 1. Aller sur l'onglet stats
+    switchTab('stats');
+    // 2. Ouvrir le panneau historique s'il est fermé
+    const col = document.getElementById('statsHistCollapse');
+    const arrow = document.getElementById('statsHistArrow');
+    if (col && col.style.display === 'none') {
+      col.style.display = 'block';
+      if (arrow) arrow.style.transform = 'rotate(180deg)';
+    }
+    // 3. Ouvrir la séance et scroller dessus
+    openHistoryIds.add(last.id);
+    renderHistory();
+    setTimeout(() => {
+      const card = document.getElementById('hcard-' + last.id);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   }
 
   function renderHistory() {
