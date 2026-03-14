@@ -6406,14 +6406,14 @@
         <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:2px">${entry.name}</div>
         ${entry.brand ? `<div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:16px">${entry.brand}</div>` : '<div style="margin-bottom:16px"></div>'}
 
-        <!-- Quantité -->
+        <!-- Quantité libre -->
         <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:6px">Quantité (g)</div>
-        <input class="inp" id="editNutriQty" type="number" value="${entry.qty}" min="1" max="2000"
-          style="width:100%;text-align:center;font-size:22px;font-family:'DM Serif Display',serif;margin-bottom:16px"
+        <input class="inp" id="editNutriQty" type="number" value="${entry.qty}" min="1" max="5000"
+          style="width:100%;text-align:center;font-size:26px;font-family:'DM Serif Display',serif;margin-bottom:16px"
           oninput="updateEditNutriPreview(${kcal100},${prot100},${gluc100},${lip100},${fib100})"/>
 
         <!-- Aperçu macros -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:18px;text-align:center">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px;text-align:center">
           <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
             <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enKcal">${entry.kcal}</div>
             <div style="font-size:8px;color:var(--muted);margin-top:2px">kcal</div>
@@ -6430,15 +6430,6 @@
             <div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)" id="enLip">${entry.lip}g</div>
             <div style="font-size:8px;color:var(--muted);margin-top:2px">lip</div>
           </div>
-        </div>
-
-        <!-- Portion rapide -->
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px">Portion rapide</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:18px">
-          ${[['¼', 0.25], ['½', 0.5], ['¾', 0.75], ['×2', 2]].map(([label, mult]) =>
-            `<button onclick="applyEditPortion(${entry.qty},${mult},${kcal100},${prot100},${gluc100},${lip100},${fib100})"
-              style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'DM Serif Display',serif;font-size:16px;color:var(--text);cursor:pointer">${label}</button>`
-          ).join('')}
         </div>
 
         <div style="display:flex;gap:10px">
@@ -6458,12 +6449,6 @@
     const p = document.getElementById('enProt'); if (p) p.textContent = Math.round(prot100*r*10)/10 + 'g';
     const g = document.getElementById('enGluc'); if (g) g.textContent = Math.round(gluc100*r*10)/10 + 'g';
     const l = document.getElementById('enLip');  if (l) l.textContent = Math.round(lip100*r*10)/10 + 'g';
-  }
-
-  function applyEditPortion(baseQty, mult, kcal100, prot100, gluc100, lip100, fib100) {
-    const newQty = Math.round(baseQty * mult);
-    const inp = document.getElementById('editNutriQty');
-    if (inp) { inp.value = newQty; updateEditNutriPreview(kcal100, prot100, gluc100, lip100, fib100); }
   }
 
   async function confirmEditNutriEntry(id, kcal100, prot100, gluc100, lip100, fib100) {
