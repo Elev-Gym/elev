@@ -6231,6 +6231,8 @@
     try { await sbDelete('nutri_meals', id); } catch(e) {}
     renderNutriAddBody();
   }
+
+  function openNutriFromCache(i) {
     const f = (window._nutriSuggCache || [])[i];
     if (!f) return;
     openNutriQtyModal(encodeURIComponent(f.name), f.kcal, f.prot, f.gluc, f.lip, f.fib || 0);
