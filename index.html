@@ -5855,8 +5855,11 @@
   let _nutriPendingFood = null;
   let _nutriActiveMeal = null;
   let _nutriAccordionOpen = {};
-  let _nutriActiveTab = 'frequent'; // 'frequent' | 'recent' | 'favorite'
+  let _nutriActiveTab = 'frequent'; // 'frequent' | 'recent' | 'favorite' | 'meals'
   let _nutriFavorites = JSON.parse(localStorage.getItem('elev_nutri_fav') || '[]');
+  let _nutriMeals = JSON.parse(localStorage.getItem('elev_nutri_meals') || '[]');
+  let _cmIngredients = [];
+  let _ingredientSearchTimer = null;
   const MEALS = ['Petit-déjeuner', 'Déjeuner', 'En-cas', 'Dîner'];
   const MEAL_ICONS = { 'Petit-déjeuner': '☀️', 'Déjeuner': '🍽️', 'En-cas': '🍎', 'Dîner': '🌙' };
 
@@ -6070,9 +6073,6 @@
   }
 
   // ══ PLATS ENREGISTRÉS ══
-  let _nutriMeals = JSON.parse(localStorage.getItem('elev_nutri_meals') || '[]');
-  let _cmIngredients = []; // ingrédients du plat en cours de création
-  let _ingredientSearchTimer = null;
 
   function openCreateMealModal() {
     _cmIngredients = [];
