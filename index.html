@@ -5064,13 +5064,7 @@
     });
 
     try {
-      await Promise.all(toUpdate.map(e =>
-        supaFetch(`/rest/v1/nutrition_entries?id=eq.${e.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kcal: e.kcal, proteins: e.prot, carbs: e.gluc, fat: e.lip })
-        })
-      ));
+      await sbSave('nutrition_entries', toUpdate);
     } catch(err) { console.error('saveKcalEdit:', err); }
 
     showToast('Calories mises à jour ✓');
@@ -6142,16 +6136,12 @@
 
   async function saveNutriEntry(entry, update = false) {
     if (!update) nutriEntries.push(entry);
+    else {
+      const idx = nutriEntries.findIndex(e => e.id === entry.id);
+      if (idx >= 0) nutriEntries[idx] = entry;
+    }
     try {
-      if (update) {
-        await supaFetch(`/rest/v1/nutrition_entries?id=eq.${entry.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ data: entry })
-        });
-      } else {
-        await sbSave('nutrition_entries', [entry]);
-      }
+      await sbSave('nutrition_entries', [entry]);
     } catch(e) {}
     renderNutritionTab();
     renderHomeNutriWidget();
@@ -7598,13 +7588,11 @@
     } catch(e) { console.error('saveFoodEdit foods:', e); }
 
     // Mettre à jour les entrées nutrition locales qui portent l'ancien nom
-    const ratio100 = (qty) => qty > 0 ? qty / 100 : 1;
     const toUpdate = [];
     nutriEntries.forEach(e => {
       if (e.name === originalName) {
         e.name  = newName;
         e.brand = newBrand || e.brand;
-        // Recalculer les macros si les valeurs /100g ont changé
         const qty = e.qty || 100;
         const r = qty / 100;
         e.kcal = Math.round(newKcal * r);
@@ -7617,16 +7605,10 @@
       }
     });
 
-    // Sauvegarder les entrées modifiées dans Supabase
+    // Sauvegarder via sbSave (format correct pour Supabase)
     if (toUpdate.length > 0) {
       try {
-        await Promise.all(toUpdate.map(e =>
-          supaFetch(`/rest/v1/nutrition_entries?id=eq.${e.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: e.name, brand: e.brand, kcal: e.kcal, proteins: e.prot, carbs: e.gluc, fat: e.lip, fiber: e.fib })
-          })
-        ));
+        await sbSave('nutrition_entries', toUpdate);
       } catch(e) { console.error('saveFoodEdit entries:', e); }
     }
 
