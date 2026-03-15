@@ -1127,8 +1127,8 @@
     <!-- CTA démarrer séance -->
     <button class="home-cta" onclick="switchTab('session')">Démarrer une séance →</button>
 
-    <!-- Cette semaine -->
-    <div class="home-section-title">Cette semaine</div>
+    <!-- Activité -->
+    <div class="home-section-title">Activité</div>
     <div class="home-streak">
       <div class="home-streak-card">
         <div class="home-snap-label">Séances</div>
@@ -1137,7 +1137,7 @@
         <div id="homeStreakBars" style="display:flex;gap:3px;align-items:flex-end;margin-top:10px"></div>
       </div>
       <div class="home-streak-card">
-        <div class="home-snap-label">Jours actifs</div>
+        <div class="home-snap-label">Jours actifs ce mois</div>
         <div class="home-snap-val" id="homeWeekDays">0</div>
         <div class="home-snap-sub" id="homeStreak"></div>
       </div>
@@ -5570,16 +5570,21 @@
       document.getElementById('homeNextMuscles').innerHTML = '';
     }
 
-    // Stats semaine
+    // Stats semaine + mois
     const monday = new Date(); monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7)); monday.setHours(0,0,0,0);
     const lastMonday = new Date(monday); lastMonday.setDate(lastMonday.getDate() - 7);
     const thisWeekSessions = sessions.filter(s => new Date(s.date) >= monday);
     const lastWeekSessions = sessions.filter(s => { const d = new Date(s.date); return d >= lastMonday && d < monday; });
-    const thisWeekDays = new Set(thisWeekSessions.map(s => s.date)).size;
+
+    // Jours actifs dans le mois en cours
+    const now2 = new Date();
+    const monthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
+    const monthDays = new Set(sessions.filter(s => new Date(s.date) >= monthStart).map(s => s.date)).size;
+
     document.getElementById('homeWeekSessions').textContent = thisWeekSessions.length;
     const diff = thisWeekSessions.length - lastWeekSessions.length;
     document.getElementById('homeWeekVsLast').textContent = diff === 0 ? 'comme la semaine dernière' : (diff > 0 ? '+' + diff + ' vs sem. dernière' : diff + ' vs sem. dernière');
-    document.getElementById('homeWeekDays').textContent = thisWeekDays;
+    document.getElementById('homeWeekDays').textContent = monthDays;
 
     // Streak (jours consécutifs)
     let streak = 0;
