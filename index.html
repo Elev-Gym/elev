@@ -7812,7 +7812,20 @@
     const goalProt = Math.round(goalKcal * (ns.prot / 100) / 4);
     const goalGluc = Math.round(goalKcal * (ns.gluc / 100) / 4);
     const goalLip  = Math.round(goalKcal * (ns.lip  / 100) / 9);
-    const remaining = Math.max(goalKcal - totalKcal, 0);
+    const diff = goalKcal - totalKcal;
+
+    const remainingEl = document.getElementById('nutriKcalRemaining');
+    if (remainingEl) {
+      if (diff > -50) {
+        // Dans les clous ou dépassement ≤ 50 kcal → afficher le diff réel en blanc
+        remainingEl.textContent = Math.max(diff, 0).toLocaleString('fr-FR');
+        remainingEl.style.color = '#fff';
+      } else {
+        // Dépassement > 50 kcal → chiffre négatif en rouge
+        remainingEl.textContent = diff.toLocaleString('fr-FR');
+        remainingEl.style.color = '#ff6b6b';
+      }
+    }
 
     // Date label hero avec indicateurs navigation
     const heroLabel = document.getElementById('nutri-date-label-hero');
@@ -7839,7 +7852,6 @@
     // Chiffres
     const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
     set('nutriKcalConsumed', totalKcal.toLocaleString('fr-FR'));
-    set('nutriKcalRemaining', remaining.toLocaleString('fr-FR'));
     set('nutriKcalGoal', goalKcal.toLocaleString('fr-FR'));
 
     // Macros texte + barres
