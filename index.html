@@ -6378,7 +6378,7 @@
     const gluc100 = f.gluc100 || f.gluc;
     const lip100  = f.lip100  || f.lip;
     const fib100  = f.fib100  || f.fib || 0;
-    openNutriQtyModal(encodeURIComponent(f.name), kcal100, prot100, gluc100, lip100, fib100, undefined, f.brand || null);
+    openNutriQtyModal(encodeURIComponent(f.name), kcal100, prot100, gluc100, lip100, fib100, undefined, f.brand || null, f.servingG || null, f.servingLabel || null);
   }
 
   function openNutriFromSearchCache(i) {
@@ -6389,7 +6389,7 @@
     const gluc100 = f.gluc100 || f.gluc;
     const lip100  = f.lip100  || f.lip;
     const fib100  = f.fib100  || f.fib || 0;
-    openNutriQtyModal(encodeURIComponent(f.name), kcal100, prot100, gluc100, lip100, fib100, undefined, f.brand || null);
+    openNutriQtyModal(encodeURIComponent(f.name), kcal100, prot100, gluc100, lip100, fib100, undefined, f.brand || null, f.servingG || null, f.servingLabel || null);
   }
 
   // Ajout direct depuis cache (100g par défaut)
@@ -6646,6 +6646,8 @@
         gluc: Math.round((r.carbs    || 0) * 10) / 10,
         lip:  Math.round((r.fat      || 0) * 10) / 10,
         fib:  Math.round((r.fiber    || 0) * 10) / 10,
+        servingG: r.serving_quantity ? parseFloat(r.serving_quantity) : null,
+        servingLabel: r.serving_size || null,
       }));
     } catch(e) {}
 
@@ -6681,7 +6683,7 @@
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 5000);
-      const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=15&lc=fr&cc=fr&fields=code,product_name,product_name_fr,brands,nutriments`, {
+      const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=15&lc=fr&cc=fr&fields=code,product_name,product_name_fr,brands,nutriments,serving_size,serving_quantity`, {
         signal: ctrl.signal, headers: { 'Accept': 'application/json' }
       });
       if (document.getElementById('nutriSearch')?.value.trim() !== q) return;
@@ -6692,11 +6694,14 @@
         .map(p => {
           const name = (p.product_name_fr || p.product_name || '').trim().slice(0, 80);
           const n = p.nutriments || {};
+          const servingG = parseFloat(p.serving_quantity) || null;
           return { name, brand: (p.brands||'').split(',')[0].trim().slice(0,40)||null,
             kcal: Math.round(n['energy-kcal_100g']||(n['energy_100g']||0)/4.184||0),
             prot: Math.round((n.proteins_100g||0)*10)/10,
             gluc: Math.round((n.carbohydrates_100g||0)*10)/10,
-            lip:  Math.round((n.fat_100g||0)*10)/10, fib: 0 };
+            lip:  Math.round((n.fat_100g||0)*10)/10, fib: 0,
+            servingG,
+            servingLabel: servingG ? (p.serving_size || servingG + 'g') : null };
         })
         .filter(f => f.name && (f.kcal||f.prot) && !seenOff.has(norm(f.name)));
       if (offItems.length) renderResults([...histMatches, ...supaItems, ...offItems], false);
@@ -6920,9 +6925,9 @@
     }
   }
 
-  function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, fib100, defaultQty, brand) {
+  function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, fib100, defaultQty, brand, servingG, servingLabel) {
     const name = decodeURIComponent(encodedName);
-    _nutriPendingFood = { name, brand: brand || null, kcal100, prot100, gluc100, lip100, fib100: fib100 || 0 };
+    _nutriPendingFood = { name, brand: brand || null, kcal100, prot100, gluc100, lip100, fib100: fib100 || 0, servingG: servingG || null };
     const qty0 = defaultQty || 100;
 
     const existing = document.getElementById('nutriQtyModal');
@@ -7023,7 +7028,13 @@
               style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 8px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text);cursor:pointer;flex-shrink:0"
               onchange="onNutriUnitChange()">
               <option value="g">Gramme</option>
-              ${(()=>{const p=getPortionDef(name);return p?`<option value="portion">Portion (${p}g)</option>`:''})()}
+              ${(()=>{
+                const p = getPortionDef(name);
+                const opts = [];
+                if (servingG) opts.push(`<option value="serving">Portion emballage (${servingG}g)</option>`);
+                if (p && (!servingG || p !== servingG)) opts.push(`<option value="portion">Ma portion (${p}g)</option>`);
+                return opts.join('');
+              })()}
             </select>
           </div>
         </div>
@@ -7034,14 +7045,44 @@
         </div>
       </div>`;
     document.body.appendChild(modal);
+
+    // ── Chercher la portion emballage OFF en arrière-plan si pas connue ──
+    if (!servingG && isOnline()) {
+      fetch(`https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(name)}&page_size=3&fields=product_name,product_name_fr,serving_size,serving_quantity`, {
+        headers: { 'Accept': 'application/json' }
+      }).then(r => r.ok ? r.json() : null).then(data => {
+        if (!data?.products?.length || !document.getElementById('nutriQtyModal')) return;
+        const normN = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const match = data.products.find(p =>
+          normN(p.product_name_fr || p.product_name || '').includes(normN(name.slice(0,8)))
+        ) || data.products[0];
+        const sg = parseFloat(match?.serving_quantity) || null;
+        if (!sg) return;
+        const sl = match?.serving_size || sg + 'g';
+        // Ajouter l'option dans le dropdown
+        const sel = document.getElementById('nutriQtyUnit');
+        if (sel && !Array.from(sel.options).some(o => o.value === 'serving')) {
+          const opt = new Option(`Portion emballage (${sg}g)`, 'serving');
+          sel.insertBefore(opt, sel.options[1] || null);
+        }
+        if (_nutriPendingFood) _nutriPendingFood.servingG = sg;
+        // Sauvegarder auto si pas de portion personnalisée
+        if (!getPortionDef(name)) savePortionDef(name, sg);
+        // Sauvegarder dans Supabase
+        if (accessToken) supaFetch(`/rest/v1/foods?name=eq.${encodeURIComponent(name)}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ serving_size: sl, serving_quantity: sg })
+        }).catch(() => {});
+      }).catch(() => {});
+    }
   }
 
   function onNutriUnitChange() {
     const unit = document.getElementById('nutriQtyUnit')?.value;
     const inp = document.getElementById('nutriQtyInput');
     if (!inp) return;
-    // Basculer la valeur par défaut selon l'unité
-    if (unit === 'portion') { inp.value = 1; } else { inp.value = 100; }
+    if (unit === 'portion' || unit === 'serving') { inp.value = 1; }
+    else { inp.value = 100; }
     updateNutriPreview();
   }
 
@@ -7049,8 +7090,10 @@
     const qtyRaw = parseFloat(document.getElementById('nutriQtyInput')?.value) || 100;
     const unit = document.getElementById('nutriQtyUnit')?.value || 'g';
     if (unit === 'portion' && _nutriPendingFood) {
-      const portionG = getPortionDef(_nutriPendingFood.name) || 100;
-      return qtyRaw * portionG;
+      return qtyRaw * (getPortionDef(_nutriPendingFood.name) || 100);
+    }
+    if (unit === 'serving' && _nutriPendingFood?.servingG) {
+      return qtyRaw * _nutriPendingFood.servingG;
     }
     return qtyRaw;
   }
