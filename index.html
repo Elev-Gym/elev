@@ -6038,6 +6038,8 @@
     overlay.style.display = 'none';
     _nutriActiveMeal = null;
     clearTimeout(_nutriSearchTimer);
+    // Rafraîchir la page repas si elle est ouverte
+    if (window._mealPageCurrent) renderMealPage();
   }
 
   function getBlacklist() { try { return JSON.parse(localStorage.getItem('elev_nutri_blacklist') || '[]'); } catch(e) { return []; } }
@@ -7099,7 +7101,7 @@
         const isLast = mi === MEALS.length - 1;
 
         return `<div>
-          <div style="display:flex;align-items:center;gap:14px;padding:14px;cursor:pointer" onclick="toggleNutriAccordion('${meal}')">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px;cursor:pointer" onclick="openMealPage('${meal}')">
             <div style="position:relative;width:48px;height:48px;flex-shrink:0">
               <svg width="48" height="48" viewBox="0 0 48 48" style="position:absolute;inset:0;transform:rotate(-90deg)">
                 <circle cx="24" cy="24" r="18" fill="none" stroke="var(--border2)" stroke-width="3"/>
@@ -7113,36 +7115,12 @@
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
                 <div style="font-size:14px;font-weight:600;color:var(--text)">${meal}</div>
-                <span style="font-size:11px;color:var(--muted)">→</span>
               </div>
               <div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace">${mealKcal} / ${mealGoal} kcal</div>
               ${preview ? `<div style="font-size:10px;color:var(--muted2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${items.length > 3 ? '…' : ''}</div>` : ''}
             </div>
-            <button onclick="event.stopPropagation();openNutriAdd('${meal}')"
-              style="background:var(--surface2,var(--warm));border:2px solid var(--border2);border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text);line-height:1">+</button>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          ${isOpen ? `<div style="border-top:1px solid var(--border);padding:2px 0 4px">
-            ${items.length ? items.map(e => `
-              <div style="position:relative;overflow:hidden;border-bottom:0.5px solid var(--border)">
-                <div id="ndel-${e.id}" onclick="deleteNutriEntry(${e.id})" style="position:absolute;right:0;top:0;bottom:0;width:72px;background:#c0392b;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.15s">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-                </div>
-                <div id="ncard-${e.id}"
-                  style="display:flex;align-items:center;padding:11px 14px;background:var(--surface);will-change:transform;cursor:pointer"
-                  ontouchstart="nutriSwipeStart(event,${e.id})"
-                  ontouchmove="nutriSwipeMove(event,${e.id})"
-                  ontouchend="nutriSwipeEnd(event,${e.id})"
-                  onclick="openEditNutriEntry(${e.id})">
-                  <div style="flex:1;min-width:0">
-                    <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
-                    <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:2px">${e.qty}g · ${e.prot}P ${e.gluc}G ${e.lip}L${e.fib ? ' · ' + e.fib + 'F' : ''}</div>
-                  </div>
-                  <div style="font-size:13px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace;margin-left:10px;flex-shrink:0">${e.kcal} kcal</div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2" style="margin-left:8px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-              </div>`).join('')
-            : `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Aucun aliment — appuie sur + pour ajouter.</div>`}
-          </div>` : ''}
           ${!isLast ? `<div style="height:1px;background:var(--border);margin:0 14px"></div>` : ''}
         </div>`;
       }).join('') + `</div>`;
@@ -7361,6 +7339,63 @@
   function toggleNutriAccordion(meal) {
     _nutriAccordionOpen[meal] = !_nutriAccordionOpen[meal];
     renderNutritionTab();
+  }
+
+  window._mealPageCurrent = null;
+
+  function openMealPage(meal) {
+    window._mealPageCurrent = meal;
+    document.getElementById('mealPageTitle').textContent = meal;
+    renderMealPage();
+    const overlay = document.getElementById('mealPageOverlay');
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+  }
+
+  function closeMealPage() {
+    document.getElementById('mealPageOverlay').style.display = 'none';
+    window._mealPageCurrent = null;
+  }
+
+  function renderMealPage() {
+    const meal = window._mealPageCurrent;
+    if (!meal) return;
+    const today = new Date().toISOString().split('T')[0];
+    const items = nutriEntries.filter(e => e.date === today && e.meal === meal);
+    const totKcal = items.reduce((s,e) => s + e.kcal, 0);
+    const totProt = Math.round(items.reduce((s,e) => s + (e.prot||0), 0) * 10) / 10;
+    const totGluc = Math.round(items.reduce((s,e) => s + (e.gluc||0), 0) * 10) / 10;
+    const totLip  = Math.round(items.reduce((s,e) => s + (e.lip ||0), 0) * 10) / 10;
+
+    document.getElementById('mpKcal').textContent = totKcal;
+    document.getElementById('mpProt').textContent = totProt + ' g';
+    document.getElementById('mpGluc').textContent = totGluc + ' g';
+    document.getElementById('mpLip').textContent  = totLip  + ' g';
+
+    const list = document.getElementById('mealPageList');
+    if (!items.length) {
+      list.innerHTML = `<div style="text-align:center;padding:48px 16px;color:var(--muted);font-size:13px">Aucun aliment pour ce repas.<br><span style="font-size:11px;opacity:0.7">Appuie sur + pour ajouter.</span></div>`;
+      return;
+    }
+    list.innerHTML = items.map(e => `
+      <div style="position:relative;overflow:hidden;border-bottom:0.5px solid var(--border)">
+        <div id="ndel-${e.id}" onclick="deleteNutriEntry(${e.id});renderMealPage();renderNutritionTab()" style="position:absolute;right:0;top:0;bottom:0;width:72px;background:#c0392b;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.15s">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+        </div>
+        <div id="ncard-${e.id}"
+          style="display:flex;align-items:center;padding:14px 16px;background:var(--surface);cursor:pointer"
+          ontouchstart="nutriSwipeStart(event,${e.id})"
+          ontouchmove="nutriSwipeMove(event,${e.id})"
+          ontouchend="nutriSwipeEnd(event,${e.id})"
+          onclick="openEditNutriEntry(${e.id})">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">${e.brand ? e.brand + ', ' : ''}${e.qty} g</div>
+          </div>
+          <div style="font-size:14px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace;margin-left:12px;flex-shrink:0">${e.kcal} kcal</div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2" style="margin-left:8px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>`).join('');
   }
 
   // Widget accueil nutrition
@@ -8940,6 +8975,51 @@
     <div style="flex:1;overflow-y:auto;padding:8px 16px" id="ingredientSearchBody">
       <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px">Tapez pour rechercher un aliment…</div>
     </div>
+  </div>
+</div>
+
+<!-- ══ PAGE REPAS DÉTAIL ══ -->
+<div id="mealPageOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:965;flex-direction:column;overflow:hidden">
+  <!-- Header -->
+  <div style="padding:calc(env(safe-area-inset-top)+12px) 16px 12px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+    <button onclick="closeMealPage()" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px;display:flex;align-items:center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div style="font-size:16px;font-weight:600;color:var(--text)" id="mealPageTitle">Repas</div>
+    <button onclick="openNutriAdd(window._mealPageCurrent)" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- Macros grille 2×2 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="text-align:center;padding:18px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)">
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);font-weight:400" id="mpKcal">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Calories</div>
+    </div>
+    <div style="text-align:center;padding:18px 12px;border-bottom:1px solid var(--border)">
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);font-weight:400" id="mpGluc">0 g</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Glucides</div>
+    </div>
+    <div style="text-align:center;padding:18px 12px;border-right:1px solid var(--border)">
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--accent);font-weight:400" id="mpProt">0 g</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Protéines</div>
+    </div>
+    <div style="text-align:center;padding:18px 12px">
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);font-weight:400" id="mpLip">0 g</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Lipides</div>
+    </div>
+  </div>
+
+  <!-- Liste aliments scrollable -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch" id="mealPageList"></div>
+
+  <!-- Bouton bas -->
+  <div style="padding:12px 16px calc(env(safe-area-inset-bottom)+12px);border-top:1px solid var(--border);flex-shrink:0;background:var(--bg)">
+    <button onclick="openNutriAdd(window._mealPageCurrent)"
+      style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer">
+      Ajouter plus
+    </button>
   </div>
 </div>
 
