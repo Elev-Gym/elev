@@ -8089,6 +8089,7 @@
           onclick="openNutriQtyModal(encodeURIComponent('${e.name.replace(/'/g,"\\'")}'),${e.kcal100||Math.round(e.kcal/(e.qty||100)*100)},${e.prot100||Math.round(e.prot/(e.qty||100)*1000)/10},${e.gluc100||Math.round(e.gluc/(e.qty||100)*1000)/10},${e.lip100||Math.round(e.lip/(e.qty||100)*1000)/10},${e.fib100||0},${e.qty},'${(e.brand||'').replace(/'/g,"\\'")}',null,null,${e.id})">
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+            ${e.brand ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${e.brand}${e.qty ? ' · ' + e.qty + 'g' : ''}</div>` : e.qty ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${e.qty}g</div>` : ''}
             <div style="display:flex;gap:5px;margin-top:5px">
               <span style="background:#edf6f1;color:#2C5F4A;border-radius:20px;padding:2px 7px;font-size:9px;font-family:'Geist Mono',monospace">G ${gluc}g</span>
               <span style="background:var(--warm);color:var(--muted);border-radius:20px;padding:2px 7px;font-size:9px;font-family:'Geist Mono',monospace">P ${prot}g</span>
