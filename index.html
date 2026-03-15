@@ -7146,29 +7146,29 @@
             </div>
           </div>
 
-          <!-- Quantité -->
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Quantité</div>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        </div>
+
+        <!-- Barre fixe bas : quantité + bouton -->
+        <div style="flex-shrink:0;border-top:1px solid var(--border);background:var(--surface);padding:12px 16px calc(env(safe-area-inset-bottom)+12px)">
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <!-- Chiffre quantité compact -->
             <input class="inp" id="nutriQtyInput" type="number" value="${qty0}" min="1" max="5000"
-              style="flex:1;text-align:center;font-size:24px;font-family:'DM Serif Display',serif"
+              style="width:72px;text-align:center;font-size:22px;font-family:'DM Serif Display',serif;flex-shrink:0;padding:10px 6px"
               oninput="updateNutriPreview()"/>
+            <!-- Dropdown unité large -->
             <select id="nutriQtyUnit"
-              style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 8px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--text);cursor:pointer;flex-shrink:0"
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'DM Serif Display',serif;font-size:15px;color:var(--text);cursor:pointer;appearance:auto"
               onchange="onNutriUnitChange()">
               <option value="g">Gramme</option>
               ${(()=>{
                 const p = getPortionDef(name);
                 const opts = [];
-                if (servingG) opts.push(`<option value="serving">Portion emballage (${servingG}g)</option>`);
-                if (p && (!servingG || p !== servingG)) opts.push(`<option value="portion">Ma portion (${p}g)</option>`);
+                if (servingG) opts.push(`<option value="serving">Portion — ${servingG} g</option>`);
+                if (p && (!servingG || p !== servingG)) opts.push(`<option value="portion">Ma portion — ${p} g</option>`);
                 return opts.join('');
               })()}
             </select>
           </div>
-        </div>
-
-        <!-- Bouton bas -->
-        <div style="padding:12px 16px calc(env(safe-area-inset-bottom)+12px);flex-shrink:0;border-top:1px solid var(--border);background:var(--surface)">
           <button onclick="confirmNutriEntry()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:15px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer">Ajouter</button>
         </div>
       </div>`;
