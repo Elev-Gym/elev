@@ -7816,25 +7816,37 @@
       return;
     }
     list.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--card-shadow)">` +
-      items.map(e => `
+      items.map(e => {
+        const gluc = Math.round((e.gluc||0)*10)/10;
+        const prot = Math.round((e.prot||0)*10)/10;
+        const lip  = Math.round((e.lip ||0)*10)/10;
+        return `
       <div style="position:relative;overflow:hidden;border-bottom:0.5px solid var(--border)">
         <div id="ndel-${e.id}" onclick="deleteNutriEntry(${e.id});renderMealPage();renderNutritionTab()" style="position:absolute;right:0;top:0;bottom:0;width:72px;background:#c0392b;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.15s">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
         </div>
         <div id="ncard-${e.id}"
-          style="display:flex;align-items:center;padding:14px 16px;background:var(--surface);cursor:pointer"
+          style="display:flex;align-items:center;padding:11px 16px;background:var(--surface);cursor:pointer"
           ontouchstart="nutriSwipeStart(event,${e.id})"
           ontouchmove="nutriSwipeMove(event,${e.id})"
           ontouchend="nutriSwipeEnd(event,${e.id})"
           onclick="openNutriQtyModal(encodeURIComponent('${e.name.replace(/'/g,"\\'")}'),${e.kcal100||Math.round(e.kcal/(e.qty||100)*100)},${e.prot100||Math.round(e.prot/(e.qty||100)*1000)/10},${e.gluc100||Math.round(e.gluc/(e.qty||100)*1000)/10},${e.lip100||Math.round(e.lip/(e.qty||100)*1000)/10},${e.fib100||0},${e.qty},'${(e.brand||'').replace(/'/g,"\\'")}',null,null,${e.id})">
           <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:3px">${e.brand ? e.brand + ', ' : ''}${e.qty} g</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+            <div style="display:flex;gap:5px;margin-top:5px">
+              <span style="background:#edf6f1;color:#2C5F4A;border-radius:20px;padding:2px 7px;font-size:9px;font-family:'Geist Mono',monospace">G ${gluc}g</span>
+              <span style="background:var(--warm);color:var(--muted);border-radius:20px;padding:2px 7px;font-size:9px;font-family:'Geist Mono',monospace">P ${prot}g</span>
+              <span style="background:#fdf6ee;color:#c8956c;border-radius:20px;padding:2px 7px;font-size:9px;font-family:'Geist Mono',monospace">L ${lip}g</span>
+            </div>
           </div>
-          <div style="font-size:14px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace;margin-left:12px;flex-shrink:0">${e.kcal} kcal</div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2" style="margin-left:8px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px">
+            <div style="font-size:14px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace">${e.kcal}</div>
+            <div style="font-size:9px;color:var(--muted)">kcal</div>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2" style="margin-left:8px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-      </div>`).join('') + `</div>`;
+      </div>`;
+      }).join('') + `</div>`;
   }
 
   // Widget accueil nutrition
@@ -9434,24 +9446,24 @@
   <!-- Contenu scrollable -->
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 0 calc(env(safe-area-inset-bottom)+24px)" id="mealPageScroll">
 
-    <!-- Card macros 2×2 -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:0 16px 16px;box-shadow:var(--card-shadow)">
-      <div style="display:grid;grid-template-columns:1fr 1fr">
-        <div style="text-align:center;padding:18px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);font-weight:400;line-height:1" id="mpKcal">0</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Calories</div>
+    <!-- Card macros 4 colonnes style F -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:0 16px 16px;box-shadow:var(--card-shadow)">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr)">
+        <div style="text-align:center;padding:14px 6px;border-right:1px solid var(--border)">
+          <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);font-weight:400;line-height:1" id="mpKcal">0</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px;font-family:'Geist Mono',monospace;letter-spacing:0.5px">KCAL</div>
         </div>
-        <div style="text-align:center;padding:18px 12px;border-bottom:1px solid var(--border)">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);font-weight:400;line-height:1" id="mpGluc">0 g</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Glucides</div>
+        <div style="text-align:center;padding:14px 6px;border-right:1px solid var(--border)">
+          <div style="font-family:'DM Serif Display',serif;font-size:22px;color:#7ab893;font-weight:400;line-height:1" id="mpGluc">0g</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px;font-family:'Geist Mono',monospace;letter-spacing:0.5px">GLUC</div>
         </div>
-        <div style="text-align:center;padding:18px 12px;border-right:1px solid var(--border)">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--accent);font-weight:400;line-height:1" id="mpProt">0 g</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Protéines</div>
+        <div style="text-align:center;padding:14px 6px;border-right:1px solid var(--border)">
+          <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--accent);font-weight:400;line-height:1" id="mpProt">0g</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px;font-family:'Geist Mono',monospace;letter-spacing:0.5px">PROT</div>
         </div>
-        <div style="text-align:center;padding:18px 12px">
-          <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);font-weight:400;line-height:1" id="mpLip">0 g</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Lipides</div>
+        <div style="text-align:center;padding:14px 6px">
+          <div style="font-family:'DM Serif Display',serif;font-size:22px;color:#b5cfc3;font-weight:400;line-height:1" id="mpLip">0g</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px;font-family:'Geist Mono',monospace;letter-spacing:0.5px">LIP</div>
         </div>
       </div>
     </div>
