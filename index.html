@@ -6489,9 +6489,7 @@
     clearTimeout(_nutriSearchTimer);
     const q = document.getElementById('nutriSearch')?.value.trim();
     if (!q || q.length < 2) { renderNutriAddBody(); return; }
-    _nutriSearchTimer = setTimeout(doNutriSearch, 400);
-    const body = document.getElementById('nutriAddBody');
-    if (body) body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;font-family:'Geist Mono',monospace;letter-spacing:1px">RECHERCHE EN COURS…</div>`;
+    _nutriSearchTimer = setTimeout(doNutriSearch, 200);
   }
 
   const NUTRI_LOCAL = []; // Retiré — base OFF dans Supabase
@@ -6505,9 +6503,6 @@
     const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const qNorm = norm(q);
 
-    // Afficher indicateur de chargement
-    body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;font-family:'Geist Mono',monospace;letter-spacing:1px">RECHERCHE…</div>`;
-
     // ── Scoring pertinence ──
     const relevance = name => {
       const n = norm(name);
@@ -6519,20 +6514,16 @@
     };
 
     // ── Rendu commun ──
-    const renderResults = items => {
-      const currentQ = document.getElementById('nutriSearch')?.value.trim();
-      if (currentQ !== q) return; // la recherche a changé entre temps
-
+    const renderResults = (items, isPartial) => {
+      if (document.getElementById('nutriSearch')?.value.trim() !== q) return;
       if (!items.length) {
-        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
+        if (!isPartial) body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
         return;
       }
-
       const usageMap = {};
       nutriEntries.forEach(e => { const k = norm(e.name); usageMap[k] = (usageMap[k] || 0) + 1; });
-
       const sorted = [...items]
-        .filter(f => relevance(f.name) < 4) // exclure les non-pertinents
+        .filter(f => relevance(f.name) < 4)
         .sort((a, b) => {
           const ua = usageMap[norm(a.name)] || 0;
           const ub = usageMap[norm(b.name)] || 0;
@@ -6541,12 +6532,10 @@
           if (ra !== rb) return ra - rb;
           return ub - ua || norm(a.name).localeCompare(norm(b.name));
         });
-
       if (!sorted.length) {
-        body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
+        if (!isPartial) body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
         return;
       }
-
       window._nutriSearchCache = sorted;
       const label = `<div style="font-size:9px;color:var(--muted2);font-family:'Geist Mono',monospace;text-align:right;margin:4px 0 8px;letter-spacing:1px">${sorted.length} RÉSULTATS</div>`;
 
@@ -6572,59 +6561,56 @@
       }).join('') + `</div>`;
     };
 
-    // ── Lancer Supabase + OFF en PARALLÈLE ──
+    // ── 1. Supabase d'abord → affichage immédiat ──
     const ftsQuery = q.trim().split(/\s+/).filter(w=>w.length>1).map(w=>w+':*').join(' & ') || q+':*';
+    let supaItems = [];
+    try {
+      const supaRes = await fetch(`${SUPA_URL}/rest/v1/rpc/search_foods`, {
+        method: 'POST',
+        headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query: ftsQuery, lim: 30 })
+      });
+      if (document.getElementById('nutriSearch')?.value.trim() !== q) return;
+      const rows = supaRes.ok ? await supaRes.json() : [];
+      supaItems = (rows || []).map(r => ({
+        name: r.name, brand: r.brand || null,
+        kcal: Math.round(r.kcal || 0),
+        prot: Math.round((r.proteins || 0) * 10) / 10,
+        gluc: Math.round((r.carbs    || 0) * 10) / 10,
+        lip:  Math.round((r.fat      || 0) * 10) / 10,
+        fib:  Math.round((r.fiber    || 0) * 10) / 10,
+      }));
+    } catch(e) {}
 
-    const supaPromise = fetch(`${SUPA_URL}/rest/v1/rpc/search_foods`, {
-      method: 'POST',
-      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query: ftsQuery, lim: 30 })
-    }).then(r => r.ok ? r.json() : []).catch(() => []);
+    // Afficher immédiatement
+    renderResults(supaItems, isOnline());
 
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 8000);
-    const offPromise = isOnline()
-      ? fetch(`https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=20&lc=fr&cc=fr&fields=code,product_name,product_name_fr,brands,nutriments`, {
-          signal: ctrl.signal, headers: { 'Accept': 'application/json' }
-        }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] }))
-      : Promise.resolve({ products: [] });
-
-    const [supaRows, offData] = await Promise.all([supaPromise, offPromise]);
-
-    if (document.getElementById('nutriSearch')?.value.trim() !== q) return;
-
-    // Mapper Supabase
-    const supaItems = (supaRows || []).map(r => ({
-      name: r.name, brand: r.brand || null,
-      kcal: Math.round(r.kcal || 0),
-      prot: Math.round((r.proteins || 0) * 10) / 10,
-      gluc: Math.round((r.carbs    || 0) * 10) / 10,
-      lip:  Math.round((r.fat      || 0) * 10) / 10,
-      fib:  Math.round((r.fiber    || 0) * 10) / 10,
-    }));
-
-    // Mapper OFF en dédupliquant vs Supabase
-    const seen = new Set(supaItems.map(f => norm(f.name)));
-    const offItems = (offData.products || [])
-      .filter(p => (p.product_name_fr || p.product_name) && p.nutriments)
-      .map(p => {
-        const name = (p.product_name_fr || p.product_name || '').trim().slice(0, 80);
-        const n = p.nutriments || {};
-        return {
-          name,
-          brand: (p.brands || '').split(',')[0].trim().slice(0, 40) || null,
-          kcal: Math.round(n['energy-kcal_100g'] || (n['energy_100g'] || 0) / 4.184 || 0),
-          prot: Math.round((n.proteins_100g      || 0) * 10) / 10,
-          gluc: Math.round((n.carbohydrates_100g || 0) * 10) / 10,
-          lip:  Math.round((n.fat_100g           || 0) * 10) / 10,
-          fib:  0,
-        };
-      })
-      .filter(f => f.name && (f.kcal || f.prot) && !seen.has(norm(f.name)));
-
-    renderResults([...supaItems, ...offItems]);
+    // ── 2. OFF en arrière-plan (silencieux) ──
+    if (!isOnline()) return;
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 5000);
+      const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=15&lc=fr&cc=fr&fields=code,product_name,product_name_fr,brands,nutriments`, {
+        signal: ctrl.signal, headers: { 'Accept': 'application/json' }
+      });
+      if (document.getElementById('nutriSearch')?.value.trim() !== q) return;
+      const offData = offRes.ok ? await offRes.json() : { products: [] };
+      const seen = new Set(supaItems.map(f => norm(f.name)));
+      const offItems = (offData.products || [])
+        .filter(p => (p.product_name_fr || p.product_name) && p.nutriments)
+        .map(p => {
+          const name = (p.product_name_fr || p.product_name || '').trim().slice(0, 80);
+          const n = p.nutriments || {};
+          return { name, brand: (p.brands||'').split(',')[0].trim().slice(0,40)||null,
+            kcal: Math.round(n['energy-kcal_100g']||(n['energy_100g']||0)/4.184||0),
+            prot: Math.round((n.proteins_100g||0)*10)/10,
+            gluc: Math.round((n.carbohydrates_100g||0)*10)/10,
+            lip:  Math.round((n.fat_100g||0)*10)/10, fib: 0 };
+        })
+        .filter(f => f.name && (f.kcal||f.prot) && !seen.has(norm(f.name)));
+      if (offItems.length) renderResults([...supaItems, ...offItems], false);
+    } catch(e) {}
   }
-
   async function searchByBarcode(code) {
     // Mode scan pour aliment custom → juste remplir le champ barcode
     if (window._scanForCustomFood) {
