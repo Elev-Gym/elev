@@ -38,11 +38,11 @@
     --card-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.03);
   }
   html.dark {
-    --bg: #0D0D0D;
-    --surface: #181816;
-    --surface2: #1F1F1C;
-    --border: rgba(180,160,100,0.10);
-    --border2: rgba(180,160,100,0.18);
+    --bg: #1c1c1e;
+    --surface: #2c2c2e;
+    --surface2: #3a3a3c;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
     --accent: #4a8c5c;
     --accent-hover: #3a7a4c;
     --accent-light: rgba(74,140,92,0.13);
@@ -53,16 +53,16 @@
     --gold: #c9962a;
     --gold-light: rgba(201,150,42,0.10);
     --text: #EDEAE4;
-    --muted: #706A60;
-    --muted2: #423E36;
-    --warm: #141412;
-    --card-shadow: 0 2px 12px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.2);
+    --muted: #8e8e93;
+    --muted2: #48484a;
+    --warm: #1c1c1e;
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
   }
   html.dark header svg text { fill: var(--text); }
   html.dark header svg line { stroke: var(--text); }
   html.dark body { color: var(--text); }
-  html.dark .bottom-nav { background: rgba(13,13,13,0.97); }
-  html.dark input, html.dark textarea { color-scheme: dark; }
+  html.dark .bottom-nav { background: rgba(28,28,30,0.97); }
+  html.dark header { background: rgba(28,28,30,0.97); border-bottom-color: var(--border); }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   input, textarea, select { touch-action: auto; }
@@ -72,7 +72,7 @@
 
   /* Header — Option C */
   header { padding: calc(env(safe-area-inset-top) + 12px) 24px 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(240,234,225,0.96); backdrop-filter: blur(12px); z-index: 100; transition: background 0.3s; display: flex; align-items: center; justify-content: space-between; }
-  html.dark header { background: rgba(13,13,13,0.97); border-bottom-color: var(--border); }
+  html.dark input, html.dark textarea { color-scheme: dark; }
   .logo { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 300; letter-spacing: 9px; text-transform: uppercase; color: var(--text); line-height: 1; }
   .header-title { font-family: 'DM Serif Display', serif; font-size: 15px; font-weight: 400; font-style: italic; color: var(--terra); line-height: 1; }
   .header-date { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
