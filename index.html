@@ -6534,15 +6534,33 @@
       }
       const usageMap = {};
       nutriEntries.forEach(e => { const k = norm(e.name); usageMap[k] = (usageMap[k] || 0) + 1; });
+
+      // Construire aussi un map par nom normalisé pour retrouver l'entry la plus récente (avec brand etc.)
+      const usedEntryMap = {};
+      [...nutriEntries].reverse().forEach(e => {
+        const k = norm(e.name);
+        if (!usedEntryMap[k]) usedEntryMap[k] = e;
+      });
+
       const sorted = [...items]
         .filter(f => relevance(f.name) < 4)
+        .map(f => {
+          const k = norm(f.name);
+          const usage = usageMap[k] || 0;
+          // Enrichir avec brand depuis l'historique si manquant
+          if (!f.brand && usedEntryMap[k]?.brand) f = { ...f, brand: usedEntryMap[k].brand };
+          return { ...f, _usage: usage };
+        })
         .sort((a, b) => {
-          const ua = usageMap[norm(a.name)] || 0;
-          const ub = usageMap[norm(b.name)] || 0;
+          // 1. Déjà utilisé VS jamais utilisé
+          const ua = a._usage, ub = b._usage;
           if ((ua > 0) !== (ub > 0)) return ub > 0 ? 1 : -1;
+          // 2. Dans le groupe "utilisé" → fréquence desc (le plus utilisé en premier)
+          if (ua > 0 && ub > 0) return ub - ua || relevance(a.name) - relevance(b.name);
+          // 3. Dans le groupe "non utilisé" → pertinence puis alpha
           const ra = relevance(a.name), rb = relevance(b.name);
           if (ra !== rb) return ra - rb;
-          return ub - ua || norm(a.name).localeCompare(norm(b.name));
+          return norm(a.name).localeCompare(norm(b.name));
         });
       if (!sorted.length) {
         if (!isPartial) body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">Aucun résultat pour « ${q} ».</div>`;
