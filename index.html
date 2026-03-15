@@ -265,6 +265,8 @@
   .create-routine-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 18px; box-shadow: var(--card-shadow); }
   .routine-ex-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
   .routine-ex-edit-row { background: var(--warm); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display:flex; flex-direction:column; gap:6px; transition: opacity 0.15s; }
+  .routine-ex-edit-row.rex-warmup { border-color: rgba(201,150,42,0.4); background: rgba(201,150,42,0.06); }
+  .routine-ex-edit-row.rex-superset { border-color: rgba(74,140,92,0.4); background: rgba(74,140,92,0.06); }
   .routine-ex-edit-row.ex-dragging { opacity: 0.4; }
   .routine-ex-edit-row.ex-drag-over { border-color: var(--accent); background: var(--surface); }
   .ex-drag-handle { cursor: grab; color: var(--muted); font-size: 16px; padding: 0 4px; flex-shrink: 0; touch-action: none; user-select: none; }
@@ -996,28 +998,77 @@
         </svg>
       </div>
 
-      <div style="font-family:DM Serif Display,serif;font-size:36px;font-weight:300;color:var(--text);line-height:1.05;margin-bottom:4px;">Bienvenue.</div>
-      <div style="font-family:DM Serif Display,serif;font-size:13px;font-style:italic;color:var(--muted);line-height:1.7;margin-bottom:28px;">Chaque séance est une promesse tenue à toi-même.</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:36px;font-weight:300;color:var(--text);line-height:1.05;margin-bottom:4px;">Bienvenue.</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:13px;font-style:italic;color:var(--muted);line-height:1.7;margin-bottom:28px;">Chaque séance est une promesse tenue à toi-même.</div>
 
-      <div id="loginForm">
-        <div style="margin-bottom:18px;">
-          <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;">E-mail</div>
-          <input id="loginEmail" type="email" placeholder="Votre e-mail" style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 0;font-family:Geist Mono,monospace;font-size:13px;color:var(--text);outline:none;" autocomplete="email"/>
-        </div>
-        <div style="margin-bottom:24px;">
-          <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;">Mot de passe</div>
-          <input id="loginPassword" type="password" placeholder="••••••••" style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 0;font-family:Geist Mono,monospace;font-size:13px;color:var(--text);outline:none;" autocomplete="current-password"/>
-        </div>
-        <button onclick="signIn()" style="width:100%;background:var(--text);color:var(--bg);border:none;border-radius:20px;padding:14px;font-family:Geist Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-bottom:10px;transition:background 0.2s;">Se connecter</button>
-        <button onclick="signUp()" style="width:100%;background:none;color:var(--muted);border:1px solid var(--border2);border-radius:20px;padding:12px;font-family:Geist Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">Créer un compte</button>
-        <div id="loginError" style="margin-top:14px;font-size:11px;color:var(--accent2);text-align:center;display:none;font-family:Geist Mono,monospace;"></div>
+      <!-- État 1 : choix Connexion / Créer un compte -->
+      <div id="authHome">
+        <button onclick="showAuthPanel('signin')" style="width:100%;background:var(--text);color:var(--bg);border:none;border-radius:20px;padding:14px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-bottom:10px;transition:background 0.2s;">Connexion</button>
+        <button onclick="showAuthPanel('signup')" style="width:100%;background:none;color:var(--muted);border:1px solid var(--border2);border-radius:20px;padding:12px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">Créer un compte</button>
       </div>
 
-      <div id="loginConfirm" style="display:none;padding:20px 0;">
-        <div style="font-family:DM Serif Display,serif;font-size:28px;font-weight:300;color:var(--text);margin-bottom:10px;">Vérifie<br>ta boîte mail.</div>
-        <div style="font-size:11px;color:var(--muted);line-height:1.8;font-family:Geist Mono,monospace;margin-bottom:28px;">Un lien de confirmation<br>t'a été envoyé.</div>
-        <button onclick="document.getElementById('loginConfirm').style.display='none';document.getElementById('loginForm').style.display='block';" style="background:none;border:1px solid var(--border2);border-radius:20px;padding:10px 24px;font-family:Geist Mono,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;">Retour</button>
+      <!-- État 2 : Connexion -->
+      <div id="authSignin" style="display:none">
+        <button onclick="showAuthPanel('home')" style="background:none;border:none;color:var(--muted);font-size:11px;font-family:'Geist Mono',monospace;cursor:pointer;margin-bottom:20px;padding:0;letter-spacing:0.5px">← Retour</button>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:20px">Connexion</div>
+        <div style="margin-bottom:18px">
+          <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">E-mail</div>
+          <input id="signinEmail" type="email" placeholder="Votre e-mail" autocomplete="email"
+            style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 0;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);outline:none;box-sizing:border-box"/>
+        </div>
+        <div style="margin-bottom:24px">
+          <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">Mot de passe</div>
+          <div style="position:relative">
+            <input id="signinPassword" type="password" placeholder="••••••••" autocomplete="current-password"
+              style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 32px 8px 0;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);outline:none;box-sizing:border-box"/>
+            <button onclick="togglePwd('signinPassword',this)" tabindex="-1"
+              style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px;line-height:1">👁</button>
+          </div>
+        </div>
+        <button onclick="signIn()" style="width:100%;background:var(--text);color:var(--bg);border:none;border-radius:20px;padding:14px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background 0.2s">Se connecter</button>
+        <div id="signinError" style="margin-top:14px;font-size:11px;color:var(--accent2);text-align:center;display:none;font-family:'Geist Mono',monospace"></div>
       </div>
+
+      <!-- État 3 : Créer un compte -->
+      <div id="authSignup" style="display:none">
+        <button onclick="showAuthPanel('home')" style="background:none;border:none;color:var(--muted);font-size:11px;font-family:'Geist Mono',monospace;cursor:pointer;margin-bottom:20px;padding:0;letter-spacing:0.5px">← Retour</button>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:20px">Créer un compte</div>
+        <div style="margin-bottom:18px">
+          <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">E-mail</div>
+          <input id="signupEmail" type="email" placeholder="Votre e-mail" autocomplete="email"
+            style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 0;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);outline:none;box-sizing:border-box"/>
+        </div>
+        <div style="margin-bottom:18px">
+          <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">Mot de passe</div>
+          <div style="position:relative">
+            <input id="signupPassword" type="password" placeholder="••••••••" autocomplete="new-password"
+              style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 32px 8px 0;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);outline:none;box-sizing:border-box"/>
+            <button onclick="togglePwd('signupPassword',this)" tabindex="-1"
+              style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px;line-height:1">👁</button>
+          </div>
+        </div>
+        <div style="margin-bottom:24px">
+          <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px">Confirmer le mot de passe</div>
+          <div style="position:relative">
+            <input id="signupPasswordConfirm" type="password" placeholder="••••••••" autocomplete="new-password"
+              style="width:100%;background:none;border:none;border-bottom:1px solid var(--border2);padding:8px 32px 8px 0;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);outline:none;box-sizing:border-box"/>
+            <button onclick="togglePwd('signupPasswordConfirm',this)" tabindex="-1"
+              style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px;line-height:1">👁</button>
+          </div>
+        </div>
+        <button onclick="signUp()" style="width:100%;background:var(--text);color:var(--bg);border:none;border-radius:20px;padding:14px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background 0.2s">Créer mon compte</button>
+        <div id="signupError" style="margin-top:14px;font-size:11px;color:var(--accent2);text-align:center;display:none;font-family:'Geist Mono',monospace"></div>
+      </div>
+
+      <!-- État 4 : confirmation e-mail -->
+      <div id="loginConfirm" style="display:none;padding:20px 0">
+        <div style="font-family:'DM Serif Display',serif;font-size:28px;font-weight:300;color:var(--text);margin-bottom:10px">Vérifie<br>ta boîte mail.</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8;font-family:'Geist Mono',monospace;margin-bottom:28px">Un lien de confirmation<br>t'a été envoyé.</div>
+        <button onclick="showAuthPanel('signin')" style="background:none;border:1px solid var(--border2);border-radius:20px;padding:10px 24px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer">Retour à la connexion</button>
+      </div>
+
+      <!-- Ancien loginForm gardé vide pour compatibilité -->
+      <div id="loginForm" style="display:none"></div>
 
     </div><!-- /card -->
 
@@ -1207,7 +1258,7 @@
         <div class="chip" onclick="this.classList.toggle('on')">Épaules</div>
         <div class="chip" onclick="this.classList.toggle('on')">Biceps</div>
         <div class="chip" onclick="this.classList.toggle('on')">Triceps</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Jambes</div>
+        <div class="chip" onclick="this.classList.toggle('on')">Quadriceps</div><div class="chip" onclick="this.classList.toggle('on')">Ischio-jambiers</div>
         <div class="chip" onclick="this.classList.toggle('on')">Abdos</div>
         <div class="chip" onclick="this.classList.toggle('on')">Fessiers</div>
       </div>
@@ -1226,7 +1277,7 @@
             <select class="inp" id="exMuscle">
               <option value="">Muscle</option>
               <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-              <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+              <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
               <option>Abdos</option><option>Fessiers</option><option>Autre</option>
             </select>
           </div>
@@ -1295,7 +1346,7 @@
       <select class="ex-muscle-sel" id="exReplaceMuscle">
         <option value="">Muscle (optionnel)</option>
         <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-        <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+        <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
         <option>Abdos</option><option>Fessiers</option><option>Autre</option>
       </select>
       <div class="ex-replace-actions">
@@ -1352,12 +1403,19 @@
           <select class="inp" id="rExMuscle">
             <option value="">Muscle</option>
             <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-            <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+            <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
             <option>Abdos</option><option>Fessiers</option><option>Autre</option>
           </select>
         </div>
         <div class="form-row" style="margin-bottom:10px">
           <input class="inp" id="rExSets" placeholder="Séries (ex: 4)" type="number" style="max-width:90px"/>
+          <!-- Toggle kg / secondes -->
+          <div style="display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0">
+            <button id="rExUnitKg" onclick="setRExUnit('kg')"
+              style="padding:8px 12px;border:none;background:var(--accent);color:#fff;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all 0.15s">KG</button>
+            <button id="rExUnitSec" onclick="setRExUnit('sec')"
+              style="padding:8px 12px;border:none;background:var(--surface);color:var(--muted);font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all 0.15s">SEC</button>
+          </div>
           <input class="inp" id="rExReps" placeholder="Reps (ex: 8-10)" type="text" style="max-width:90px" maxlength="8"/>
           <select class="inp" id="rExRest" style="max-width:145px" onchange="toggleCustomRest(this)">
             <option value="60">Repos 1 min</option>
@@ -1368,6 +1426,11 @@
             <option value="custom">Personnalisé...</option>
           </select>
           <input class="inp" id="rExRestCustom" type="number" placeholder="Sec." style="max-width:70px;display:none;" min="5" max="600"/>
+        </div>
+        <!-- Exercice d'échauffement -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <input type="checkbox" id="rExIsWarmup" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer"/>
+          <label for="rExIsWarmup" style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:0.5px;cursor:pointer">🔥 Exercice d'échauffement</label>
         </div>
         <button class="btn-add" style="width:100%" onclick="addRoutineEx();toggleRExPanel()">Confirmer ↵</button>
       </div>
@@ -1771,7 +1834,7 @@
           <select class="pr-search-inp" id="historyMuscleSearch" style="flex:1" onchange="renderHistory()">
             <option value="">Tous les muscles</option>
             <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-            <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+            <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
             <option>Abdos</option><option>Fessiers</option>
           </select>
         </div>
@@ -1947,40 +2010,73 @@
     }
   }
 
+  // ── Auth panels ──
+  function showAuthPanel(panel) {
+    document.getElementById('authHome').style.display    = panel === 'home'   ? 'block' : 'none';
+    document.getElementById('authSignin').style.display  = panel === 'signin' ? 'block' : 'none';
+    document.getElementById('authSignup').style.display  = panel === 'signup' ? 'block' : 'none';
+    document.getElementById('loginConfirm').style.display = panel === 'confirm' ? 'block' : 'none';
+  }
+
+  function togglePwd(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const isHidden = inp.type === 'password';
+    inp.type = isHidden ? 'text' : 'password';
+    btn.textContent = isHidden ? '🙈' : '👁';
+  }
+
   // ── Auth ──
   async function signUp() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if (!email || !password) { showLoginError('Remplis tous les champs'); return; }
-    if (password.length < 6) { showLoginError('Mot de passe trop court (6 car. min)'); return; }
+    const email    = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const confirm  = document.getElementById('signupPasswordConfirm').value;
+    if (!email || !password) { showSignupError('Remplis tous les champs'); return; }
+    if (password.length < 6) { showSignupError('Mot de passe trop court (6 car. min)'); return; }
+    if (password !== confirm) { showSignupError('Les mots de passe ne correspondent pas'); return; }
     const res = await fetch(SUPA_URL + '/auth/v1/signup', {
       method: 'POST',
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if (data.error || data.msg) { showLoginError(data.error_description || data.msg || 'Erreur'); return; }
+    if (data.error || data.msg) { showSignupError(data.error_description || data.msg || 'Erreur'); return; }
     if (data.access_token) {
       await handleSession(data);
     } else {
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('loginConfirm').style.display = 'block';
+      showAuthPanel('confirm');
     }
   }
 
   async function signIn() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if (!email || !password) { showLoginError('Remplis tous les champs'); return; }
+    const email    = document.getElementById('signinEmail').value.trim();
+    const password = document.getElementById('signinPassword').value;
+    if (!email || !password) { showSigninError('Remplis tous les champs'); return; }
     const res = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
       method: 'POST',
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if (!data.access_token) { showLoginError('Email ou mot de passe incorrect'); return; }
+    if (!data.access_token) { showSigninError('Email ou mot de passe incorrect'); return; }
     await handleSession(data);
   }
+
+  function showSigninError(msg) {
+    const el = document.getElementById('signinError');
+    if (!el) return;
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+
+  function showSignupError(msg) {
+    const el = document.getElementById('signupError');
+    if (!el) return;
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+
+  function showLoginError(msg) { showSigninError(msg); } // compatibilité
 
   async function handleSession(data) {
     accessToken = data.access_token;
@@ -1994,13 +2090,8 @@
   async function signOut() {
     localStorage.removeItem('seance_session');
     accessToken = null; currentUser = null;
+    showAuthPanel('home');
     document.getElementById('loginScreen').style.display = 'flex';
-  }
-
-  function showLoginError(msg) {
-    const el = document.getElementById('loginError');
-    el.textContent = msg; el.style.display = 'block';
-    setTimeout(() => el.style.display = 'none', 3000);
   }
 
   // ── Helpers cache ──
@@ -3067,12 +3158,33 @@
     exercises = routine.exercises.map(ex => {
       const nSets = Array.isArray(ex.sets) ? ex.sets.length : (parseInt(ex.sets) || 3);
       const restTime = ex.restTime ?? ex.rest ?? 90;
+      const isWarmupEx = !!ex.isWarmup;
       return {
         id: Date.now() + Math.random(),
         name: ex.name, muscle: ex.muscle || '', restTime,
         repsTarget: ex.repsTarget || (ex.reps ? String(ex.reps) : ''),
-        sets: Array.from({ length: nSets }, () => ({ w: '', r: '', done: false }))
+        unit: ex.unit || 'kg',
+        sets: Array.from({ length: nSets }, (_, si) => ({ w: '', r: '', done: false, warmup: isWarmupEx && si === 0 ? false : false })),
+        // Si marqué échauffement dans la routine → ajouter séries warmup auto
+        ...(isWarmupEx ? { _isRoutineWarmup: true } : {})
       };
+    });
+    // Pour les exercices marqués échauffement, convertir toutes les séries en warmup
+    exercises.forEach(ex => {
+      if (ex._isRoutineWarmup) {
+        ex.sets = ex.sets.map(s => ({ ...s, warmup: true }));
+        delete ex._isRoutineWarmup;
+      }
+    });
+    // Reconstituer les supersets : les indices draft → IDs séance
+    routine.exercises.forEach((rEx, ri) => {
+      if (rEx.supersetWith !== undefined) {
+        const partnerRi = rEx.supersetWith;
+        if (exercises[ri] && exercises[partnerRi]) {
+          exercises[ri].supersetWith = exercises[partnerRi].id;
+          exercises[partnerRi].supersetWith = exercises[ri].id;
+        }
+      }
     });
     const muscles = [...new Set(routine.exercises.map(e => e.muscle).filter(Boolean))];
     document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', muscles.includes(c.textContent)));
@@ -3097,16 +3209,23 @@
     document.getElementById('routineConfirmModal').style.display = 'none';
     loadedRoutineId = id;
     exercises = routine.exercises.map(ex => {
-      const nSets = Array.isArray(ex.sets) ? ex.sets.length : (parseInt(ex.sets) || parseInt(ex.sets) || 3);
+      const nSets = Array.isArray(ex.sets) ? ex.sets.length : (parseInt(ex.sets) || 3);
       const restTime = ex.restTime ?? ex.rest ?? 90;
+      const isWarmupEx = !!ex.isWarmup;
       return {
         id: Date.now() + Math.random(),
-        name: ex.name,
-        muscle: ex.muscle || '',
-        restTime,
+        name: ex.name, muscle: ex.muscle || '', restTime,
         repsTarget: ex.repsTarget || (ex.reps ? String(ex.reps) : ''),
-        sets: Array.from({ length: nSets }, () => ({ w: '', r: '', done: false }))
+        unit: ex.unit || 'kg',
+        sets: Array.from({ length: nSets }, () => ({ w: '', r: '', done: false })),
+        ...(isWarmupEx ? { _isRoutineWarmup: true } : {})
       };
+    });
+    exercises.forEach(ex => {
+      if (ex._isRoutineWarmup) {
+        ex.sets = ex.sets.map(s => ({ ...s, warmup: true }));
+        delete ex._isRoutineWarmup;
+      }
     });
     const muscles = [...new Set(routine.exercises.map(e => e.muscle).filter(Boolean))];
     document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', muscles.includes(c.textContent)));
@@ -3320,15 +3439,187 @@
     }).join('');
   }
   // ── Known exercises (from sessions + routines) ──
+  const EXERCISE_DB = [
+    // ── PECTORAUX ──
+    { name: 'Développé couché barre', muscle: 'Pectoraux' },
+    { name: 'Développé couché haltères', muscle: 'Pectoraux' },
+    { name: 'Développé incliné barre', muscle: 'Pectoraux' },
+    { name: 'Développé incliné haltères', muscle: 'Pectoraux' },
+    { name: 'Développé décliné barre', muscle: 'Pectoraux' },
+    { name: 'Développé décliné haltères', muscle: 'Pectoraux' },
+    { name: 'Développé couché machine', muscle: 'Pectoraux' },
+    { name: 'Écarté couché haltères', muscle: 'Pectoraux' },
+    { name: 'Écarté incliné haltères', muscle: 'Pectoraux' },
+    { name: 'Écarté poulie croisée', muscle: 'Pectoraux' },
+    { name: 'Écarté machine', muscle: 'Pectoraux' },
+    { name: 'Pompes', muscle: 'Pectoraux' },
+    { name: 'Pompes lestées', muscle: 'Pectoraux' },
+    { name: 'Dips pectoraux', muscle: 'Pectoraux' },
+    { name: 'Pec deck', muscle: 'Pectoraux' },
+    { name: 'Pull-over haltère', muscle: 'Pectoraux' },
+    { name: 'Pull-over machine', muscle: 'Pectoraux' },
+    { name: 'Développé couché prise serrée', muscle: 'Pectoraux' },
+    { name: 'Cable fly bas', muscle: 'Pectoraux' },
+    { name: 'Cable fly haut', muscle: 'Pectoraux' },
+    // ── DOS ──
+    { name: 'Tractions', muscle: 'Dos' },
+    { name: 'Tractions lestées', muscle: 'Dos' },
+    { name: 'Tractions assistées', muscle: 'Dos' },
+    { name: 'Tractions supination', muscle: 'Dos' },
+    { name: 'Rowing barre', muscle: 'Dos' },
+    { name: 'Rowing haltère unilatéral', muscle: 'Dos' },
+    { name: 'Rowing poulie basse', muscle: 'Dos' },
+    { name: 'Rowing machine', muscle: 'Dos' },
+    { name: 'Rowing T-bar', muscle: 'Dos' },
+    { name: 'Tirage vertical prise large', muscle: 'Dos' },
+    { name: 'Tirage vertical prise serrée', muscle: 'Dos' },
+    { name: 'Tirage vertical prise neutre', muscle: 'Dos' },
+    { name: 'Tirage horizontal poulie', muscle: 'Dos' },
+    { name: 'Soulevé de terre', muscle: 'Dos' },
+    { name: 'Soulevé de terre roumain', muscle: 'Dos' },
+    { name: 'Soulevé de terre sumo', muscle: 'Dos' },
+    { name: 'Good morning', muscle: 'Dos' },
+    { name: 'Extension lombaire machine', muscle: 'Dos' },
+    { name: 'Extension lombaire banc', muscle: 'Dos' },
+    { name: 'Shrug barre', muscle: 'Dos' },
+    { name: 'Shrug haltères', muscle: 'Dos' },
+    { name: 'Shrug machine', muscle: 'Dos' },
+    { name: 'Face pull', muscle: 'Dos' },
+    // ── ÉPAULES ──
+    { name: 'Développé militaire barre', muscle: 'Épaules' },
+    { name: 'Développé militaire haltères', muscle: 'Épaules' },
+    { name: 'Développé Arnold', muscle: 'Épaules' },
+    { name: 'Développé machine épaules', muscle: 'Épaules' },
+    { name: 'Élévation latérale haltères', muscle: 'Épaules' },
+    { name: 'Élévation latérale câble', muscle: 'Épaules' },
+    { name: 'Élévation latérale machine', muscle: 'Épaules' },
+    { name: 'Élévation frontale haltères', muscle: 'Épaules' },
+    { name: 'Élévation frontale barre', muscle: 'Épaules' },
+    { name: 'Oiseau haltères', muscle: 'Épaules' },
+    { name: 'Oiseau câble', muscle: 'Épaules' },
+    { name: 'Oiseau machine', muscle: 'Épaules' },
+    { name: 'Upright row barre', muscle: 'Épaules' },
+    { name: 'Upright row câble', muscle: 'Épaules' },
+    { name: 'Overhead press machine', muscle: 'Épaules' },
+    { name: 'Landmine press', muscle: 'Épaules' },
+    // ── BICEPS ──
+    { name: 'Curl biceps barre', muscle: 'Biceps' },
+    { name: 'Curl biceps haltères', muscle: 'Biceps' },
+    { name: 'Curl marteau', muscle: 'Biceps' },
+    { name: 'Curl incliné haltères', muscle: 'Biceps' },
+    { name: 'Curl concentré', muscle: 'Biceps' },
+    { name: 'Curl câble bas', muscle: 'Biceps' },
+    { name: 'Curl barre EZ', muscle: 'Biceps' },
+    { name: 'Curl pupitre barre', muscle: 'Biceps' },
+    { name: 'Curl pupitre haltères', muscle: 'Biceps' },
+    { name: 'Curl câble unilatéral', muscle: 'Biceps' },
+    { name: 'Curl corde câble', muscle: 'Biceps' },
+    { name: 'Curl machine', muscle: 'Biceps' },
+    { name: 'Curl barre supination prise serrée', muscle: 'Biceps' },
+    // ── TRICEPS ──
+    { name: 'Extension triceps poulie haute', muscle: 'Triceps' },
+    { name: 'Extension triceps corde', muscle: 'Triceps' },
+    { name: 'Extension triceps barre front', muscle: 'Triceps' },
+    { name: 'Extension triceps haltère', muscle: 'Triceps' },
+    { name: 'Extension triceps machine', muscle: 'Triceps' },
+    { name: 'Dips triceps', muscle: 'Triceps' },
+    { name: 'Dips lestés', muscle: 'Triceps' },
+    { name: 'Kickback triceps haltère', muscle: 'Triceps' },
+    { name: 'Kickback triceps câble', muscle: 'Triceps' },
+    { name: 'Développé couché prise serrée triceps', muscle: 'Triceps' },
+    { name: 'Skull crusher barre', muscle: 'Triceps' },
+    { name: 'Skull crusher barre EZ', muscle: 'Triceps' },
+    { name: 'Skull crusher haltères', muscle: 'Triceps' },
+    { name: 'Pompes diamant', muscle: 'Triceps' },
+    { name: 'Barre derrière la tête', muscle: 'Triceps' },
+    // ── QUADRICEPS ──
+    { name: 'Squat barre', muscle: 'Quadriceps' },
+    { name: 'Squat avant barre', muscle: 'Quadriceps' },
+    { name: 'Squat haltères', muscle: 'Quadriceps' },
+    { name: 'Squat bulgare', muscle: 'Quadriceps' },
+    { name: 'Squat Smith machine', muscle: 'Quadriceps' },
+    { name: 'Squat sumo', muscle: 'Quadriceps' },
+    { name: 'Leg press', muscle: 'Quadriceps' },
+    { name: 'Leg extension machine', muscle: 'Quadriceps' },
+    { name: 'Fente avant barre', muscle: 'Quadriceps' },
+    { name: 'Fente avant haltères', muscle: 'Quadriceps' },
+    { name: 'Fente latérale', muscle: 'Quadriceps' },
+    { name: 'Fente marchée', muscle: 'Quadriceps' },
+    { name: 'Fente inversée', muscle: 'Quadriceps' },
+    { name: 'Step up', muscle: 'Quadriceps' },
+    { name: 'Hack squat machine', muscle: 'Quadriceps' },
+    { name: 'Presse à cuisses', muscle: 'Quadriceps' },
+    { name: 'Sissy squat', muscle: 'Quadriceps' },
+    { name: 'Wall sit', muscle: 'Quadriceps' },
+    // ── ISCHIO-JAMBIERS / FESSIERS ──
+    { name: 'Soulevé de terre jambes tendues', muscle: 'Ischio-jambiers' },
+    { name: 'Leg curl couché machine', muscle: 'Ischio-jambiers' },
+    { name: 'Leg curl assis machine', muscle: 'Ischio-jambiers' },
+    { name: 'Leg curl debout machine', muscle: 'Ischio-jambiers' },
+    { name: 'Nordic curl', muscle: 'Ischio-jambiers' },
+    { name: 'Hip thrust barre', muscle: 'Fessiers' },
+    { name: 'Hip thrust machine', muscle: 'Fessiers' },
+    { name: 'Hip thrust haltère', muscle: 'Fessiers' },
+    { name: 'Glute bridge', muscle: 'Fessiers' },
+    { name: 'Donkey kick câble', muscle: 'Fessiers' },
+    { name: 'Abduction machine', muscle: 'Fessiers' },
+    { name: 'Adduction machine', muscle: 'Fessiers' },
+    { name: 'Cable kickback', muscle: 'Fessiers' },
+    // ── MOLLETS ──
+    { name: 'Mollets debout machine', muscle: 'Mollets' },
+    { name: 'Mollets assis machine', muscle: 'Mollets' },
+    { name: 'Mollets debout barre', muscle: 'Mollets' },
+    { name: 'Mollets haltères', muscle: 'Mollets' },
+    { name: 'Mollets à la presse', muscle: 'Mollets' },
+    { name: 'Mollets unilatéral', muscle: 'Mollets' },
+    { name: 'Flexion dorsale cheville', muscle: 'Mollets' },
+    // ── ABDOMINAUX ──
+    { name: 'Crunch', muscle: 'Abdominaux' },
+    { name: 'Crunch câble', muscle: 'Abdominaux' },
+    { name: 'Crunch machine', muscle: 'Abdominaux' },
+    { name: 'Relevé de jambes', muscle: 'Abdominaux' },
+    { name: 'Relevé de jambes suspendu', muscle: 'Abdominaux' },
+    { name: 'Gainage planche', muscle: 'Abdominaux' },
+    { name: 'Gainage latéral', muscle: 'Abdominaux' },
+    { name: 'Russian twist', muscle: 'Abdominaux' },
+    { name: 'Ab wheel', muscle: 'Abdominaux' },
+    { name: 'Mountain climber', muscle: 'Abdominaux' },
+    { name: 'Bicycle crunch', muscle: 'Abdominaux' },
+    { name: 'Dragon flag', muscle: 'Abdominaux' },
+    { name: 'Hollow body', muscle: 'Abdominaux' },
+    { name: 'Vacuum abdominal', muscle: 'Abdominaux' },
+    { name: 'Torsion buste câble', muscle: 'Abdominaux' },
+    { name: 'Decline crunch', muscle: 'Abdominaux' },
+    // ── AVANT-BRAS ──
+    { name: 'Curl poignet barre', muscle: 'Avant-bras' },
+    { name: 'Extension poignet barre', muscle: 'Avant-bras' },
+    { name: 'Reverse curl barre', muscle: 'Avant-bras' },
+    { name: 'Pinch grip', muscle: 'Avant-bras' },
+    { name: 'Farmer carry', muscle: 'Avant-bras' },
+    // ── POLYARTICULAIRES / FULL BODY ──
+    { name: 'Développé couché barre (force)', muscle: 'Pectoraux' },
+    { name: 'Clean & press', muscle: 'Full body' },
+    { name: 'Snatch haltère', muscle: 'Full body' },
+    { name: 'Kettlebell swing', muscle: 'Full body' },
+    { name: 'Burpees', muscle: 'Full body' },
+    { name: 'Thruster', muscle: 'Full body' },
+    { name: 'Bear complex', muscle: 'Full body' },
+    { name: 'Man maker', muscle: 'Full body' },
+    { name: 'Turkish get up', muscle: 'Full body' },
+  ];
+
   function getKnownExercises() {
     const map = {};
+    // Base statique en premier
+    EXERCISE_DB.forEach(e => { map[e.name.toLowerCase()] = e; });
+    // Exercices des séances et routines (priorité sur la base statique)
     sessions.forEach(s => s.exercises.forEach(e => {
       if (e.name) map[e.name.toLowerCase()] = { name: e.name, muscle: e.muscle || '' };
     }));
     routines.forEach(r => r.exercises.forEach(e => {
-      if (e.name && !map[e.name.toLowerCase()]) map[e.name.toLowerCase()] = { name: e.name, muscle: e.muscle || '' };
+      if (e.name) map[e.name.toLowerCase()] = { name: e.name, muscle: e.muscle || '' };
     }));
-    return Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
+    return Object.values(map).sort((a,b) => a.name.localeCompare(b.name, 'fr'));
   }
 
   // ── Add form autocomplete ──
@@ -3651,7 +3942,7 @@
               <div style="display:flex;gap:6px;margin-bottom:6px">
                 <select class="inp" id="newSessExMuscle-${d}" style="flex:1;font-size:12px">
                   <option value="">Muscle</option>
-                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
+                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
                 </select>
                 <input class="inp" id="newSessExSets-${d}" type="number" min="1" max="20" placeholder="Séries" style="width:70px;text-align:center"/>
                 <input class="inp" id="newSessExRest-${d}" type="number" min="0" placeholder="Repos s" style="width:75px;text-align:center"/>
@@ -3846,7 +4137,7 @@
               <div style="display:flex;gap:6px;margin-bottom:6px">
                 <select class="inp" id="inlineNewSessExMuscle-${progId}-${d}" style="flex:1;font-size:12px">
                   <option value="">Muscle</option>
-                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
+                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
                 </select>
                 <input class="inp" id="inlineNewSessExSets-${progId}-${d}" type="number" min="1" max="20" placeholder="Séries" style="width:70px;text-align:center"/>
                 <input class="inp" id="inlineNewSessExRest-${progId}-${d}" type="number" min="0" placeholder="Repos s" style="width:75px;text-align:center"/>
@@ -4072,14 +4363,45 @@
     if (!isOpen) setTimeout(() => document.getElementById('inlineRExName-' + routineId)?.focus(), 50);
   }
 
+  let _rExUnit = 'kg'; // 'kg' | 'sec'
+
+  function setRExUnit(unit) {
+    _rExUnit = unit;
+    const kgBtn  = document.getElementById('rExUnitKg');
+    const secBtn = document.getElementById('rExUnitSec');
+    const repsInp = document.getElementById('rExReps');
+    if (kgBtn)  { kgBtn.style.background  = unit === 'kg'  ? 'var(--accent)' : 'var(--surface)'; kgBtn.style.color  = unit === 'kg'  ? '#fff' : 'var(--muted)'; }
+    if (secBtn) { secBtn.style.background = unit === 'sec' ? 'var(--accent)' : 'var(--surface)'; secBtn.style.color = unit === 'sec' ? '#fff' : 'var(--muted)'; }
+    if (repsInp) repsInp.placeholder = unit === 'sec' ? 'Durée (ex: 30)' : 'Reps (ex: 8-10)';
+  }
+
   function addRoutineEx() {
     const name = document.getElementById('rExName').value.trim();
     if (!name) { showToast('Entre un nom'); return; }
     const restSel = document.getElementById('rExRest');
     const restVal = restSel.value === 'custom' ? parseInt(document.getElementById('rExRestCustom').value)||90 : parseInt(restSel.value);
-    draftRoutineExs.push({ name, muscle: document.getElementById('rExMuscle').value, sets: parseInt(document.getElementById('rExSets').value)||3, repsTarget: document.getElementById('rExReps').value.trim(), restTime: restVal });
-    document.getElementById('rExName').value=''; document.getElementById('rExMuscle').value=''; document.getElementById('rExSets').value=''; document.getElementById('rExReps').value=''; restSel.value='90'; document.getElementById('rExRestCustom').style.display='none'; document.getElementById('rExRestCustom').value='';
-    // Refermer le panel et remettre le label du bouton
+    const repsRaw = document.getElementById('rExReps').value.trim();
+    const repsTarget = _rExUnit === 'sec' && repsRaw ? repsRaw + 's' : repsRaw;
+    const isWarmup = document.getElementById('rExIsWarmup')?.checked || false;
+    draftRoutineExs.push({
+      name,
+      muscle: document.getElementById('rExMuscle').value,
+      sets: parseInt(document.getElementById('rExSets').value)||3,
+      repsTarget,
+      unit: _rExUnit,
+      isWarmup,
+      restTime: restVal
+    });
+    document.getElementById('rExName').value='';
+    document.getElementById('rExMuscle').value='';
+    document.getElementById('rExSets').value='';
+    document.getElementById('rExReps').value='';
+    if (document.getElementById('rExIsWarmup')) document.getElementById('rExIsWarmup').checked = false;
+    restSel.value='90';
+    document.getElementById('rExRestCustom').style.display='none';
+    document.getElementById('rExRestCustom').value='';
+    _rExUnit = 'kg';
+    setRExUnit('kg');
     const panel = document.getElementById('rExPanel');
     if (panel) panel.style.display = 'none';
     const btn = document.getElementById('rExToggleBtn');
@@ -4087,8 +4409,14 @@
     renderDraftRoutineExs();
   }
   function renderDraftRoutineExs() {
-    document.getElementById('routineExList').innerHTML = draftRoutineExs.map((ex,i)=>`
-      <div class="routine-ex-edit-row">
+    const html = draftRoutineExs.map((ex, i) => {
+      const isInSS = ex.supersetWith !== undefined;
+      const ssPartnerIdx = isInSS ? draftRoutineExs.findIndex((e,j) => j !== i && e.supersetWith === i || j === ex.supersetWith) : -1;
+      // Connecteur SS entre deux exercices liés
+      const showConnector = isInSS && i > 0 && draftRoutineExs[i-1].supersetWith === i;
+
+      return `${showConnector ? `<div style="text-align:center;margin:-4px 0;font-size:9px;color:var(--accent);font-family:'Geist Mono',monospace;letter-spacing:1px;padding:3px 0;background:rgba(74,140,92,0.08);border-radius:4px">⇄ SUPERSET</div>` : ''}
+      <div class="routine-ex-edit-row${ex.isWarmup ? ' rex-warmup' : ''}${isInSS ? ' rex-superset' : ''}">
         <div class="routine-ex-edit-top">
           <div class="rex-name-wrap">
             <input class="rex-inp rex-name-inp" value="${ex.name.replace(/"/g,'&quot;')}" placeholder="Nom exercice"
@@ -4097,25 +4425,72 @@
               autocomplete="off"/>
             <div class="ex-suggestions ex-add-suggestions" id="draftExSug${i}"></div>
           </div>
-          <button class="routine-ex-del" onclick="delDraftEx(${i})" style="font-size:14px;padding:4px 8px;">✕</button>
+          <div style="display:flex;gap:4px;align-items:center">
+            <!-- Bouton superset -->
+            <button onclick="toggleDraftSuperset(${i})"
+              title="${isInSS ? 'Retirer du superset' : 'Lier en superset avec le suivant'}"
+              style="background:${isInSS ? 'var(--accent)' : 'none'};color:${isInSS ? '#fff' : 'var(--muted)'};border:1px solid ${isInSS ? 'var(--accent)' : 'var(--border)'};border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer;font-family:'Geist Mono',monospace;flex-shrink:0">⇄</button>
+            <button class="routine-ex-del" onclick="delDraftEx(${i})" style="font-size:14px;padding:4px 8px;">✕</button>
+          </div>
         </div>
         <div class="routine-ex-edit-bot">
           <select class="rex-inp" style="flex:1" onchange="draftRoutineExs[${i}].muscle=this.value">
             <option value="">Muscle</option>
-            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
+            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
           </select>
-          <input class="rex-inp" type="number" style="width:60px;text-align:center" value="${ex.sets}" min="1" max="10" placeholder="Séries"
+          <input class="rex-inp" type="number" style="width:52px;text-align:center" value="${ex.sets}" min="1" max="10" placeholder="Séries"
             oninput="draftRoutineExs[${i}].sets=parseInt(this.value)||3" title="Nombre de séries"/>
-          <select class="rex-inp" style="width:100px" onchange="onDraftRestChange(${i}, this)">
+          <!-- Toggle kg/sec -->
+          <div style="display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0">
+            <button onclick="draftRoutineExs[${i}].unit='kg';renderDraftRoutineExs()"
+              style="padding:6px 8px;border:none;background:${ex.unit!=='sec'?'var(--accent)':'var(--surface)'};color:${ex.unit!=='sec'?'#fff':'var(--muted)'};font-family:'Geist Mono',monospace;font-size:8px;cursor:pointer">KG</button>
+            <button onclick="draftRoutineExs[${i}].unit='sec';renderDraftRoutineExs()"
+              style="padding:6px 8px;border:none;background:${ex.unit==='sec'?'var(--accent)':'var(--surface)'};color:${ex.unit==='sec'?'#fff':'var(--muted)'};font-family:'Geist Mono',monospace;font-size:8px;cursor:pointer">SEC</button>
+          </div>
+          <input class="rex-inp" type="text" style="width:72px;text-align:center"
+            value="${ex.repsTarget||''}"
+            placeholder="${ex.unit==='sec'?'Durée':'Reps'}"
+            maxlength="8"
+            oninput="draftRoutineExs[${i}].repsTarget=this.value.trim()"/>
+          <select class="rex-inp" style="width:90px" onchange="onDraftRestChange(${i}, this)">
             ${[['60','1 min'],['90','1m30'],['120','2 min'],['180','3 min'],['0','Sans'],['custom','Perso.']].map(([v,l])=>`<option value="${v}" ${v!=='custom'&&parseInt(ex.restTime)===parseInt(v)?'selected':v==='custom'&&![0,60,90,120,180].includes(parseInt(ex.restTime))&&ex.restTime>0?'selected':''}>${l}</option>`).join('')}
           </select>
           <input class="rex-inp" type="number" placeholder="Sec." min="5" max="600"
             id="draftRestCustom${i}"
-            style="width:60px;display:${![0,60,90,120,180].includes(parseInt(ex.restTime))&&ex.restTime>0?'block':'none'}"
+            style="width:52px;display:${![0,60,90,120,180].includes(parseInt(ex.restTime))&&ex.restTime>0?'block':'none'}"
             value="${![0,60,90,120,180].includes(parseInt(ex.restTime))&&ex.restTime>0?ex.restTime:''}"
             oninput="draftRoutineExs[${i}].restTime=parseInt(this.value)||90"/>
         </div>
-      </div>`).join('');
+        <!-- Case échauffement -->
+        <div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <input type="checkbox" id="draftWarmup${i}" ${ex.isWarmup?'checked':''} style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer"
+            onchange="draftRoutineExs[${i}].isWarmup=this.checked;renderDraftRoutineExs()"/>
+          <label for="draftWarmup${i}" style="font-size:10px;color:${ex.isWarmup?'#c9962a':'var(--muted)'};font-family:'Geist Mono',monospace;cursor:pointer">🔥 Échauffement</label>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('routineExList').innerHTML = html;
+  }
+
+  function toggleDraftSuperset(i) {
+    const ex = draftRoutineExs[i];
+    if (ex.supersetWith !== undefined) {
+      // Retirer du superset
+      const partnerId = ex.supersetWith;
+      const partnerIdx = draftRoutineExs.findIndex((e, j) => j === partnerId);
+      if (partnerIdx >= 0) delete draftRoutineExs[partnerIdx].supersetWith;
+      delete ex.supersetWith;
+      showToast('Superset retiré');
+    } else {
+      // Lier avec le suivant
+      const nextIdx = i + 1;
+      if (nextIdx >= draftRoutineExs.length) { showToast('Ajoute un exercice suivant pour créer un superset'); return; }
+      if (draftRoutineExs[nextIdx].supersetWith !== undefined) { showToast('L\'exercice suivant est déjà en superset'); return; }
+      ex.supersetWith = nextIdx;
+      draftRoutineExs[nextIdx].supersetWith = i;
+      showToast('⇄ Superset créé');
+    }
+    renderDraftRoutineExs();
   }
 
   function onDraftRestChange(i, sel) {
@@ -4216,7 +4591,7 @@
           <select class="inp" id="inlineRExMuscle-${routineId}">
             <option value="">Muscle</option>
             <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-            <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+            <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
             <option>Abdos</option><option>Fessiers</option><option>Autre</option>
           </select>
         </div>
@@ -4261,7 +4636,7 @@
         <div class="routine-ex-edit-bot">
           <select class="rex-inp" style="flex:1" onchange="draftRoutineExs[${i}].muscle=this.value">
             <option value="">Muscle</option>
-            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
+            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
           </select>
           <input class="rex-inp" type="number" style="width:54px;text-align:center" placeholder="Séries" value="${ex.sets}" min="1" max="10"
             oninput="draftRoutineExs[${i}].sets=parseInt(this.value)||3"/>
@@ -4437,7 +4812,7 @@
           </div>
         </div>
         ${muscles.length ? `<div style="display:flex;gap:5px;flex-wrap:wrap">${muscles.map(m => `<span style="font-size:8px;${getTagStyle(m)};padding:2px 8px;border-radius:20px;font-family:'Geist Mono',monospace">${m.toUpperCase()}</span>`).join('')}</div>` : ''}
-        <div class="rc-exs-list ${(openRoutineIds.has(r.id)&&!isEditing)?'open':''}" onclick="toggleRoutineExs(${r.id})">${r.exercises.map(ex=>`<div class="rc-ex-row"><div><div class="rc-ex-name">${ex.name}</div>${ex.muscle?`<div class="rc-ex-muscle">${ex.muscle}</div>`:''}</div><div class="rc-ex-sets">${ex.sets} série${ex.sets>1?'s':''} ${ex.repsTarget ? '· ' + ex.repsTarget + ' reps' : ''} · ${ex.restTime??90}s</div></div>`).join('')}</div>
+        <div class="rc-exs-list ${(openRoutineIds.has(r.id)&&!isEditing)?'open':''}" onclick="toggleRoutineExs(${r.id})">${r.exercises.map(ex=>`<div class="rc-ex-row"><div><div class="rc-ex-name">${ex.name}</div>${ex.muscle?`<div class="rc-ex-muscle">${ex.muscle}</div>`:''}</div><div class="rc-ex-sets">${ex.sets} série${ex.sets>1?'s':''} ${ex.repsTarget ? '· ' + ex.repsTarget + (ex.unit==='sec' ? 's' : ' reps') : ''} · ${ex.restTime??90}s</div></div>`).join('')}</div>
         <div class="rc-inline-edit ${isEditing?'open':''}" id="inlineEdit-${r.id}"></div>
       </div>`;
     }).join('');
@@ -9135,7 +9510,7 @@
 
     // Groupes musculaires (depuis les chips cochés OU depuis exercises)
     const selectedMuscles = [...document.querySelectorAll('.chip.on')].map(c => c.textContent);
-    const muscleChips = ['Pectoraux','Dos','Épaules','Biceps','Triceps','Jambes','Abdos','Fessiers'];
+    const muscleChips = ['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers'];
     const muscleHtml = `
       <div style="margin-bottom:18px">
         <div class="label" style="margin-bottom:8px">Groupes musculaires</div>
@@ -9233,7 +9608,7 @@
             <select class="inp" id="exMuscleFs">
               <option value="">Muscle</option>
               <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-              <option>Biceps</option><option>Triceps</option><option>Jambes</option>
+              <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
               <option>Abdos</option><option>Fessiers</option><option>Autre</option>
             </select>
           </div>
