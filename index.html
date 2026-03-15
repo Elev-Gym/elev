@@ -8313,33 +8313,47 @@
 
   // ── Navigation date nutrition par swipe ──
   let _nutriSwipeStartX = null;
+  let _nutriSwipeStartY = null;
+  let _nutriSwipeDir = null; // 'h' | 'v' | null
 
   function nutriCardSwipeStart(e) {
     _nutriSwipeStartX = e.touches[0].clientX;
+    _nutriSwipeStartY = e.touches[0].clientY;
+    _nutriSwipeDir = null;
   }
 
   function nutriCardSwipeMove(e) {
-    // Pas de scroll pendant le swipe horizontal
     if (_nutriSwipeStartX === null) return;
     const dx = e.touches[0].clientX - _nutriSwipeStartX;
-    if (Math.abs(dx) > 10) e.preventDefault();
+    const dy = e.touches[0].clientY - _nutriSwipeStartY;
+    // Déterminer la direction dominante au premier mouvement significatif
+    if (!_nutriSwipeDir && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      _nutriSwipeDir = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+    }
+    if (_nutriSwipeDir === 'h') e.preventDefault();
   }
 
   function nutriCardSwipeEnd(e) {
     if (_nutriSwipeStartX === null) return;
     const dx = e.changedTouches[0].clientX - _nutriSwipeStartX;
     _nutriSwipeStartX = null;
+    _nutriSwipeStartY = null;
+    _nutriSwipeDir = null;
     if (Math.abs(dx) < 50) return; // seuil minimum
+    // dx > 0 = swipe droite = jour précédent (-1), dx < 0 = swipe gauche = jour suivant (+1)
     nutriNavigateDate(dx > 0 ? -1 : 1);
   }
 
   function nutriNavigateDate(delta) {
-    const d = new Date(_nutriViewDate + 'T00:00:00');
+    // Manipulation purement sur la string YYYY-MM-DD pour éviter tout problème de fuseau
+    const parts = _nutriViewDate.split('-');
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     d.setDate(d.getDate() + delta);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+    const newStr = d.toLocaleDateString('en-CA');
     // Pas de navigation dans le futur
-    if (d.toISOString().split('T')[0] > todayStr) return;
-    _nutriViewDate = d.toISOString().split('T')[0];
+    if (newStr > todayStr) return;
+    _nutriViewDate = newStr;
     // Animation flash
     const card = document.getElementById('nutriSummaryCard');
     if (card) {
