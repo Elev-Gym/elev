@@ -1081,11 +1081,12 @@
           <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:6px;align-self:flex-start">Calories</div>
           <!-- Arc fin + chiffre centré -->
           <div style="position:relative;width:84px;height:84px;flex-shrink:0">
-            <svg width="84" height="84" viewBox="0 0 84 84" style="transform:rotate(-90deg)">
-              <circle cx="42" cy="42" r="36" fill="none" stroke="var(--border2)" stroke-width="3"/>
+            <svg width="84" height="84" viewBox="0 0 84 84" style="transform:rotate(135deg)">
+              <circle cx="42" cy="42" r="36" fill="none" stroke="var(--border2)" stroke-width="3"
+                stroke-dasharray="170 226" stroke-linecap="round"/>
               <circle cx="42" cy="42" r="36" fill="none" stroke="var(--accent)" stroke-width="3"
                 stroke-linecap="round" id="homeKcalRing"
-                stroke-dasharray="226" stroke-dashoffset="226"/>
+                stroke-dasharray="0 226"/>
             </svg>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
               <div style="font-family:'DM Serif Display',serif;font-size:19px;font-weight:400;color:var(--text);line-height:1" id="homeKcalVal">0</div>
@@ -1521,15 +1522,15 @@
           <div style="font-size:10px;color:var(--muted);margin-top:5px">Mangées</div>
         </div>
 
-        <!-- Anneau complet SVG centré — r=52, circumference=326.7 -->
+        <!-- Anneau ouvert SVG centré — r=52, ouverture en bas -->
         <div style="position:relative;width:130px;height:130px;flex-shrink:0">
-          <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg)">
-            <circle cx="65" cy="65" r="52" fill="none" stroke="var(--border2)" stroke-width="10"/>
+          <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(135deg)">
+            <circle cx="65" cy="65" r="52" fill="none" stroke="var(--border2)" stroke-width="10"
+              stroke-dasharray="245 326.7" stroke-linecap="round"/>
             <circle cx="65" cy="65" r="52" fill="none" stroke="var(--accent)" stroke-width="10"
               stroke-linecap="round"
               id="nutriSemiRing"
-              stroke-dasharray="326.7"
-              stroke-dashoffset="326.7"/>
+              stroke-dasharray="0 326.7"/>
           </svg>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
             <div style="font-family:'DM Serif Display',serif;font-size:32px;color:var(--text);line-height:1" id="nutriKcalRemaining">—</div>
@@ -5331,9 +5332,9 @@
     const todayLip  = Math.round(nutriToday.reduce((s, e) => s + (e.lip  || 0), 0) * 10) / 10;
     const kcalTarget = parseInt(profile?.kcalTarget) || 2400;
     const pct = Math.min(todayNutriKcal / kcalTarget, 1);
-    const circumference = 226;
+    const arcHome = 170;
     const ring = document.getElementById('homeKcalRing');
-    if (ring) ring.style.strokeDashoffset = circumference - pct * circumference;
+    if (ring) ring.style.strokeDasharray = (pct * arcHome) + ' 226';
     const kcalEl = document.getElementById('homeKcalVal');
     if (kcalEl) kcalEl.textContent = todayNutriKcal > 0 ? todayNutriKcal.toLocaleString('fr-FR') : kcalTarget.toLocaleString('fr-FR');
     const subEl = document.getElementById('homeKcalSub');
@@ -7128,12 +7129,12 @@
     const goalLip  = Math.round(goalKcal * (ns.lip  / 100) / 9);
     const remaining = Math.max(goalKcal - totalKcal, 0);
 
-    // Demi-anneau : stroke-dasharray 141.4 = demi-cercle r=45 * π ≈ 141.4
-    const semiLen = 326.7;
-    const semiOffset = semiLen - Math.min(totalKcal / goalKcal, 1) * semiLen;
+    // Arc ouvert (270°) : longueur = 245
+    const arcLen = 245;
+    const filled = Math.min(totalKcal / goalKcal, 1) * arcLen;
     const ring = document.getElementById('nutriSemiRing');
     if (ring) {
-      ring.style.strokeDashoffset = semiOffset;
+      ring.style.strokeDasharray = `${filled} 326.7`;
       ring.style.stroke = totalKcal > goalKcal ? 'var(--accent2)' : 'var(--accent)';
     }
 
@@ -7502,7 +7503,7 @@
 
     // Anneau + macros du snap card
     const ring = document.getElementById('homeKcalRing');
-    if (ring) ring.style.strokeDashoffset = 226 - pct * 226;
+    if (ring) ring.style.strokeDasharray = (pct * 170) + ' 226';
     const kcalEl = document.getElementById('homeKcalVal');
     if (kcalEl) kcalEl.textContent = totalKcal > 0 ? totalKcal.toLocaleString('fr-FR') : goalKcal.toLocaleString('fr-FR');
     const subEl = document.getElementById('homeKcalSub');
