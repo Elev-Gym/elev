@@ -7460,11 +7460,13 @@
     document.getElementById('mpLip').textContent  = totLip  + ' g';
 
     const list = document.getElementById('mealPageList');
+    list.style.margin = '0 16px';
     if (!items.length) {
-      list.innerHTML = `<div style="text-align:center;padding:48px 16px;color:var(--muted);font-size:13px">Aucun aliment pour ce repas.<br><span style="font-size:11px;opacity:0.7">Appuie sur + pour ajouter.</span></div>`;
+      list.innerHTML = `<div style="text-align:center;padding:48px 0;color:var(--muted);font-size:13px">Aucun aliment pour ce repas.<br><span style="font-size:11px;opacity:0.7">Appuie sur + pour ajouter.</span></div>`;
       return;
     }
-    list.innerHTML = items.map(e => `
+    list.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--card-shadow)">` +
+      items.map(e => `
       <div style="position:relative;overflow:hidden;border-bottom:0.5px solid var(--border)">
         <div id="ndel-${e.id}" onclick="deleteNutriEntry(${e.id});renderMealPage();renderNutritionTab()" style="position:absolute;right:0;top:0;bottom:0;width:72px;background:#c0392b;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.15s">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
@@ -7482,7 +7484,7 @@
           <div style="font-size:14px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace;margin-left:12px;flex-shrink:0">${e.kcal} kcal</div>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="2" style="margin-left:8px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-      </div>`).join('');
+      </div>`).join('') + `</div>`;
   }
 
   // Widget accueil nutrition
@@ -9080,10 +9082,10 @@
   </div>
 
   <!-- Contenu scrollable -->
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px calc(env(safe-area-inset-bottom)+24px)" id="mealPageScroll">
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 0 calc(env(safe-area-inset-bottom)+24px)" id="mealPageScroll">
 
     <!-- Card macros 2×2 -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:var(--card-shadow)">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:0 16px 16px;box-shadow:var(--card-shadow)">
       <div style="display:grid;grid-template-columns:1fr 1fr">
         <div style="text-align:center;padding:18px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)">
           <div style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);font-weight:400;line-height:1" id="mpKcal">0</div>
@@ -9105,12 +9107,12 @@
     </div>
 
     <!-- Liste aliments -->
-    <div id="mealPageList"></div>
+    <div id="mealPageList" style="margin:0 16px"></div>
 
-    <!-- Bouton Ajouter plus (dans le scroll, sous les aliments) -->
-    <div style="margin-top:16px">
+    <!-- Bouton Ajouter plus -->
+    <div style="margin:16px 16px 0">
       <button onclick="mealPageAddFood()"
-        style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer;color:var(--accent);display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:var(--card-shadow)">
+        style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer;color:var(--accent);display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:var(--card-shadow);box-sizing:border-box">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Ajouter un aliment
       </button>
