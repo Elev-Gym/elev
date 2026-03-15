@@ -8345,16 +8345,25 @@
   }
 
   function nutriNavigateDate(delta) {
-    // Manipulation purement sur la string YYYY-MM-DD pour éviter tout problème de fuseau
+    // Manipulation purement locale sur la string YYYY-MM-DD
     const parts = _nutriViewDate.split('-');
     const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     d.setDate(d.getDate() + delta);
-    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
-    const newStr = d.toLocaleDateString('en-CA');
+
+    // today en local YYYY-MM-DD sans dépendance toLocaleDateString
+    const now = new Date();
+    const todayStr = now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2, '0') + '-' +
+      String(now.getDate()).padStart(2, '0');
+
+    const newStr = d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+
     // Pas de navigation dans le futur
     if (newStr > todayStr) return;
+
     _nutriViewDate = newStr;
-    // Animation flash
     const card = document.getElementById('nutriSummaryCard');
     if (card) {
       card.style.transition = 'opacity 0.12s';
