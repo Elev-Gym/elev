@@ -723,6 +723,7 @@
   .ex-note-toggle { flex: 1; background: none; border: none; color: var(--muted); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; padding: 12px 8px; font-family: 'Geist Mono', monospace; text-align: center; transition: all 0.15s; }
   .ex-note-toggle:hover { color: var(--accent); background: var(--accent-light); }
   .ex-note-toggle:active { background: var(--accent-light); }
+  .ex-note-toggle.wu-active { color: var(--accent); background: var(--accent-light); }
   .ex-note-area { width:100%;background:var(--warm);border:none;border-top:1px solid var(--border);padding:10px 14px;font-family:DM Serif Display,serif;font-size:14px;font-style:italic;color:var(--text);resize:none;min-height:52px;line-height:1.5;box-sizing:border-box; }
   .ex-note-area:focus { outline:none;background:#f0ece6; }
   /* ── Récap modal ── */
@@ -3312,7 +3313,7 @@
         <div class="ex-actions-row">
           <button class="add-set" onclick="addSet(${ei})">+ Série</button>
           <button class="add-set wu-btn${ex.sets.some(s=>s.warmup)?' wu-active':''}" onclick="toggleWarmup(${ei})">${ex.sets.some(s=>s.warmup)?'🔥 Retirer':'🔥 Échauff.'}</button>
-          <button class="ex-note-toggle" onclick="toggleExNote(${ei})" id="ex-note-btn-${ei}">${ex.note ? '📝 Note' : '+ Note'}</button>
+          <button class="ex-note-toggle${ex.note ? ' wu-active' : ''}" onclick="toggleExNote(${ei})" id="ex-note-btn-${ei}">📝 Notes</button>
         </div>
         <textarea class="ex-note-area" id="ex-note-${ei}" placeholder="Note sur cet exercice..." style="display:${ex.note ? 'block' : 'none'}" onchange="updExNote(${ei},this.value)" onblur="updExNote(${ei},this.value)">${ex.note || ''}</textarea>
       </div>`;
@@ -9200,6 +9201,7 @@
         <div class="ex-actions-row">
           <button class="add-set" onclick="addSet(${ei})">+ Série</button>
           <button class="add-set wu-btn${ex.sets.some(s=>s.warmup)?' wu-active':''}" onclick="toggleWarmup(${ei})">${ex.sets.some(s=>s.warmup)?'🔥 Retirer':'🔥 Échauff.'}</button>
+          <button class="ex-note-toggle${ex.note ? ' wu-active' : ''}" onclick="toggleExNote(${ei})" id="ex-note-btn-fs-${ei}">📝 Notes</button>
         </div>
         ${ex.note !== undefined ? `<textarea class="ex-note-area" placeholder="Note sur l'exercice..." oninput="exercises[${ei}].note=this.value">${ex.note||''}</textarea>` : ''}
       </div>`;
