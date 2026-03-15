@@ -8981,41 +8981,41 @@
 <!-- ══ PAGE REPAS DÉTAIL ══ -->
 <div id="mealPageOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:965;flex-direction:column;overflow:hidden">
   <!-- Header -->
-  <div style="padding:calc(env(safe-area-inset-top)+12px) 16px 12px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
-    <button onclick="closeMealPage()" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px;display:flex;align-items:center">
+  <div style="padding:12px 16px 12px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;margin-top:env(safe-area-inset-top)">
+    <button onclick="closeMealPage()" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px;display:flex;align-items:center;width:36px">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <div style="font-size:16px;font-weight:600;color:var(--text)" id="mealPageTitle">Repas</div>
-    <button onclick="openNutriAdd(window._mealPageCurrent)" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);flex:1;text-align:center" id="mealPageTitle">Repas</div>
+    <button onclick="openNutriAdd(window._mealPageCurrent)" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px;display:flex;align-items:center;justify-content:flex-end;width:36px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
   </div>
 
   <!-- Macros grille 2×2 -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--border);flex-shrink:0">
-    <div style="text-align:center;padding:18px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)">
-      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);font-weight:400" id="mpKcal">0</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Calories</div>
+    <div style="text-align:center;padding:16px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)">
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);font-weight:400;line-height:1" id="mpKcal">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Calories</div>
     </div>
-    <div style="text-align:center;padding:18px 12px;border-bottom:1px solid var(--border)">
-      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);font-weight:400" id="mpGluc">0 g</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Glucides</div>
+    <div style="text-align:center;padding:16px 12px;border-bottom:1px solid var(--border)">
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);font-weight:400;line-height:1" id="mpGluc">0 g</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Glucides</div>
     </div>
-    <div style="text-align:center;padding:18px 12px;border-right:1px solid var(--border)">
-      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--accent);font-weight:400" id="mpProt">0 g</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Protéines</div>
+    <div style="text-align:center;padding:16px 12px;border-right:1px solid var(--border)">
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--accent);font-weight:400;line-height:1" id="mpProt">0 g</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Protéines</div>
     </div>
-    <div style="text-align:center;padding:18px 12px">
-      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);font-weight:400" id="mpLip">0 g</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Lipides</div>
+    <div style="text-align:center;padding:16px 12px">
+      <div style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);font-weight:400;line-height:1" id="mpLip">0 g</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Lipides</div>
     </div>
   </div>
 
   <!-- Liste aliments scrollable -->
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch" id="mealPageList"></div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)" id="mealPageList"></div>
 
   <!-- Bouton bas -->
-  <div style="padding:12px 16px calc(env(safe-area-inset-bottom)+12px);border-top:1px solid var(--border);flex-shrink:0;background:var(--bg)">
+  <div style="padding:12px 16px calc(env(safe-area-inset-bottom)+12px);flex-shrink:0;background:var(--bg)">
     <button onclick="openNutriAdd(window._mealPageCurrent)"
       style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer">
       Ajouter plus
