@@ -4070,13 +4070,15 @@
     const p = programs.find(x => x.id === id);
     if (!p) return;
     _editingProgId = id;
-    // Make sure card is open
-    openProgIds.add(id);
     renderProgramsList();
-    // Render inline edit form
+    _renderInlineProgEditForm(id);
+  }
+
+  function _renderInlineProgEditForm(id) {
+    const p = programs.find(x => x.id === id);
+    if (!p) return;
     const el = document.getElementById('inlineProgEdit-' + id);
     if (!el) return;
-    const dayOrder = [1,2,3,4,5,6,0];
     el.innerHTML = `
       <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Modifier le programme</div>
       <input class="inp" id="inlineProgName-${id}" value="${p.name.replace(/"/g,'&quot;')}" placeholder="Nom du programme" style="width:100%;box-sizing:border-box;margin-bottom:12px"/>
@@ -4291,11 +4293,11 @@
       </div>`;
     }).join('');
 
-    // Re-rendre les forms en édition
+    // Re-rendre les forms en édition (sans rappeler renderProgramsList)
     programs.forEach(p => {
       if (_editingProgId === p.id) {
         const formEl = document.getElementById('inlineProgEdit-' + p.id);
-        if (formEl) { renderInlineProgAssign(p.id, p); editProgram(p.id); }
+        if (formEl && formEl.innerHTML === '') _renderInlineProgEditForm(p.id);
       }
     });
   }
@@ -4475,22 +4477,63 @@
   function toggleDraftSuperset(i) {
     const ex = draftRoutineExs[i];
     if (ex.supersetWith !== undefined) {
-      // Retirer du superset
-      const partnerId = ex.supersetWith;
-      const partnerIdx = draftRoutineExs.findIndex((e, j) => j === partnerId);
-      if (partnerIdx >= 0) delete draftRoutineExs[partnerIdx].supersetWith;
+      // Déjà en superset → retirer
+      const pi = ex.supersetWith;
+      if (draftRoutineExs[pi]) delete draftRoutineExs[pi].supersetWith;
       delete ex.supersetWith;
       showToast('Superset retiré');
+      renderDraftRoutineExs();
     } else {
-      // Lier avec le suivant
-      const nextIdx = i + 1;
-      if (nextIdx >= draftRoutineExs.length) { showToast('Ajoute un exercice suivant pour créer un superset'); return; }
-      if (draftRoutineExs[nextIdx].supersetWith !== undefined) { showToast('L\'exercice suivant est déjà en superset'); return; }
-      ex.supersetWith = nextIdx;
-      draftRoutineExs[nextIdx].supersetWith = i;
-      showToast('⇄ Superset créé');
+      openDraftSupersetPicker(i, null);
     }
-    renderDraftRoutineExs();
+  }
+
+  function openDraftSupersetPicker(i, routineId) {
+    const options = draftRoutineExs
+      .map((e, j) => ({ idx: j, name: e.name }))
+      .filter(({ idx }) => idx !== i && draftRoutineExs[idx].supersetWith === undefined);
+
+    if (!options.length) {
+      showToast('Aucun autre exercice disponible pour un superset');
+      return;
+    }
+
+    const existing = document.getElementById('draftSSPickerModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'draftSSPickerModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:980;display:flex;align-items:flex-end;justify-content:center';
+    modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+    modal.innerHTML = `
+      <div style="background:var(--surface);border-radius:18px 18px 0 0;padding:24px 20px 40px;width:100%;max-width:480px" onclick="event.stopPropagation()">
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:4px">Lier en superset</div>
+        <div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:20px;letter-spacing:0.5px">
+          avec <strong style="color:var(--text)">${draftRoutineExs[i].name || 'cet exercice'}</strong>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${options.map(({ idx, name }) => `
+            <button onclick="linkDraftSuperset(${i},${idx},'${routineId}');document.getElementById('draftSSPickerModal').remove()"
+              style="background:var(--warm);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:left;cursor:pointer;font-size:14px;font-family:'DM Serif Display',serif;color:var(--text);display:flex;align-items:center;justify-content:space-between">
+              <span>${name || '(sans nom)'}</span>
+              <span style="font-size:11px;color:var(--accent);font-family:'Geist Mono',monospace">⇄ choisir</span>
+            </button>`).join('')}
+        </div>
+        <button onclick="document.getElementById('draftSSPickerModal').remove()"
+          style="width:100%;margin-top:14px;background:none;border:1px solid var(--border);border-radius:12px;padding:12px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);cursor:pointer">
+          Annuler
+        </button>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  function linkDraftSuperset(i, j, routineId) {
+    draftRoutineExs[i].supersetWith = j;
+    draftRoutineExs[j].supersetWith = i;
+    showToast('⇄ Superset créé');
+    if (routineId) renderInlineDraftExs(routineId);
+    else renderDraftRoutineExs();
   }
 
   function onDraftRestChange(i, sel) {
@@ -4670,15 +4713,10 @@
       if (draftRoutineExs[pi]) delete draftRoutineExs[pi].supersetWith;
       delete ex.supersetWith;
       showToast('Superset retiré');
+      renderInlineDraftExs(routineId);
     } else {
-      const nextIdx = i + 1;
-      if (nextIdx >= draftRoutineExs.length) { showToast('Ajoute un exercice suivant'); return; }
-      if (draftRoutineExs[nextIdx].supersetWith !== undefined) { showToast('L\'exercice suivant est déjà en superset'); return; }
-      ex.supersetWith = nextIdx;
-      draftRoutineExs[nextIdx].supersetWith = i;
-      showToast('⇄ Superset créé');
+      openDraftSupersetPicker(i, routineId);
     }
-    renderInlineDraftExs(routineId);
   }
 
   function onInlineDraftRestChange(routineId, i, sel) {
