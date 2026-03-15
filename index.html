@@ -1379,56 +1379,19 @@
     <!-- Main content (shown after onboarding) -->
     <div id="weightMain" style="display:none">
 
-      <!-- ── ONGLETS POIDS / CALORIES ── -->
-      <div class="entry-tabs">
-        <button class="entry-tab active" id="entryTabWeight" onclick="switchEntryTab('weight')">Poids</button>
-        <button class="entry-tab" id="entryTabKcal" onclick="switchEntryTab('kcal')">Calories</button>
-      </div>
-
-      <!-- Panel Poids -->
-      <div class="entry-panel active" id="entryPanelWeight">
-        <div class="weight-entry-card" style="border-top:none;border-radius:0 0 6px 6px;margin-top:0">
-          <div class="weight-big-display">
-            <div class="weight-current" id="weightCurrent">—</div>
-            <div class="weight-unit">kg</div>
-            <div class="weight-delta" id="weightDelta" style="display:none"></div>
-          </div>
-          <div style="margin-bottom:12px;">
-            <input type="date" id="weightDate" class="inp" style="width:100%;box-sizing:border-box;max-width:100%;"/>
-          </div>
-          <div class="weight-input-row">
-            <input class="weight-inp" id="weightInput" type="number" step="0.1" placeholder="Votre poids"/>
-            <button class="weight-save" onclick="logWeight()">Ajouter</button>
-          </div>
+      <!-- Panel Poids uniquement -->
+      <div class="weight-entry-card" style="border-radius:6px">
+        <div class="weight-big-display">
+          <div class="weight-current" id="weightCurrent">—</div>
+          <div class="weight-unit">kg</div>
+          <div class="weight-delta" id="weightDelta" style="display:none"></div>
         </div>
-      </div>
-
-      <!-- Panel Calories -->
-      <div class="entry-panel" id="entryPanelKcal">
-        <div class="weight-entry-card" style="border-top:none;border-radius:0 0 6px 6px;margin-top:0">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-            <div id="kcalTodayBadge" style="display:none;font-size:10px;font-family:Geist Mono,monospace;letter-spacing:1px;padding:4px 10px;border-radius:20px;"></div>
-          </div>
-          <div class="weight-input-row" style="margin-bottom:10px">
-            <input type="date" id="kcalDate" class="inp" style="flex:1"/>
-          </div>
-          <div class="weight-input-row" style="margin-bottom:10px">
-            <input class="weight-inp" id="kcalInput" type="number" step="1" placeholder="kcal (ex: 2200)" style="flex:1"/>
-          </div>
-          <div style="margin-bottom:10px">
-            <input class="inp" id="kcalNote" type="text" placeholder="Note (optionnel)" style="width:100%;box-sizing:border-box"/>
-          </div>
-          <button class="weight-save" onclick="logKcal()" style="width:100%">Ajouter</button>
-
-          <!-- Objectif journalier -->
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-            <div class="label" style="margin-bottom:8px">Objectif journalier</div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input class="weight-inp" id="kcalTargetInput" type="number" step="50" placeholder="ex: 2200" style="flex:1;min-width:0"/>
-              <span style="font-family:Geist Mono,monospace;font-size:10px;color:var(--muted);white-space:nowrap">kcal</span>
-              <button class="weight-save" onclick="saveKcalTarget()" style="flex-shrink:0">Sauvegarder</button>
-            </div>
-          </div>
+        <div style="margin-bottom:12px;">
+          <input type="date" id="weightDate" class="inp" style="width:100%;box-sizing:border-box;max-width:100%;"/>
+        </div>
+        <div class="weight-input-row">
+          <input class="weight-inp" id="weightInput" type="number" step="0.1" placeholder="Votre poids"/>
+          <button class="weight-save" onclick="logWeight()">Ajouter</button>
         </div>
       </div>
 
@@ -1456,37 +1419,30 @@
         <canvas id="weightChart" height="140"></canvas>
       </div>
 
-      <!-- ── 5. ÉVOLUTION CALORIES ── -->
-      <div class="chart-wrap" id="kcalChartWrap" style="display:none;margin-top:16px">
+      <!-- ── 5. ÉVOLUTION CALORIES (depuis nutrition) ── -->
+      <div class="chart-wrap" id="kcalChartWrap" style="margin-top:16px">
         <div class="chart-title">Calories — 30 derniers jours</div>
         <canvas id="kcalChart" height="140"></canvas>
       </div>
 
-      <!-- ── 6+7. HISTORIQUE (onglets) ── -->
+      <!-- ── 6. HISTORIQUE POIDS ── -->
       <div style="height:1px;background:var(--border);margin:20px 0"></div>
-      <div class="entry-tabs">
-        <button class="entry-tab active" id="histTabWeight" onclick="switchHistTab('weight')">
-          Histo poids
-          <button onclick="event.stopPropagation();sbLoad('body_weights').then(d=>{bodyWeights=d;bodyWeights.sort((a,b)=>a.date.localeCompare(b.date));renderWeightTab();showToast('Données rechargées ✓')})" style="background:none;border:none;color:inherit;cursor:pointer;font-size:13px;padding:0 0 0 4px;opacity:0.7" title="Recharger">↻</button>
-        </button>
-        <button class="entry-tab" id="histTabKcal" onclick="switchHistTab('kcal')">Histo calories</button>
-      </div>
-
-      <!-- Panel histo poids -->
-      <div class="entry-panel active" id="histPanelWeight" style="border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;padding:12px">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="label" style="margin:0">Historique poids</div>
+        <div style="display:flex;align-items:center;gap:8px">
           <input class="pr-search-inp" id="weightSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderWeightTab()" title="Filtrer par mois"/>
+          <button onclick="sbLoad('body_weights').then(d=>{bodyWeights=d;bodyWeights.sort((a,b)=>a.date.localeCompare(b.date));renderWeightTab();showToast('Rechargé ✓')})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px" title="Recharger">↻</button>
         </div>
-        <div class="weight-hist-list" id="weightHistList"></div>
       </div>
+      <div class="weight-hist-list" id="weightHistList"></div>
 
-      <!-- Panel histo calories -->
-      <div class="entry-panel" id="histPanelKcal" style="border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;padding:12px">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderKcalHistory()" title="Filtrer par mois"/>
-        </div>
-        <div id="kcalHistList"></div>
+      <!-- ── 7. HISTORIQUE CALORIES (depuis nutrition) ── -->
+      <div style="height:1px;background:var(--border);margin:20px 0"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="label" style="margin:0">Historique calories</div>
+        <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderKcalHistory()" title="Filtrer par mois"/>
       </div>
+      <div id="kcalHistList"></div>
 
     </div>
   </div>
@@ -4941,35 +4897,36 @@
     const profile = getUserProfile();
     const target = profile?.kcalTarget ? parseInt(profile.kcalTarget) : null;
     const monthFilter = document.getElementById('kcalSearchDate')?.value || '';
-    let display = [...kcalEntries].reverse();
+
+    // Regrouper nutriEntries par date
+    const byDate = {};
+    nutriEntries.forEach(e => {
+      if (!byDate[e.date]) byDate[e.date] = 0;
+      byDate[e.date] += e.kcal;
+    });
+    let display = Object.entries(byDate)
+      .sort(([a],[b]) => b.localeCompare(a))
+      .map(([date, kcal]) => ({ date, kcal: Math.round(kcal) }));
+
     if (monthFilter) display = display.filter(e => e.date.startsWith(monthFilter));
     else display = display.slice(0, 14);
+
     if (!display.length) {
       el.innerHTML = '<div style="padding:16px;font-size:11px;color:var(--muted2);text-align:center">Aucun enregistrement.</div>';
       return;
     }
     el.innerHTML = display.map(e => {
       const diff = target ? (e.kcal - target) : null;
-      const isOk  = diff !== null && Math.abs(diff) <= 50;
-      const isOver = diff !== null && diff > 50;
-      const isUnder = diff !== null && diff < -50;
       let diffHtml = '';
       if (diff !== null) {
         const sign = diff >= 0 ? '+' : '';
-        const col = isOk ? '#4caf50' : '#f44336';
+        const col = Math.abs(diff) <= 50 ? '#4caf50' : '#f44336';
         diffHtml = `<span style="font-size:10px;color:${col};margin-left:6px">${sign}${diff}</span>`;
       }
       const dateStr = new Date(e.date).toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
-      const noteHtml = e.note ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${e.note}</div>` : '';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:11px;font-family:Geist Mono,monospace;color:var(--muted);letter-spacing:0.5px">${dateStr}</div>
-          ${noteHtml}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="font-family:DM Serif Display,serif;font-size:18px;color:var(--text)">${e.kcal}<span style="font-size:11px;color:var(--muted);margin-left:2px">kcal</span>${diffHtml}</div>
-          <button class="weight-hist-del" onclick="delKcal('${e.date}')">✕</button>
-        </div>
+        <div style="font-size:11px;font-family:'Geist Mono',monospace;color:var(--muted);letter-spacing:0.5px">${dateStr}</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text)">${e.kcal}<span style="font-size:11px;color:var(--muted);margin-left:2px">kcal</span>${diffHtml}</div>
       </div>`;
     }).join('');
   }
@@ -4986,8 +4943,19 @@
     const canvas = document.getElementById('kcalChart');
     const wrap   = document.getElementById('kcalChartWrap');
     if (!canvas || !wrap) return;
+
+    // Construire les données depuis nutriEntries (regroupées par date)
+    const byDate = {};
+    nutriEntries.forEach(e => {
+      if (!byDate[e.date]) byDate[e.date] = 0;
+      byDate[e.date] += e.kcal;
+    });
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 29); cutoff.setHours(0,0,0,0);
-    const recent = kcalEntries.filter(e => new Date(e.date) >= cutoff);
+    const recent = Object.entries(byDate)
+      .filter(([d]) => new Date(d) >= cutoff)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .map(([date, kcal]) => ({ date, kcal: Math.round(kcal) }));
+
     if (recent.length < 2) { wrap.style.display = 'none'; return; }
     wrap.style.display = 'block';
     const profile = getUserProfile();
@@ -5514,8 +5482,6 @@
     // Set default date to today
     const dateEl = document.getElementById('weightDate');
     if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
-    const kcalDateEl = document.getElementById('kcalDate');
-    if (kcalDateEl && !kcalDateEl.value) kcalDateEl.value = new Date().toISOString().split('T')[0];
     // (updateWeightClock supprimé — dead code)
     // Goal banner
     renderGoalBanner();
@@ -7360,10 +7326,9 @@
     const newFib   = parseFloat(document.getElementById('feFib')?.value)  || 0;
     const newPortion = parseFloat(document.getElementById('fePortion')?.value) || 0;
 
-    // Sauvegarder la portion personnalisée
     if (newPortion > 0) savePortionDef(newName, newPortion);
 
-    // Mettre à jour dans Supabase
+    // Mettre à jour dans Supabase (table foods)
     try {
       const res = await supaFetch(`/rest/v1/foods?name=eq.${encodeURIComponent(originalName)}`, {
         method: 'PATCH',
@@ -7371,18 +7336,52 @@
         body: JSON.stringify({ name: newName, brand: newBrand, kcal: newKcal, proteins: newProt, carbs: newGluc, fat: newLip, fiber: newFib })
       });
       if (!res.ok) {
-        // Si pas trouvé → créer un nouvel aliment custom
         await supaFetch('/rest/v1/foods', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
           body: JSON.stringify({ id: 'custom_' + Date.now(), name: newName, brand: newBrand, kcal: newKcal, proteins: newProt, carbs: newGluc, fat: newLip, fiber: newFib, scan_count: 0 })
         });
       }
-    } catch(e) { console.error('saveFoodEdit:', e); }
+    } catch(e) { console.error('saveFoodEdit foods:', e); }
+
+    // Mettre à jour les entrées nutrition locales qui portent l'ancien nom
+    const ratio100 = (qty) => qty > 0 ? qty / 100 : 1;
+    const toUpdate = [];
+    nutriEntries.forEach(e => {
+      if (e.name === originalName) {
+        e.name  = newName;
+        e.brand = newBrand || e.brand;
+        // Recalculer les macros si les valeurs /100g ont changé
+        const qty = e.qty || 100;
+        const r = qty / 100;
+        e.kcal = Math.round(newKcal * r);
+        e.prot = Math.round(newProt * r * 10) / 10;
+        e.gluc = Math.round(newGluc * r * 10) / 10;
+        e.lip  = Math.round(newLip  * r * 10) / 10;
+        e.fib  = Math.round(newFib  * r * 10) / 10;
+        e.kcal100 = newKcal; e.prot100 = newProt; e.gluc100 = newGluc; e.lip100 = newLip; e.fib100 = newFib;
+        toUpdate.push(e);
+      }
+    });
+
+    // Sauvegarder les entrées modifiées dans Supabase
+    if (toUpdate.length > 0) {
+      try {
+        await Promise.all(toUpdate.map(e =>
+          supaFetch(`/rest/v1/nutrition_entries?id=eq.${e.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: e.name, brand: e.brand, kcal: e.kcal, proteins: e.prot, carbs: e.gluc, fat: e.lip, fiber: e.fib })
+          })
+        ));
+      } catch(e) { console.error('saveFoodEdit entries:', e); }
+    }
 
     document.getElementById('foodEditModal').remove();
     // Rouvrir la fiche avec les nouvelles valeurs
     openNutriQtyModal(encodeURIComponent(newName), newKcal, newProt, newGluc, newLip, newFib, undefined, newBrand, newPortion || null, null);
+    // Rafraîchir l'affichage nutrition
+    renderNutritionTab();
     showToast('Aliment modifié ✓');
   }
 
