@@ -1260,7 +1260,7 @@
         <div class="chip" onclick="this.classList.toggle('on')">Triceps</div>
         <div class="chip" onclick="this.classList.toggle('on')">Quadriceps</div><div class="chip" onclick="this.classList.toggle('on')">Ischio-jambiers</div>
         <div class="chip" onclick="this.classList.toggle('on')">Abdos</div>
-        <div class="chip" onclick="this.classList.toggle('on')">Fessiers</div>
+        <div class="chip" onclick="this.classList.toggle('on')">Fessiers</div><div class="chip" onclick="this.classList.toggle('on')">Adducteurs</div><div class="chip" onclick="this.classList.toggle('on')">Abducteurs</div>
       </div>
 
       <div class="label">Exercices</div>
@@ -1278,7 +1278,7 @@
               <option value="">Muscle</option>
               <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
               <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
-              <option>Abdos</option><option>Fessiers</option><option>Autre</option>
+              <option>Abdos</option><option>Fessiers</option><option>Adducteurs</option><option>Abducteurs</option><option>Autre</option>
             </select>
           </div>
           <div class="form-row" style="margin-top:8px">
@@ -1347,7 +1347,7 @@
         <option value="">Muscle (optionnel)</option>
         <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
         <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
-        <option>Abdos</option><option>Fessiers</option><option>Autre</option>
+        <option>Abdos</option><option>Fessiers</option><option>Adducteurs</option><option>Abducteurs</option><option>Autre</option>
       </select>
       <div class="ex-replace-actions">
         <button class="ex-replace-cancel" onclick="closeReplaceModal()">Annuler</button>
@@ -1404,7 +1404,7 @@
             <option value="">Muscle</option>
             <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
             <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
-            <option>Abdos</option><option>Fessiers</option><option>Autre</option>
+            <option>Abdos</option><option>Fessiers</option><option>Adducteurs</option><option>Abducteurs</option><option>Autre</option>
           </select>
         </div>
         <div class="form-row" style="margin-bottom:10px">
@@ -1835,7 +1835,7 @@
             <option value="">Tous les muscles</option>
             <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
             <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
-            <option>Abdos</option><option>Fessiers</option>
+            <option>Abdos</option><option>Fessiers</option><option>Adducteurs</option><option>Abducteurs</option>
           </select>
         </div>
       </div>
@@ -3562,8 +3562,14 @@
     { name: 'Hip thrust haltère', muscle: 'Fessiers' },
     { name: 'Glute bridge', muscle: 'Fessiers' },
     { name: 'Donkey kick câble', muscle: 'Fessiers' },
-    { name: 'Abduction machine', muscle: 'Fessiers' },
-    { name: 'Adduction machine', muscle: 'Fessiers' },
+    { name: 'Abduction machine', muscle: 'Abducteurs' },
+    { name: 'Adduction machine', muscle: 'Adducteurs' },
+    { name: 'Abduction câble debout', muscle: 'Abducteurs' },
+    { name: 'Adduction câble debout', muscle: 'Adducteurs' },
+    { name: 'Abduction élastique', muscle: 'Abducteurs' },
+    { name: 'Adduction élastique', muscle: 'Adducteurs' },
+    { name: 'Sumo squat', muscle: 'Adducteurs' },
+    { name: 'Fente latérale lestée', muscle: 'Adducteurs' },
     { name: 'Cable kickback', muscle: 'Fessiers' },
     // ── MOLLETS ──
     { name: 'Mollets debout machine', muscle: 'Mollets' },
@@ -3942,7 +3948,7 @@
               <div style="display:flex;gap:6px;margin-bottom:6px">
                 <select class="inp" id="newSessExMuscle-${d}" style="flex:1;font-size:12px">
                   <option value="">Muscle</option>
-                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
+                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Adducteurs','Abducteurs','Autre'].map(m=>`<option>${m}</option>`).join('')}
                 </select>
                 <input class="inp" id="newSessExSets-${d}" type="number" min="1" max="20" placeholder="Séries" style="width:70px;text-align:center"/>
                 <input class="inp" id="newSessExRest-${d}" type="number" min="0" placeholder="Repos s" style="width:75px;text-align:center"/>
@@ -4139,7 +4145,7 @@
               <div style="display:flex;gap:6px;margin-bottom:6px">
                 <select class="inp" id="inlineNewSessExMuscle-${progId}-${d}" style="flex:1;font-size:12px">
                   <option value="">Muscle</option>
-                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option>${m}</option>`).join('')}
+                  ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Adducteurs','Abducteurs','Autre'].map(m=>`<option>${m}</option>`).join('')}
                 </select>
                 <input class="inp" id="inlineNewSessExSets-${progId}-${d}" type="number" min="1" max="20" placeholder="Séries" style="width:70px;text-align:center"/>
                 <input class="inp" id="inlineNewSessExRest-${progId}-${d}" type="number" min="0" placeholder="Repos s" style="width:75px;text-align:center"/>
@@ -4466,7 +4472,7 @@
         <div class="routine-ex-edit-bot">
           <select class="rex-inp" style="flex:1" onchange="draftRoutineExs[${i}].muscle=this.value">
             <option value="">Muscle</option>
-            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
+            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Adducteurs','Abducteurs','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
           </select>
           <input class="rex-inp" type="number" style="width:52px;text-align:center" value="${ex.sets}" min="1" max="10" placeholder="Séries"
             oninput="draftRoutineExs[${i}].sets=parseInt(this.value)||3" title="Nombre de séries"/>
@@ -4663,7 +4669,7 @@
             <option value="">Muscle</option>
             <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
             <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
-            <option>Abdos</option><option>Fessiers</option><option>Autre</option>
+            <option>Abdos</option><option>Fessiers</option><option>Adducteurs</option><option>Abducteurs</option><option>Autre</option>
           </select>
         </div>
         <div class="form-row" style="margin-bottom:10px">
@@ -4715,7 +4721,7 @@
         <div class="routine-ex-edit-bot" style="flex-wrap:wrap;gap:6px">
           <select class="rex-inp" style="flex:1;min-width:100px" onchange="draftRoutineExs[${i}].muscle=this.value">
             <option value="">Muscle</option>
-            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
+            ${['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Adducteurs','Abducteurs','Autre'].map(m=>`<option ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
           </select>
           <input class="rex-inp" type="number" style="width:50px;text-align:center;flex-shrink:0" placeholder="Séries" value="${ex.sets}" min="1" max="10"
             oninput="draftRoutineExs[${i}].sets=parseInt(this.value)||3"/>
@@ -4870,6 +4876,8 @@
       'mollets':   { bg:'#edf9f6', color:'#2C8A6E' },
       'abdos':     { bg:'#f0edf9', color:'#7b68b5' },
       'fessiers':  { bg:'#fde8ee', color:'#c0396b' },
+      'adducteurs':{ bg:'#f0edf9', color:'#7b68b5' },
+      'abducteurs':{ bg:'#e8f0fa', color:'#5b8ccc' },
     };
     const getTagStyle = (muscle) => {
       const key = muscle.toLowerCase();
@@ -9603,7 +9611,7 @@
 
     // Groupes musculaires (depuis les chips cochés OU depuis exercises)
     const selectedMuscles = [...document.querySelectorAll('.chip.on')].map(c => c.textContent);
-    const muscleChips = ['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers'];
+    const muscleChips = ['Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers','Adducteurs','Abducteurs'];
     const muscleHtml = `
       <div style="margin-bottom:18px">
         <div class="label" style="margin-bottom:8px">Groupes musculaires</div>
@@ -9702,7 +9710,7 @@
               <option value="">Muscle</option>
               <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
               <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
-              <option>Abdos</option><option>Fessiers</option><option>Autre</option>
+              <option>Abdos</option><option>Fessiers</option><option>Adducteurs</option><option>Abducteurs</option><option>Autre</option>
             </select>
           </div>
           <div class="form-row" style="margin-top:8px">
