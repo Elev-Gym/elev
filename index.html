@@ -5948,9 +5948,19 @@
   const MEALS = ['Petit-déjeuner', 'Déjeuner', 'En-cas', 'Dîner'];
   const MEAL_ICONS = { 'Petit-déjeuner': '☀️', 'Déjeuner': '🍽️', 'En-cas': '🍎', 'Dîner': '🌙' };
 
-  async function saveNutriEntry(entry) {
-    nutriEntries.push(entry);
-    try { await sbSave('nutrition_entries', [entry]); } catch(e) {}
+  async function saveNutriEntry(entry, update = false) {
+    if (!update) nutriEntries.push(entry);
+    try {
+      if (update) {
+        await supaFetch(`/rest/v1/nutrition_entries?id=eq.${entry.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ data: entry })
+        });
+      } else {
+        await sbSave('nutrition_entries', [entry]);
+      }
+    } catch(e) {}
     renderNutritionTab();
     renderHomeNutriWidget();
   }
@@ -7055,9 +7065,9 @@
     }
   }
 
-  function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, fib100, defaultQty, brand, servingG, servingLabel) {
+  function openNutriQtyModal(encodedName, kcal100, prot100, gluc100, lip100, fib100, defaultQty, brand, servingG, servingLabel, entryId) {
     const name = decodeURIComponent(encodedName);
-    _nutriPendingFood = { name, brand: brand || null, kcal100, prot100, gluc100, lip100, fib100: fib100 || 0, servingG: servingG || null };
+    _nutriPendingFood = { name, brand: brand || null, kcal100, prot100, gluc100, lip100, fib100: fib100 || 0, servingG: servingG || null, entryId: entryId || null };
     const qty0 = defaultQty || 100;
 
     const existing = document.getElementById('nutriQtyModal');
@@ -7359,10 +7369,11 @@
     const qty = getNutriQtyGrams();
     const f = _nutriPendingFood;
     const ratio = qty / 100;
-    const entry = {
-      id: Date.now(),
+    const entryId = f.entryId;
+
+    const entryData = {
       date: new Date().toISOString().split('T')[0],
-      meal: _nutriActiveMeal || 'Déjeuner',
+      meal: _nutriActiveMeal || (entryId ? (nutriEntries.find(e=>e.id===entryId)?.meal || 'Déjeuner') : 'Déjeuner'),
       name: f.name,
       brand: f.brand || null,
       qty: Math.round(qty),
@@ -7371,19 +7382,32 @@
       gluc: Math.round(f.gluc100 * ratio * 10) / 10,
       lip:  Math.round(f.lip100  * ratio * 10) / 10,
       fib:  Math.round((f.fib100 || 0) * ratio * 10) / 10,
-      // Stocker les valeurs /100g pour recalculer dans la modal
-      kcal100: f.kcal100,
-      prot100: f.prot100,
-      gluc100: f.gluc100,
-      lip100:  f.lip100,
-      fib100:  f.fib100 || 0,
+      kcal100: f.kcal100, prot100: f.prot100, gluc100: f.gluc100,
+      lip100: f.lip100, fib100: f.fib100 || 0,
     };
+
     document.getElementById('nutriQtyModal')?.remove();
     _nutriPendingFood = null;
-    closeNutriAdd();
-    await saveNutriEntry(entry);
-    showToast(f.name.slice(0, 30) + ' ajouté ✓');
-    _nutriAccordionOpen[entry.meal] = true;
+
+    if (entryId) {
+      // Modifier l'entrée existante
+      const idx = nutriEntries.findIndex(e => e.id === entryId);
+      if (idx >= 0) {
+        nutriEntries[idx] = { ...nutriEntries[idx], ...entryData };
+        await saveNutriEntry(nutriEntries[idx], true);
+        showToast(f.name.slice(0, 30) + ' modifié ✓');
+      }
+    } else {
+      // Nouvelle entrée
+      const entry = { id: Date.now(), ...entryData };
+      closeNutriAdd();
+      await saveNutriEntry(entry);
+      showToast(f.name.slice(0, 30) + ' ajouté ✓');
+      _nutriAccordionOpen[entry.meal] = true;
+    }
+
+    renderMealPage();
+    renderNutritionTab();
   }
 
   // ── Rendu principal ──
@@ -7755,7 +7779,7 @@
           ontouchstart="nutriSwipeStart(event,${e.id})"
           ontouchmove="nutriSwipeMove(event,${e.id})"
           ontouchend="nutriSwipeEnd(event,${e.id})"
-          onclick="openNutriQtyModal(encodeURIComponent('${e.name.replace(/'/g,"\\'")}'),${e.kcal100||Math.round(e.kcal/(e.qty||100)*100)},${e.prot100||Math.round(e.prot/(e.qty||100)*1000)/10},${e.gluc100||Math.round(e.gluc/(e.qty||100)*1000)/10},${e.lip100||Math.round(e.lip/(e.qty||100)*1000)/10},${e.fib100||0},${e.qty},'${(e.brand||'').replace(/'/g,"\\'")}',null,null)">
+          onclick="openNutriQtyModal(encodeURIComponent('${e.name.replace(/'/g,"\\'")}'),${e.kcal100||Math.round(e.kcal/(e.qty||100)*100)},${e.prot100||Math.round(e.prot/(e.qty||100)*1000)/10},${e.gluc100||Math.round(e.gluc/(e.qty||100)*1000)/10},${e.lip100||Math.round(e.lip/(e.qty||100)*1000)/10},${e.fib100||0},${e.qty},'${(e.brand||'').replace(/'/g,"\\'")}',null,null,${e.id})">
           <div style="flex:1;min-width:0">
             <div style="font-size:15px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:3px">${e.brand ? e.brand + ', ' : ''}${e.qty} g</div>
