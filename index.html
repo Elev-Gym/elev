@@ -7252,7 +7252,7 @@
       window._ingredientCache = recent;
       body.innerHTML = `<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin:8px 0 10px">Récemment consommés</div>` +
         recent.map((f, i) => `
-          <div style="display:flex;align-items:center;padding:11px 0;border-bottom:0.5px solid var(--border)">
+          <div style="display:flex;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--border)">
             <div style="flex:1;min-width:0">
               <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
               ${f.brand ? `<div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:1px">${f.brand}</div>` : ''}
@@ -10851,23 +10851,23 @@
 </div>
 
 <!-- ══ MODAL RECHERCHE INGRÉDIENT ══ -->
-<div id="ingredientSearchModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:990;align-items:flex-end;justify-content:center">
-  <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:82vh;display:flex;flex-direction:column">
-    <div style="padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <button onclick="closeIngredientSearch()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:0;line-height:1">←</button>
-        <div style="font-size:15px;font-weight:500;color:var(--text);flex:1">Choisir un ingrédient</div>
-        <button onclick="openCustomFoodModal()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:9px;font-family:'Geist Mono',monospace;letter-spacing:1px;color:var(--muted);cursor:pointer;white-space:nowrap">+ Créer</button>
-      </div>
-      <div style="position:relative">
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none">🔍</span>
-        <input id="ingredientSearchInput" class="inp" placeholder="Rechercher un aliment…" oninput="ingredientSearchDebounce()"
-          autocomplete="off" style="width:100%;padding-left:36px;font-size:14px;box-sizing:border-box"/>
-      </div>
+<div id="ingredientSearchModal" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:990;flex-direction:column">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top)+12px) 16px 12px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <button onclick="closeIngredientSearch()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;padding:0;line-height:1;display:flex;align-items:center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div style="font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);flex:1">Choisir un ingrédient</div>
+      <button onclick="openCustomFoodModal()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:9px;font-family:'Geist Mono',monospace;letter-spacing:1px;color:var(--muted);cursor:pointer;white-space:nowrap">+ Créer</button>
     </div>
-    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px" id="ingredientSearchBody">
-      <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px">Tapez pour rechercher un aliment…</div>
+    <div style="position:relative">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none">🔍</span>
+      <input id="ingredientSearchInput" class="inp" placeholder="Rechercher un aliment…" oninput="ingredientSearchDebounce()"
+        autocomplete="off" style="width:100%;padding-left:36px;font-size:14px;box-sizing:border-box"/>
     </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px 32px" id="ingredientSearchBody">
+    <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px">Tapez pour rechercher un aliment…</div>
   </div>
 </div>
 
