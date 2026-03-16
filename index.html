@@ -7151,7 +7151,7 @@
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:995;display:flex;align-items:flex-end;justify-content:center';
     modal.onclick = e => { if (e.target === modal) modal.remove(); };
     modal.innerHTML = `
-      <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px calc(env(safe-area-inset-bottom)+20px)" onclick="event.stopPropagation()">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px calc(max(20px,env(safe-area-inset-bottom))+20px);margin-bottom:env(safe-area-inset-bottom,0px)" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div style="font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);line-height:1.2;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
           <button onclick="document.getElementById('cmQtyModal').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;padding:0 0 0 10px;flex-shrink:0">✕</button>
@@ -7421,7 +7421,7 @@
     const totalQty = m.qty || m.ingredients?.reduce((s, ing) => s + ing.qty, 0) || 100;
 
     modal.innerHTML = `
-      <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(env(safe-area-inset-bottom)+24px)" onclick="event.stopPropagation()">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(max(20px,env(safe-area-inset-bottom))+20px)" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text)">${m.name}</div>
           <button onclick="document.getElementById('mealPortionModal').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px">✕</button>
@@ -7494,7 +7494,7 @@
       const totLip  = Math.round(customIngs.reduce((s,g) => s+g.lip,  0)*10)/10;
 
       return `
-        <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
           <!-- Header -->
           <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -7533,7 +7533,7 @@
             }).join('')}
           </div>
           <!-- Bouton ajouter -->
-          <div style="padding:12px 20px calc(env(safe-area-inset-bottom)+12px);border-top:1px solid var(--border);flex-shrink:0">
+          <div style="padding:12px 20px calc(max(20px,env(safe-area-inset-bottom))+8px);border-top:1px solid var(--border);flex-shrink:0;background:var(--surface)">
             <button onclick="confirmMealCustomize(${i})"
               style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:15px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer">
               Ajouter ce repas →
@@ -7631,7 +7631,7 @@
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:996;display:flex;align-items:flex-end;justify-content:center';
     modal.onclick = e => { if (e.target === modal) modal.remove(); };
     modal.innerHTML = `
-      <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px calc(env(safe-area-inset-bottom)+20px)" onclick="event.stopPropagation()">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px calc(max(20px,env(safe-area-inset-bottom))+20px);margin-bottom:env(safe-area-inset-bottom,0px)" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div style="font-family:'DM Serif Display',serif;font-size:17px;color:var(--text)">${ing.name}</div>
           <button onclick="document.getElementById('savedMealIngModal').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px">✕</button>
@@ -10810,7 +10810,7 @@
 
 <!-- ══ MODAL CRÉER UN PLAT ══ -->
 <div id="createMealModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:985;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeCreateMealModal()">
-  <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:92vh;display:flex;flex-direction:column">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
 
     <!-- Header -->
     <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
