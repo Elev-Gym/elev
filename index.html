@@ -631,7 +631,10 @@
   .share-btn { flex:1;padding:11px;font-family:Geist Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;border-radius:8px;cursor:pointer;border:none; }
   /* ── Drag session exercises ── */
   .ex-card { touch-action: manipulation; }
-  .ex-drag-handle { cursor:grab;color:var(--muted);font-size:16px;padding:0 6px 0 0;user-select:none;touch-action:none; }
+  .ex-drag-handle { cursor:grab;color:var(--muted);font-size:16px;padding:0 6px 0 0;user-select:none;touch-action:none;display:none; }
+  body.reorder-mode .ex-drag-handle { display:inline; }
+  body.reorder-mode .ex-card { border-color:var(--accent);border-style:dashed; }
+  body.reorder-mode #reorderBtn { background:var(--accent);color:#fff;border-color:var(--accent); }
   .ex-card.ex-dragging { opacity:0.4; }
   .ex-card.ex-drag-over { border-color: var(--accent); border-style: dashed; }
 
@@ -1267,7 +1270,10 @@
         <div class="chip" onclick="this.classList.toggle('on')">Fessiers</div><div class="chip" onclick="this.classList.toggle('on')">Adducteurs</div><div class="chip" onclick="this.classList.toggle('on')">Abducteurs</div>
       </div>
 
-      <div class="label">Exercices</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="label" style="margin:0">Exercices</div>
+        <button id="reorderBtn" onclick="toggleReorderMode()" style="font-size:10px;font-family:'Geist Mono',monospace;letter-spacing:1px;color:var(--muted);background:none;border:0.5px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer">⠿ MODIFIER L'ORDRE</button>
+      </div>
       <div class="exercise-list" id="exerciseList"></div>
 
       <div class="add-form">
@@ -2612,6 +2618,7 @@
   // ── Tabs ──
   const TAB_TITLES = { home: 'Accueil', session: 'Séances', stats: 'Stats', routines: 'Programmes', poids: 'Poids', nutrition: 'Nutrition' };
   function switchTab(tab) {
+    if (_reorderMode) { _reorderMode = false; document.body.classList.remove('reorder-mode'); }
     // Rediriger l'ancien onglet séances vers programmes
     if (tab === 'session') tab = 'routines';
     document.title = 'Élev | ' + (TAB_TITLES[tab] || tab);
@@ -4380,6 +4387,36 @@
         </div>
         <!-- Liste des séances associées -->
         ${isOpen ? `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
+          ${(() => {
+            // Récap global du programme — tous groupes musculaires cumulés
+            const MUSCLE_DOTS = {'épaules':'#2C5F4A','pectoraux':'#4A8C6A','pecs':'#4A8C6A','triceps':'#8CAA7A','dos':'#2C5F4A','biceps':'#4A8C6A','quadriceps':'#2C5F4A','quads':'#2C5F4A','ischios':'#4A8C6A','ischio-jambiers':'#4A8C6A','mollets':'#8CAA7A','abdos':'#8CAA7A','fessiers':'#4A8C6A','adducteurs':'#8CAA7A','abducteurs':'#2C5F4A'};
+            const mLabel = m => { if (!m) return ''; const k = m.toLowerCase(); if (k === 'pectoraux') return 'Pecs'; return m.charAt(0).toUpperCase() + m.slice(1).toLowerCase(); };
+            const dColor = m => MUSCLE_DOTS[m?.toLowerCase()] || '#2C5F4A';
+            const globalCounts = {};
+            p.trainingDays.forEach(td => {
+              const r = routines.find(r => r.id === td.sessionId || String(r.id) === String(td.sessionId));
+              if (r) r.exercises.filter(e => !e.isWarmup).forEach(e => { if (e.muscle) globalCounts[e.muscle] = (globalCounts[e.muscle]||0)+1; });
+            });
+            const entries = Object.entries(globalCounts).sort((a,b) => b[1]-a[1]);
+            if (!entries.length) return '';
+            return `<div style="margin-bottom:14px">
+              <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px">Volume / semaine</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                ${entries.map(([m, cnt]) => {
+                  const maxCnt = entries[0][1];
+                  const pct = Math.round((cnt / maxCnt) * 100);
+                  return `<div style="display:flex;align-items:center;gap:8px">
+                    <div style="width:5px;height:5px;border-radius:50%;background:${dColor(m)};flex-shrink:0"></div>
+                    <span style="font-size:11px;color:var(--text);font-family:'Geist Mono',monospace;width:80px;flex-shrink:0">${mLabel(m)}</span>
+                    <div style="flex:1;height:4px;background:var(--border2);border-radius:2px;overflow:hidden">
+                      <div style="height:100%;width:${pct}%;background:${dColor(m)};border-radius:2px;transition:width 0.4s ease"></div>
+                    </div>
+                    <span style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;width:20px;text-align:right">${cnt}</span>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>`;
+          })()}
           <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px">Séances associées</div>
           ${p.trainingDays.length ? p.trainingDays.sort((a,b) => {
             const order = [1,2,3,4,5,6,0];
@@ -4787,14 +4824,17 @@
       const isInSS = ex.supersetWith !== undefined;
       const showConnector = isInSS && i > 0 && draftRoutineExs[i-1].supersetWith === i;
       return `${showConnector ? `<div style="text-align:center;margin:-4px 0;font-size:9px;color:var(--accent);font-family:'Geist Mono',monospace;letter-spacing:1px;padding:3px 0;background:rgba(74,140,92,0.08);border-radius:4px">⇄ SUPERSET</div>` : ''}
-      <div class="routine-ex-edit-row${isInSS ? ' rex-superset' : ''}" draggable="true"
+      <div class="routine-ex-edit-row${isInSS ? ' rex-superset' : ''}" id="inline-ex-row-${routineId}-${i}" draggable="true"
         ondragstart="inlineExDragSrc=${i};this.classList.add('ex-dragging');event.dataTransfer.effectAllowed='move'"
         ondragend="this.classList.remove('ex-dragging');document.querySelectorAll('.routine-ex-edit-row').forEach(r=>r.classList.remove('ex-drag-over'))"
         ondragover="event.preventDefault();this.classList.add('ex-drag-over')"
         ondragleave="this.classList.remove('ex-drag-over')"
         ondrop="event.preventDefault();this.classList.remove('ex-drag-over');if(inlineExDragSrc!==null&&inlineExDragSrc!==${i}){const moved=draftRoutineExs.splice(inlineExDragSrc,1)[0];draftRoutineExs.splice(${i},0,moved);inlineExDragSrc=null;renderInlineDraftExs('${routineId}');}">
         <div class="routine-ex-edit-top">
-          <span class="ex-drag-handle" title="Déplacer">⠿</span>
+          <span class="ex-drag-handle" title="Déplacer"
+            ontouchstart="onInlineExTouchStart(event,${i},'${routineId}')"
+            ontouchmove="onInlineExTouchMove(event,${i},'${routineId}')"
+            ontouchend="onInlineExTouchEnd(event,${i},'${routineId}')">⠿</span>
           <div class="rex-name-wrap" style="flex:1">
             <input class="rex-inp rex-name-inp" value="${ex.name.replace(/"/g,'&quot;')}" placeholder="Nom exercice"
               oninput="draftRoutineExs[${i}].name=this.value"
@@ -9890,6 +9930,7 @@
   let exDragSrc = null;
   // ── Drag desktop exercises ──
   function armExDrag(ei) {
+    if (!_reorderMode) return;
     const card = document.getElementById('excard-' + ei);
     if (!card) return;
     card.setAttribute('draggable', 'true');
@@ -9905,6 +9946,70 @@
     const card = document.getElementById('excard-' + ei);
     if (card) { card.setAttribute('draggable', 'false'); card.ondragstart = null; }
   }
+  // ── Touch drag pour l'édition inline des routines ──
+  let _inlineTouchDragIdx = null, _inlineTouchRoutineId = null;
+  let _inlineTouchClone = null, _inlineTouchStartY = 0;
+
+  function onInlineExTouchStart(e, idx, routineId) {
+    e.stopPropagation();
+    _inlineTouchDragIdx = idx;
+    _inlineTouchRoutineId = routineId;
+    _inlineTouchStartY = e.touches[0].clientY;
+    const row = document.getElementById('inline-ex-row-' + routineId + '-' + idx);
+    if (!row) return;
+    _inlineTouchClone = row.cloneNode(true);
+    _inlineTouchClone.style.cssText = `position:fixed;z-index:9999;width:${row.offsetWidth}px;opacity:0.85;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.15);left:${row.getBoundingClientRect().left}px;top:${row.getBoundingClientRect().top}px;border-radius:10px;`;
+    document.body.appendChild(_inlineTouchClone);
+    row.style.opacity = '0.3';
+  }
+
+  function onInlineExTouchMove(e, idx, routineId) {
+    if (_inlineTouchDragIdx === null || !_inlineTouchClone) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const dy = touch.clientY - _inlineTouchStartY;
+    const row = document.getElementById('inline-ex-row-' + routineId + '-' + idx);
+    if (row) _inlineTouchClone.style.top = (row.getBoundingClientRect().top + dy) + 'px';
+
+    // Trouver la cible sous le doigt
+    _inlineTouchClone.style.display = 'none';
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    _inlineTouchClone.style.display = '';
+    const targetRow = el?.closest('.routine-ex-edit-row');
+    document.querySelectorAll('.routine-ex-edit-row').forEach(r => r.classList.remove('ex-drag-over'));
+    if (targetRow && targetRow !== row) targetRow.classList.add('ex-drag-over');
+  }
+
+  function onInlineExTouchEnd(e, idx, routineId) {
+    if (_inlineTouchDragIdx === null) return;
+    if (_inlineTouchClone) { _inlineTouchClone.remove(); _inlineTouchClone = null; }
+    document.querySelectorAll('.routine-ex-edit-row').forEach(r => r.classList.remove('ex-drag-over'));
+    const row = document.getElementById('inline-ex-row-' + routineId + '-' + idx);
+    if (row) row.style.opacity = '';
+
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetRow = el?.closest('[id^="inline-ex-row-' + routineId + '-"]');
+    if (targetRow) {
+      const targetIdx = parseInt(targetRow.id.split('-').pop());
+      if (!isNaN(targetIdx) && targetIdx !== idx) {
+        const moved = draftRoutineExs.splice(idx, 1)[0];
+        draftRoutineExs.splice(targetIdx, 0, moved);
+        renderInlineDraftExs(routineId);
+      }
+    }
+    _inlineTouchDragIdx = null;
+    _inlineTouchRoutineId = null;
+  }
+
+  let _reorderMode = false;
+  function toggleReorderMode() {
+    _reorderMode = !_reorderMode;
+    document.body.classList.toggle('reorder-mode', _reorderMode);
+    const btn = document.getElementById('reorderBtn');
+    if (btn) btn.textContent = _reorderMode ? '✓ TERMINER' : '⠿ MODIFIER L\'ORDRE';
+  }
+
   function onExDragStart(e, ei) {
     exDragSrc = ei;
     e.currentTarget.classList.add('ex-dragging');
@@ -11003,3 +11108,4 @@
 
 </body>
 </html>
+c
