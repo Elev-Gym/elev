@@ -1619,44 +1619,50 @@
             </div>
           </div>
 
-          <div style="margin-top:12px;display:flex;flex-direction:column;gap:7px">
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
             <!-- Gluc -->
             <div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                <div style="display:flex;align-items:center;gap:5px">
-                  <div style="width:6px;height:6px;border-radius:50%;background:#a8d5c2;flex-shrink:0"></div>
-                  <span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:'Geist Mono',monospace">GLUCIDES</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <div style="width:8px;height:8px;border-radius:50%;background:#a8d5c2;flex-shrink:0"></div>
+                  <span style="font-size:12px;color:rgba(255,255,255,0.85);font-family:'Geist Mono',monospace;letter-spacing:0.5px">GLUCIDES</span>
                 </div>
-                <span style="font-size:12px;color:#fff;font-family:'DM Serif Display',serif"><span id="valGluc">0</span><span style="color:rgba(255,255,255,0.35);font-size:10px">g / <span id="goalGluc">—</span>g</span></span>
+                <span style="font-family:'DM Serif Display',serif">
+                  <span style="font-size:16px;color:#fff;font-weight:400" id="valGluc">0</span><span style="font-size:11px;color:rgba(255,255,255,0.5)">g / <span id="goalGluc">—</span>g</span>
+                </span>
               </div>
-              <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px">
-                <div id="barGluc" style="height:100%;background:#a8d5c2;border-radius:2px;width:0%;transition:width 0.4s"></div>
+              <div style="height:5px;background:rgba(255,255,255,0.12);border-radius:3px;overflow:hidden">
+                <div id="barGluc" style="height:100%;background:#a8d5c2;border-radius:3px;width:0%;transition:width 0.4s"></div>
               </div>
             </div>
             <!-- Prot -->
             <div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                <div style="display:flex;align-items:center;gap:5px">
-                  <div style="width:6px;height:6px;border-radius:50%;background:#7ab893;flex-shrink:0"></div>
-                  <span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:'Geist Mono',monospace">PROTÉINES</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <div style="width:8px;height:8px;border-radius:50%;background:#7ab893;flex-shrink:0"></div>
+                  <span style="font-size:12px;color:rgba(255,255,255,0.85);font-family:'Geist Mono',monospace;letter-spacing:0.5px">PROTÉINES</span>
                 </div>
-                <span style="font-size:12px;color:#fff;font-family:'DM Serif Display',serif"><span id="valProt">0</span><span style="color:rgba(255,255,255,0.35);font-size:10px">g / <span id="goalProt">—</span>g</span></span>
+                <span style="font-family:'DM Serif Display',serif">
+                  <span style="font-size:16px;color:#7ab893;font-weight:400" id="valProt">0</span><span style="font-size:11px;color:rgba(255,255,255,0.5)">g / <span id="goalProt">—</span>g</span>
+                </span>
               </div>
-              <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px">
-                <div id="barProt" style="height:100%;background:#7ab893;border-radius:2px;width:0%;transition:width 0.4s"></div>
+              <div style="height:5px;background:rgba(255,255,255,0.12);border-radius:3px;overflow:hidden">
+                <div id="barProt" style="height:100%;background:#7ab893;border-radius:3px;width:0%;transition:width 0.4s"></div>
               </div>
             </div>
             <!-- Lip -->
             <div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                <div style="display:flex;align-items:center;gap:5px">
-                  <div style="width:6px;height:6px;border-radius:50%;background:#d4e9e1;flex-shrink:0"></div>
-                  <span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:'Geist Mono',monospace">LIPIDES</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <div style="width:8px;height:8px;border-radius:50%;background:#e8c49a;flex-shrink:0"></div>
+                  <span style="font-size:12px;color:rgba(255,255,255,0.85);font-family:'Geist Mono',monospace;letter-spacing:0.5px">LIPIDES</span>
                 </div>
-                <span style="font-size:12px;color:#fff;font-family:'DM Serif Display',serif"><span id="valLip">0</span><span style="color:rgba(255,255,255,0.35);font-size:10px">g / <span id="goalLip">—</span>g</span></span>
+                <span style="font-family:'DM Serif Display',serif">
+                  <span style="font-size:16px;color:#e8c49a;font-weight:400" id="valLip">0</span><span style="font-size:11px;color:rgba(255,255,255,0.5)">g / <span id="goalLip">—</span>g</span>
+                </span>
               </div>
-              <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:2px">
-                <div id="barLip" style="height:100%;background:#d4e9e1;border-radius:2px;width:0%;transition:width 0.4s"></div>
+              <div style="height:5px;background:rgba(255,255,255,0.12);border-radius:3px;overflow:hidden">
+                <div id="barLip" style="height:100%;background:#e8c49a;border-radius:3px;width:0%;transition:width 0.4s"></div>
               </div>
             </div>
           </div>
