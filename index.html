@@ -2616,7 +2616,7 @@
     if (tab === 'home') renderHome();
     if (tab === 'stats') { renderCalendar(); renderStats(); renderWeeklySummary(); }
     if (tab === 'routines') { renderRoutinesList(); renderProgramsList(); }
-    if (tab === 'nutrition') { _nutriViewDate = new Date().toISOString().split('T')[0]; renderNutritionTab(); }
+    if (tab === 'nutrition') { renderNutritionTab(); }
     if (tab === 'poids') {
       sbLoad('body_weights').then(data => { bodyWeights = data; bodyWeights.sort((a,b)=>a.date.localeCompare(b.date)); });
       sbLoad('kcal_entries').then(data => { kcalEntries = data; kcalEntries.sort((a,b)=>a.date.localeCompare(b.date)); renderKcalHistory(); drawKcalChart(); renderKcalBadge(); });
@@ -2636,7 +2636,7 @@
     if (tab === 'home') renderHome();
     if (tab === 'stats') { renderCalendar(); renderStats(); renderWeeklySummary(); }
     if (tab === 'routines') { renderRoutinesList(); renderProgramsList(); }
-    if (tab === 'nutrition') { _nutriViewDate = new Date().toISOString().split('T')[0]; renderNutritionTab(); }
+    if (tab === 'nutrition') { renderNutritionTab(); }
     if (tab === 'poids') { checkWeightOnboarding(); }
   }
 
@@ -7415,13 +7415,13 @@
     if (existing) existing.remove();
     const modal = document.createElement('div');
     modal.id = 'mealPortionModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:996;display:flex;align-items:flex-end;justify-content:center';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:996;display:flex;align-items:center;justify-content:center;padding:20px';
     modal.onclick = e => { if (e.target === modal) modal.remove(); };
 
     const totalQty = m.qty || m.ingredients?.reduce((s, ing) => s + ing.qty, 0) || 100;
 
     modal.innerHTML = `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(max(20px,env(safe-area-inset-bottom))+20px)" onclick="event.stopPropagation()">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:440px;padding:24px 20px 24px;box-shadow:0 8px 40px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text)">${m.name}</div>
           <button onclick="document.getElementById('mealPortionModal').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px">✕</button>
@@ -7484,7 +7484,7 @@
     if (existing) existing.remove();
     const modal = document.createElement('div');
     modal.id = 'mealCustomizeModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:996;display:flex;align-items:flex-end;justify-content:center';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:996;display:flex;align-items:center;justify-content:center;padding:20px';
     modal.onclick = e => { if (e.target === modal) modal.remove(); };
 
     function buildContent() {
@@ -7494,7 +7494,7 @@
       const totLip  = Math.round(customIngs.reduce((s,g) => s+g.lip,  0)*10)/10;
 
       return `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:440px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">
           <!-- Header -->
           <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -7533,7 +7533,7 @@
             }).join('')}
           </div>
           <!-- Bouton ajouter -->
-          <div style="padding:12px 20px calc(max(20px,env(safe-area-inset-bottom))+8px);border-top:1px solid var(--border);flex-shrink:0;background:var(--surface)">
+          <div style="padding:12px 20px 16px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface);border-radius:0 0 16px 16px">
             <button onclick="confirmMealCustomize(${i})"
               style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:15px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer">
               Ajouter ce repas →
@@ -8814,14 +8814,26 @@
 
   // ── Rendu principal ──
   function renderNutritionTab() {
-    // Toujours remettre à aujourd'hui si on ouvre l'onglet depuis un autre onglet
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
     const viewDate = new Date(_nutriViewDate + 'T00:00:00');
     const isToday = _nutriViewDate === todayStr;
 
-    const dateLabel = viewDate.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+    // Label date avec gestion futur
+    const diffDays = Math.round((viewDate - new Date(todayStr + 'T00:00:00')) / 86400000);
+    const baseDateLabel = viewDate.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+    const dateLabel = diffDays === 1 ? 'Demain · ' + baseDateLabel
+      : diffDays > 1 ? `Dans ${diffDays} jours · ` + baseDateLabel
+      : baseDateLabel;
+
     const el = document.getElementById('nutri-date-label');
     if (el) el.textContent = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
+
+    // Date label hero avec indicateurs navigation
+    const heroLabel = document.getElementById('nutri-date-label-hero');
+    if (heroLabel) {
+      heroLabel.textContent = (diffDays === 1 ? 'Demain · ' : diffDays > 1 ? `Dans ${diffDays} jours · ` : '') + baseDateLabel.charAt(0).toUpperCase() + baseDateLabel.slice(1);
+    }
 
     const todayEntries = nutriEntries.filter(e => e.date === _nutriViewDate);
     const totalKcal = todayEntries.reduce((s, e) => s + e.kcal, 0);
@@ -8853,13 +8865,6 @@
         remainingEl.textContent = diff.toLocaleString('fr-FR');
         remainingEl.style.color = '#ff6b6b';
       }
-    }
-
-    // Date label hero avec indicateurs navigation
-    const heroLabel = document.getElementById('nutri-date-label-hero');
-    if (heroLabel) {
-      const label = viewDate.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-      heroLabel.textContent = label.charAt(0).toUpperCase() + label.slice(1);
     }
 
     // Triple anneau I-3
@@ -9437,18 +9442,9 @@
     const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     d.setDate(d.getDate() + delta);
 
-    // today en local YYYY-MM-DD sans dépendance toLocaleDateString
-    const now = new Date();
-    const todayStr = now.getFullYear() + '-' +
-      String(now.getMonth() + 1).padStart(2, '0') + '-' +
-      String(now.getDate()).padStart(2, '0');
-
     const newStr = d.getFullYear() + '-' +
       String(d.getMonth() + 1).padStart(2, '0') + '-' +
       String(d.getDate()).padStart(2, '0');
-
-    // Pas de navigation dans le futur
-    if (newStr > todayStr) return;
 
     _nutriViewDate = newStr;
     const card = document.getElementById('nutriSummaryCard');
