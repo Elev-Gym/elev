@@ -11035,16 +11035,15 @@
 
   // ── Notes par exercice ──
   function toggleExNote(ei) {
-    const area = document.getElementById('ex-note-' + ei)
-      || document.getElementById('ex-note-fs-' + ei)
-      || document.querySelector(`#excard-${ei} .ex-note-area`)
-      || document.querySelector(`#fsexcard-${ei} .ex-note-area`);
-    if (!area) return;
+    // Chercher la textarea dans la card (excard ou fsexcard)
+    const card = document.getElementById('fsexcard-' + ei) || document.getElementById('excard-' + ei);
+    const area = card ? card.querySelector('.ex-note-area') : (document.getElementById('ex-note-fs-' + ei) || document.getElementById('ex-note-' + ei));
+    if (!area) { console.warn('toggleExNote: no area for ei=', ei); return; }
     const isVisible = area.style.display !== 'none';
     area.style.display = isVisible ? 'none' : 'block';
-    const btn = document.getElementById('ex-note-btn-fs-' + ei) || document.getElementById('ex-note-btn-' + ei);
+    const btn = card ? card.querySelector('.ex-note-toggle') : (document.getElementById('ex-note-btn-fs-' + ei) || document.getElementById('ex-note-btn-' + ei));
     if (btn) btn.classList.toggle('wu-active', !isVisible);
-    if (!isVisible) setTimeout(() => area.focus(), 50);
+    if (!isVisible) setTimeout(() => { area.focus(); area.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
   }
   function updExNote(ei, val) {
     if (exercises[ei]) { exercises[ei].note = val; autosaveDraft(); }
