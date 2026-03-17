@@ -11721,30 +11721,5 @@
   </div>
 </div>
 
-      <button onclick="closeFsExEdit()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0">×</button>
-    </div>
-    <div style="margin-bottom:12px">
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:6px">NOM</div>
-      <div style="position:relative">
-        <input id="fsExEditName" class="inp" placeholder="Nom de l'exercice" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:15px"
-          oninput="filterFsExEditSug(this.value)"
-          onblur="setTimeout(()=>document.getElementById('fsExEditSug').classList.remove('show'),180)"/>
-        <div class="ex-suggestions ex-add-suggestions" id="fsExEditSug"></div>
-      </div>
-    </div>
-    <div style="margin-bottom:20px">
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:6px">MUSCLE</div>
-      <select id="fsExEditMuscle" class="inp" style="width:100%;box-sizing:border-box">
-        <option value="">— Aucun —</option>
-        <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-        <option>Biceps</option><option>Triceps</option><option>Quadriceps</option>
-        <option>Ischio-jambiers</option><option>Abdos</option><option>Fessiers</option>
-        <option>Adducteurs</option><option>Abducteurs</option><option>Autre</option>
-      </select>
-    </div>
-    <button onclick="saveFsExEdit()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:600">Valider</button>
-  </div>
-</div>
-
 </body>
 </html>
