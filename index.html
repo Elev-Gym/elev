@@ -388,8 +388,8 @@
   .weight-hist-del:hover { color: var(--accent2); }
 
   /* Exercise replace modal */
-  .ex-replace-modal { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:960;display:flex;align-items:flex-end;justify-content:center; }
-  .ex-replace-sheet { background:var(--surface);border-radius:18px 18px 0 0;padding:28px 22px 36px;width:100%;max-width:480px;box-shadow:0 -4px 32px rgba(0,0,0,.12); }
+  .ex-replace-modal { position:fixed;inset:0;background:var(--bg);z-index:960;display:flex;flex-direction:column;overflow:hidden; }
+  .ex-replace-sheet { display:flex;flex-direction:column;height:100%; }
   .ex-replace-title { font-family:DM Serif Display,serif;font-size:20px;margin-bottom:16px;color:var(--text); }
   .ex-search-wrap { position:relative;margin-bottom:8px; }
   .ex-search-inp { width:100%;padding:10px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:15px;box-sizing:border-box;outline:none; }
@@ -1407,24 +1407,28 @@
     </div>
   </div>
 
-  <!-- ══ EXERCISE REPLACE MODAL ══ -->
-  <div class="ex-replace-modal" id="exReplaceModal" style="display:none" onclick="if(event.target===this)closeReplaceModal()">
+  <!-- ══ EXERCISE REPLACE MODAL (fullscreen picker) ══ -->
+  <div class="ex-replace-modal" id="exReplaceModal" style="display:none">
     <div class="ex-replace-sheet">
-      <div class="ex-replace-title">Remplacer l'exercice</div>
-      <div class="ex-search-wrap">
-        <input class="ex-search-inp" id="exReplaceSearch" placeholder="Rechercher ou saisir un exercice…" oninput="filterReplaceSuggestions()" autocomplete="off"/>
-        <div class="ex-suggestions" id="exReplaceSuggestions"></div>
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top)+14px) 16px 12px;border-bottom:0.5px solid var(--border);flex-shrink:0">
+        <button onclick="closeReplaceModal()" style="background:none;border:none;color:var(--accent);font-family:'Geist Mono',monospace;font-size:12px;cursor:pointer;padding:4px 0">Annuler</button>
+        <div style="font-family:'DM Serif Display',serif;font-size:17px;color:var(--text)">Remplacer l'exercice</div>
+        <button onclick="confirmReplaceEx()" style="background:none;border:none;color:var(--accent);font-family:'Geist Mono',monospace;font-size:12px;cursor:pointer;padding:4px 0;font-weight:500">Créer</button>
       </div>
-      <select class="ex-muscle-sel" id="exReplaceMuscle">
-        <option value="">Muscle (optionnel)</option>
-        <option>Pectoraux</option><option>Dos</option><option>Épaules</option>
-        <option>Biceps</option><option>Triceps</option><option>Quadriceps</option><option>Ischio-jambiers</option>
-        <option>Abdos</option><option>Fessiers</option><option>Adducteurs</option><option>Abducteurs</option><option>Autre</option>
-      </select>
-      <div class="ex-replace-actions">
-        <button class="ex-replace-cancel" onclick="closeReplaceModal()">Annuler</button>
-        <button class="ex-replace-confirm" onclick="confirmReplaceEx()">Remplacer</button>
+      <!-- Barre de recherche -->
+      <div style="padding:12px 16px;flex-shrink:0;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:0 14px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input id="exReplaceSearch" type="text" placeholder="Chercher un exercice" autocomplete="off"
+            style="flex:1;background:none;border:none;outline:none;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);padding:11px 0"
+            oninput="renderReplaceList()"/>
+        </div>
       </div>
+      <!-- Filtres muscle -->
+      <div id="replaceMuscleFilters" style="display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:0.5px solid var(--border);scrollbar-width:none"></div>
+      <!-- Liste résultats -->
+      <div id="replaceExList" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 40px"></div>
     </div>
   </div>
 
@@ -3842,45 +3846,121 @@
     if (!e.target.closest('.ex-search-wrap')) document.getElementById('exReplaceSuggestions') && (document.getElementById('exReplaceSuggestions').innerHTML = '');
   });
 
-  // ── Replace modal ──
+  // ── Replace modal (fullscreen picker) ──
   let replaceTargetIdx = null;
+  let _replaceMuscleFilter = '';
+
   function openReplaceModal(ei) {
     replaceTargetIdx = ei;
-    document.getElementById('exReplaceSearch').value = exercises[ei].name;
-    document.getElementById('exReplaceMuscle').value = exercises[ei].muscle || '';
-    document.getElementById('exReplaceSuggestions').innerHTML = '';
-    filterReplaceSuggestions();
+    _replaceMuscleFilter = '';
+    document.getElementById('exReplaceSearch').value = '';
+    // Filtres muscle
+    const muscles = ['Tout','Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers'];
+    document.getElementById('replaceMuscleFilters').innerHTML = muscles.map((m,i) =>
+      `<div onclick="setReplaceMuscleFilter('${m}',this)"
+        style="flex-shrink:0;padding:5px 14px;border-radius:20px;font-size:10px;letter-spacing:1px;font-family:'Geist Mono',monospace;cursor:pointer;border:1px solid var(--border2);background:${i===0?'var(--accent)':'var(--surface)'};color:${i===0?'#fff':'var(--muted)'};white-space:nowrap">${m}</div>`
+    ).join('');
     document.getElementById('exReplaceModal').style.display = 'flex';
+    renderReplaceList();
+    setTimeout(() => document.getElementById('exReplaceSearch')?.focus(), 200);
   }
+
+  function setReplaceMuscleFilter(muscle, el) {
+    _replaceMuscleFilter = muscle === 'Tout' ? '' : muscle;
+    document.querySelectorAll('#replaceMuscleFilters div').forEach(d => {
+      d.style.background = 'var(--surface)'; d.style.color = 'var(--muted)';
+    });
+    el.style.background = 'var(--accent)'; el.style.color = '#fff';
+    renderReplaceList();
+  }
+
+  function renderReplaceList() {
+    const q = (document.getElementById('exReplaceSearch')?.value || '').trim().toLowerCase();
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const all = getKnownExercises();
+    const el = document.getElementById('replaceExList');
+    const currentEx = replaceTargetIdx !== null ? exercises[replaceTargetIdx] : null;
+
+    let filtered = all;
+    if (_replaceMuscleFilter) filtered = filtered.filter(e => e.muscle === _replaceMuscleFilter);
+
+    if (q) {
+      // Recherche live
+      const results = filtered.filter(e => norm(e.name).includes(norm(q)));
+      if (!results.length) {
+        el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">Aucun résultat<br><span style="font-size:11px">Tu peux créer "${q}" via le bouton Créer</span></div>`;
+        return;
+      }
+      el.innerHTML = renderReplaceSection('Résultats', results);
+    } else {
+      // Suggérés (même muscle) + récents
+      const suggested = currentEx?.muscle
+        ? filtered.filter(e => e.muscle === currentEx.muscle && e.name !== currentEx.name).slice(0, 8)
+        : [];
+      // Récents = exercices des dernières séances
+      const recentNames = new Set();
+      const recents = [];
+      [...sessions].reverse().forEach(s => s.exercises.forEach(e => {
+        if (!recentNames.has(e.name) && e.name !== currentEx?.name) {
+          recentNames.add(e.name);
+          const known = all.find(k => k.name === e.name);
+          if (known && (!_replaceMuscleFilter || known.muscle === _replaceMuscleFilter)) recents.push(known);
+        }
+      }));
+      const suggestedNames = new Set(suggested.map(e => e.name));
+      const recentFiltered = recents.filter(e => !suggestedNames.has(e.name)).slice(0, 10);
+      const rest = filtered.filter(e => !suggestedNames.has(e.name) && !recentNames.has(e.name) && e.name !== currentEx?.name).slice(0, 20);
+
+      let html = '';
+      if (suggested.length) html += renderReplaceSection('Exercices suggérés', suggested);
+      if (recentFiltered.length) html += renderReplaceSection('Exercices récents', recentFiltered);
+      if (rest.length) html += renderReplaceSection('Tous les exercices', rest);
+      el.innerHTML = html || `<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Aucun exercice trouvé</div>`;
+    }
+  }
+
+  function renderReplaceSection(title, items) {
+    return `<div style="padding:14px 16px 4px">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Geist Mono',monospace;margin-bottom:8px">${title}</div>
+      ${items.map(e => {
+        const safeName = e.name.replace(/'/g,"\'");
+        const safeMuscle = (e.muscle||'').replace(/'/g,"\'");
+        return `<div onclick="selectAndReplaceEx('${safeName}','${safeMuscle}')"
+          style="display:flex;align-items:center;padding:13px 0;border-bottom:0.5px solid var(--border);gap:14px;cursor:pointer">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;color:var(--text)">${e.name}</div>
+            ${e.muscle ? `<div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:2px">${e.muscle}</div>` : ''}
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted2)" stroke-width="1.5"><path d="M9 18l6-6-6-6"/></svg>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function selectAndReplaceEx(name, muscle) {
+    if (replaceTargetIdx === null) return;
+    exercises[replaceTargetIdx].name = name;
+    if (muscle) exercises[replaceTargetIdx].muscle = muscle;
+    closeReplaceModal();
+    _rerender();
+    showToast(`Remplacé par "${name}" ✓`);
+  }
+
   function closeReplaceModal() {
     document.getElementById('exReplaceModal').style.display = 'none';
     replaceTargetIdx = null;
   }
-  function filterReplaceSuggestions() {
-    const q = document.getElementById('exReplaceSearch').value.trim().toLowerCase();
-    const box = document.getElementById('exReplaceSuggestions');
-    const all = getKnownExercises();
-    const matches = q ? all.filter(e => e.name.toLowerCase().includes(q)).slice(0,10) : all.slice(0,10);
-    if (!matches.length) { box.innerHTML = ''; return; }
-    box.innerHTML = matches.map(e => `<div class="ex-suggestion" onclick="selectReplaceSuggestion('${e.name.replace(/'/g,"\'")}','${e.muscle.replace(/'/g,"\'")}')">
-      <span>${e.name}</span>${e.muscle?`<span class="ex-sug-muscle">${e.muscle}</span>`:''}
-    </div>`).join('');
-  }
-  function selectReplaceSuggestion(name, muscle) {
-    document.getElementById('exReplaceSearch').value = name;
-    if (muscle) document.getElementById('exReplaceMuscle').value = muscle;
-    document.getElementById('exReplaceSuggestions').innerHTML = '';
-  }
+
   function confirmReplaceEx() {
+    // Bouton "Créer" — crée l'exercice custom depuis la recherche
     if (replaceTargetIdx === null) return;
     const newName = document.getElementById('exReplaceSearch').value.trim();
-    if (!newName) { return; }
-    const newMuscle = document.getElementById('exReplaceMuscle').value;
+    if (!newName) { showToast("Entre un nom d\'exercice"); return; }
     exercises[replaceTargetIdx].name = newName;
-    exercises[replaceTargetIdx].muscle = newMuscle;
+    exercises[replaceTargetIdx].muscle = _replaceMuscleFilter || exercises[replaceTargetIdx].muscle || '';
     closeReplaceModal();
-    renderExercises();
-    showToast(`Exercice remplacé par "${newName}"`);
+    _rerender();
+    showToast(`Remplacé par "${newName}" ✓`);
   }
 
   // Flush all unsaved input values from the FS DOM into exercises[] state before re-rendering
