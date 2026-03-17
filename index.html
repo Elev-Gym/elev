@@ -675,9 +675,9 @@
   .expicker-chip { background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:5px 14px;font-size:10px;letter-spacing:1px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.15s;font-family:'Geist Mono',monospace; }
   .expicker-chip.on { background:var(--accent);border-color:var(--accent);color:#fff; }
   .expicker-list { flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 60px; }
-  .expicker-item { display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:0.5px solid var(--border);cursor:pointer;transition:opacity 0.15s;gap:12px; }
-  .expicker-item:last-child { border-bottom:none; }
-  .expicker-item:active { opacity:0.6; }
+  .expicker-item { display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;gap:12px;margin-bottom:8px; }
+  .expicker-item:last-child { margin-bottom:0; }
+  .expicker-item:active { opacity:0.7;transform:scale(0.99); }
   .expicker-item-name { font-size:15px;color:var(--text);line-height:1.2; }
   .expicker-item-meta { font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:3px; }
   .expicker-item-freq { font-size:9px;background:var(--accent-light);color:var(--accent);border-radius:20px;padding:2px 8px;font-family:'Geist Mono',monospace; }
