@@ -392,6 +392,8 @@
   @media (min-width:600px) { .ex-replace-modal { align-items:center; } }
   .ex-replace-sheet { display:flex;flex-direction:column;background:var(--bg);width:100%;max-width:480px;height:92vh;border-radius:20px 20px 0 0;overflow:hidden; }
   @media (min-width:600px) { .ex-replace-sheet { border-radius:16px;height:80vh;box-shadow:0 20px 60px rgba(0,0,0,0.3); } }
+  .rp-sheet { background:var(--surface);width:100%;max-width:480px;max-height:92vh;border-radius:20px 20px 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch; }
+  @media (min-width:600px) { .rp-sheet { border-radius:16px;max-height:80vh;box-shadow:0 20px 60px rgba(0,0,0,0.3); } }
   .ex-replace-title { font-family:DM Serif Display,serif;font-size:20px;margin-bottom:16px;color:var(--text); }
   .ex-search-wrap { position:relative;margin-bottom:8px; }
   .ex-search-inp { width:100%;padding:10px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:15px;box-sizing:border-box;outline:none; }
@@ -1397,7 +1399,7 @@
 
   <!-- ══ ROUTINE PREVIEW MODAL ══ -->
   <div class="ex-replace-modal" id="routinePreviewModal" style="display:none" onclick="if(event.target===this)closeRoutinePreview()">
-    <div class="ex-replace-sheet" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 20px 32px">
+    <div class="rp-sheet" style="padding:24px 20px 32px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div class="label" style="margin:0">SÉANCE</div>
         <button onclick="closeRoutinePreview()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0;line-height:1">×</button>
@@ -3289,7 +3291,7 @@
     const modal = document.getElementById('routinePreviewModal');
     modal.style.display = 'flex';
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      modal.querySelector('.ex-replace-sheet').style.transform = 'translateY(0)';
+      const sheet = modal.querySelector('.rp-sheet') || modal.querySelector('.ex-replace-sheet'); if(sheet) sheet.style.transform = 'translateY(0)';
     }));
   }
 
