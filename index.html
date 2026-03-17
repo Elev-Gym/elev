@@ -6286,7 +6286,19 @@
 
     document.getElementById('homeWeekSessions').textContent = thisWeekSessions.length;
     const diff = thisWeekSessions.length - lastWeekSessions.length;
-    document.getElementById('homeWeekVsLast').textContent = diff === 0 ? 'comme la semaine dernière' : (diff > 0 ? '+' + diff + ' vs sem. dernière' : diff + ' vs sem. dernière');
+    const isSunday = new Date().getDay() === 0;
+    const motivHome = (() => {
+      if (!isSunday) return '';
+      const n = thisWeekSessions.length;
+      if (diff > 1) return '🔥 En feu cette semaine !';
+      if (diff === 1) return '📈 Un de plus que la semaine passée';
+      if (diff === 0 && n >= 3) return '💪 Belle régularité, continue !';
+      if (diff === 0 && n >= 1) return '✓ Dans les temps, keep going';
+      if (diff === 0 && n === 0) return 'La semaine commence, à toi de jouer';
+      if (diff === -1) return 'Rattrape ça cette semaine 👊';
+      return 'Chaque séance compte 💡';
+    })();
+    document.getElementById('homeWeekVsLast').textContent = motivHome;
     document.getElementById('homeWeekDays').textContent = monthDays;
 
     // Streak (jours consécutifs)
@@ -9588,12 +9600,20 @@
 
     // Volume comparison
     let compareHtml = '';
-    if (prevVol > 0) {
-      const diff = Math.round((totalVol - prevVol) / prevVol * 100);
-      const sign = diff >= 0 ? '+' : '';
-      const cls = diff >= 0 ? 'up' : 'down';
-      const arrow = diff >= 0 ? '↑' : '↓';
-      compareHtml = '<div class="weekly-compare ' + cls + '">' + arrow + ' ' + sign + diff + '% vs semaine dernière</div>';
+    if (prevVol > 0 || nbSessions > 0) {
+      const pct = prevVol > 0 ? Math.round((totalVol - prevVol) / prevVol * 100) : null;
+      const isSundayStats = now.getDay() === 0;
+      if (isSundayStats) {
+        const motivStats = (() => {
+          if (pct === null) return { txt: '💪 Première semaine, lance-toi !', cls: 'up' };
+          if (pct >= 20)  return { txt: '🔥 Volume en hausse de +' + pct + '% — excellent !', cls: 'up' };
+          if (pct >= 5)   return { txt: '📈 +' + pct + '% vs semaine dernière, belle progression', cls: 'up' };
+          if (pct >= -4)  return { txt: '✓ Volume stable, la régularité paie', cls: 'up' };
+          if (pct >= -15) return { txt: '👊 ' + pct + '% de volume en moins — reviens fort', cls: 'down' };
+          return { txt: '⚡ Semaine difficile, la suite sera meilleure', cls: 'down' };
+        })();
+        compareHtml = '<div class="weekly-compare ' + motivStats.cls + '">' + motivStats.txt + '</div>';
+      }
     }
 
     // Days of week
