@@ -610,8 +610,8 @@
 
   /* ── Edit session modal ── */
   /* ── Edit session full-page ── */
-  .edit-modal-overlay { position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transform:translateX(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);pointer-events:none; }
-  .edit-modal-overlay.show { transform:translateX(0);pointer-events:all; }
+  .edit-modal-overlay { position:fixed;inset:0;z-index:500;background:var(--bg);display:none;flex-direction:column;overflow:hidden;transform:translateX(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1); }
+  .edit-modal-overlay.show { display:flex;transform:translateX(0); }
   .edit-modal { display:none; }
   .edit-modal-title { font-family:'DM Serif Display',serif;font-size:18px;font-weight:400; }
   .edit-ex-block { background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--card-shadow);margin-bottom:12px; }
@@ -9896,11 +9896,15 @@
     const s = sessions.find(x => x.id === id);
     if (!s) return;
     editSessionId = id;
-    // Deep clone for editing
     editSessionData = JSON.parse(JSON.stringify(s));
-    const body = document.getElementById('editSessionBody');
     renderEditBody();
-    document.getElementById('editSessionOverlay').classList.add('show');
+    const el = document.getElementById('editSessionOverlay');
+    el.style.display = 'flex';
+    el.style.transform = 'translateX(100%)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transition = 'transform 0.3s cubic-bezier(.4,0,.2,1)';
+      el.style.transform = 'translateX(0)';
+    }));
   }
   function renderEditBody() {
     const body = document.getElementById('editSessionBody');
@@ -9973,7 +9977,14 @@
     renderExPickerList();
   }
   function closeEditSession() {
-    document.getElementById('editSessionOverlay').classList.remove('show');
+    const el = document.getElementById('editSessionOverlay');
+    el.style.transition = 'transform 0.3s cubic-bezier(.4,0,.2,1)';
+    el.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      el.style.display = 'none';
+      el.style.transform = '';
+      el.style.transition = '';
+    }, 310);
     editSessionId = null; editSessionData = null;
   }
   async function saveEditSession() {
