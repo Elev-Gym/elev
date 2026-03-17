@@ -883,7 +883,7 @@
   .ss-connector::before { content:''; position:absolute; left:10px; top:50%; bottom:0; width:2px; background:var(--accent); opacity:0.3; }
   .ss-connector-label { font-family:Geist Mono,monospace; font-size:8px; letter-spacing:1px; color:var(--accent); background:var(--bg); position:relative; padding:0 6px; }
   /* Superset picker modal */
-  .ss-modal { position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:600;display:flex;align-items:flex-end;justify-content:center; }
+  .ss-modal { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1080;display:flex;align-items:flex-end;justify-content:center; }
   .ss-sheet { background:var(--surface);border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:460px; }
   .ss-sheet-title { font-family:DM Serif Display,serif;font-size:20px;color:var(--text);margin-bottom:4px; }
   .ss-sheet-sub { font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:18px; }
@@ -10898,23 +10898,31 @@
   function openSSPicker(ei) {
     _ssPendingEi = ei;
     const ex = exercises[ei];
-    // If already in superset — offer to unlink
+    // Déjà en superset — proposer de le retirer
     if (ex.supersetWith !== undefined) {
-      if (confirm('Supprimer ce superset ?')) {
-        const partnerIdx = exercises.findIndex(e => e.id === ex.supersetWith);
+      const partnerIdx = exercises.findIndex(e => e.id === ex.supersetWith);
+      const partnerName = partnerIdx >= 0 ? exercises[partnerIdx].name : 'exercice lié';
+      if (confirm('Retirer le superset avec "' + partnerName + '" ?')) {
         if (partnerIdx >= 0) delete exercises[partnerIdx].supersetWith;
         delete ex.supersetWith;
         renderExercises(); autosaveDraft();
+        showToast('Superset retiré');
       }
       return;
     }
-    // Show picker with other exercises
+    // Lister les autres exercices disponibles (pas déjà en superset)
     const options = exercises
       .map((e, i) => ({ e, i }))
-      .filter(({ i }) => i !== ei && exercises[i].supersetWith === undefined);
-    if (!options.length) { showToast('Ajoute un autre exercice pour créer un superset'); return; }
+      .filter(({ e, i }) => i !== ei && e.supersetWith === undefined);
+    if (!options.length) { showToast("Ajoute un autre exercice d'abord"); return; }
+    // Mettre à jour le titre avec le nom de l'exercice source
+    document.querySelector('#ssModal .ss-sheet-title').textContent = 'Superset avec…';
+    document.querySelector('#ssModal .ss-sheet-sub').textContent = ex.name.toUpperCase();
     document.getElementById('ssExOptions').innerHTML = options.map(({ e, i }) =>
-      '<div class="ss-ex-option" onclick="linkSuperset(' + i + ')">' + e.name + (e.muscle ? ' <span style="font-size:12px;color:var(--muted)">· ' + e.muscle + '</span>' : '') + '</div>'
+      `<div class="ss-ex-option" onclick="linkSuperset(${i})">
+        <div style="font-family:'DM Serif Display',serif;font-size:16px">${e.name}</div>
+        ${e.muscle ? `<div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;margin-top:2px">${e.muscle}</div>` : ''}
+      </div>`
     ).join('');
     document.getElementById('ssModal').style.display = 'flex';
   }
