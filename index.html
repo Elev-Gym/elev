@@ -1337,6 +1337,19 @@
     </div>
   </div>
 
+  <!-- ══ UPDATE ROUTINE MODAL ══ -->
+  <div id="updateRoutineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:810;align-items:flex-end;justify-content:center;">
+    <div style="background:var(--surface);border-radius:16px 16px 0 0;padding:28px 24px calc(env(safe-area-inset-bottom)+32px);width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,0.2)">
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:6px">Séance modifiée</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.6">Tu as modifié des exercices pendant la séance.<br>Veux-tu mettre à jour la séance <strong id="updateRoutineNameLabel" style="color:var(--text)"></strong> avec ces modifications ?</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="saveSessionAndUpdateRoutine()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:600">✓ Mettre à jour la séance</button>
+        <button onclick="saveSessionWithoutUpdate()" style="width:100%;background:var(--warm);color:var(--text);border:1px solid var(--border2);border-radius:12px;padding:14px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Garder la séance d'origine</button>
+        <button onclick="document.getElementById('updateRoutineModal').style.display='none'" style="background:none;border:none;color:var(--muted);font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;padding:8px">Annuler</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ ROUTINE PREVIEW MODAL ══ -->
   <div class="ex-replace-modal" id="routinePreviewModal" style="display:none" onclick="if(event.target===this)closeRoutinePreview()">
     <div class="ex-replace-sheet" style="max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -3919,12 +3932,51 @@
       closeSessionFs();
     }
     if (!exercises.length) { showToast('Ajoute au moins un exercice'); return; }
-    if (loadedRoutineId) { saveSessionOnly(); return; }
+    if (loadedRoutineId) {
+      // Vérifier si les exercices ont été modifiés par rapport à la routine d'origine
+      const routine = routines.find(r => r.id === loadedRoutineId);
+      const routineNames = (routine?.exercises || []).map(e => e.name).join('|');
+      const sessionNames = exercises.map(e => e.name).join('|');
+      const routineSets = (routine?.exercises || []).map(e => e.sets).join('|');
+      const sessionSets = exercises.map(e => e.sets.filter(s=>!s.warmup).length).join('|');
+      const hasChanged = routineNames !== sessionNames || routineSets !== sessionSets;
+      if (hasChanged && routine) {
+        document.getElementById('updateRoutineNameLabel').textContent = routine.name;
+        document.getElementById('updateRoutineModal').style.display = 'flex';
+        return;
+      }
+      saveSessionOnly();
+      return;
+    }
     // Free session — propose saving as routine
     const modal = document.getElementById('saveRoutineModal');
     modal.style.display = 'flex';
     const muscles = getSelectedMuscles();
     if (muscles.length) document.getElementById('saveRoutineName').placeholder = muscles.join(' · ');
+  }
+
+  async function saveSessionAndUpdateRoutine() {
+    document.getElementById('updateRoutineModal').style.display = 'none';
+    const routine = routines.find(r => r.id === loadedRoutineId);
+    if (routine) {
+      routine.exercises = exercises.map(ex => ({
+        name: ex.name,
+        muscle: ex.muscle || '',
+        sets: ex.sets.filter(s => !s.warmup).length || 3,
+        restTime: ex.restTime || 90,
+        repsTarget: ex.repsTarget || '',
+        unit: ex.unit || 'kg',
+      }));
+      showSyncBadge('Mise à jour...');
+      await sbSave('routines', [routine]);
+      showSyncBadge('✓ Sync', true);
+    }
+    await saveSessionOnly();
+  }
+
+  async function saveSessionWithoutUpdate() {
+    document.getElementById('updateRoutineModal').style.display = 'none';
+    await saveSessionOnly();
   }
 
   function closeSaveRoutineModal() {
@@ -10109,6 +10161,51 @@
   let _inlineTouchDragIdx = null, _inlineTouchRoutineId = null;
   let _inlineTouchClone = null, _inlineTouchStartY = 0;
 
+  // ── Touch drag pour les exercices en séance fullscreen ──
+  let _fsTouchDragIdx = null, _fsTouchClone = null, _fsTouchStartY = 0;
+  function fsTouchDragStart(e, idx) {
+    e.stopPropagation();
+    _fsTouchDragIdx = idx;
+    _fsTouchStartY = e.touches[0].clientY;
+    const card = document.getElementById('fsexcard-' + idx);
+    if (!card) return;
+    _fsTouchClone = card.cloneNode(true);
+    _fsTouchClone.style.cssText = `position:fixed;z-index:9999;width:${card.offsetWidth}px;opacity:0.85;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.18);left:${card.getBoundingClientRect().left}px;top:${card.getBoundingClientRect().top}px;border-radius:12px;`;
+    document.body.appendChild(_fsTouchClone);
+    card.style.opacity = '0.3';
+  }
+  function fsTouchDragMove(e, idx) {
+    if (_fsTouchDragIdx === null || !_fsTouchClone) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const dy = touch.clientY - _fsTouchStartY;
+    const card = document.getElementById('fsexcard-' + idx);
+    if (card) _fsTouchClone.style.top = (card.getBoundingClientRect().top + dy) + 'px';
+    _fsTouchClone.style.display = 'none';
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    _fsTouchClone.style.display = '';
+    const targetCard = el?.closest('[id^="fsexcard-"]');
+    document.querySelectorAll('[id^="fsexcard-"]').forEach(c => c.classList.remove('ex-drag-over'));
+    if (targetCard && targetCard !== card) targetCard.classList.add('ex-drag-over');
+  }
+  function fsTouchDragEnd(e, idx) {
+    if (_fsTouchDragIdx === null) return;
+    if (_fsTouchClone) { _fsTouchClone.remove(); _fsTouchClone = null; }
+    document.querySelectorAll('[id^="fsexcard-"]').forEach(c => { c.classList.remove('ex-drag-over'); c.style.opacity = ''; });
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetCard = el?.closest('[id^="fsexcard-"]');
+    if (targetCard) {
+      const targetIdx = parseInt(targetCard.id.replace('fsexcard-', ''));
+      if (!isNaN(targetIdx) && targetIdx !== idx) {
+        const moved = exercises.splice(idx, 1)[0];
+        exercises.splice(targetIdx, 0, moved);
+        _rerender();
+      }
+    }
+    _fsTouchDragIdx = null;
+  }
+
   function onInlineExTouchStart(e, idx, routineId) {
     e.stopPropagation();
     _inlineTouchDragIdx = idx;
@@ -10562,9 +10659,18 @@
           <button onclick="delSet(${ei},${realSi})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:11px;padding:0;line-height:1;" title="Supprimer">✕</button>
         </div>`;
       }).join('');
-      return `<div class="ex-card${ex.sets.some(s=>s.warmup)?' has-warmup':''}" id="fsexcard-${ei}" style="margin-bottom:12px">
+      return `<div class="ex-card${ex.sets.some(s=>s.warmup)?' has-warmup':''}" id="fsexcard-${ei}" style="margin-bottom:12px"
+        ondragover="event.preventDefault();this.classList.add('ex-drag-over')"
+        ondragleave="this.classList.remove('ex-drag-over')"
+        ondrop="event.preventDefault();this.classList.remove('ex-drag-over');if(window._fsDragSrc!==null&&window._fsDragSrc!==${ei}){const mv=exercises.splice(window._fsDragSrc,1)[0];exercises.splice(${ei},0,mv);window._fsDragSrc=null;_rerender();}">
         <div class="ex-head">
-          <div><div class="ex-name">${ex.name}</div>
+          <span style="cursor:grab;color:var(--muted);font-size:18px;padding:0 8px 0 0;opacity:0.45;touch-action:none;user-select:none;flex-shrink:0" draggable="true"
+            ondragstart="window._fsDragSrc=${ei};document.getElementById('fsexcard-${ei}').classList.add('ex-dragging');event.dataTransfer.effectAllowed='move'"
+            ondragend="document.getElementById('fsexcard-${ei}').classList.remove('ex-dragging');document.querySelectorAll('.ex-card').forEach(c=>c.classList.remove('ex-drag-over'))"
+            ontouchstart="fsTouchDragStart(event,${ei})"
+            ontouchmove="fsTouchDragMove(event,${ei})"
+            ontouchend="fsTouchDragEnd(event,${ei})">⠿</span>
+          <div style="flex:1;min-width:0"><div class="ex-name">${ex.name}</div>
           <div class="ex-meta">${ex.muscle?`<span class="ex-muscle-tag">${ex.muscle}</span>`:''}${pr?`<span class="ex-pr-badge">🏆 PR ${pr.weight}kg × ${pr.reps}reps</span>`:''}${ex.sets.some(s=>s.warmup)?'<span class="warmup-badge">🔥 Échauff.</span>':''}</div></div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="ex-del" onclick="delEx(${ei})">✕</button>
