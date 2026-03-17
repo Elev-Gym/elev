@@ -609,18 +609,25 @@
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 6px; }
 
   /* ── Edit session modal ── */
-  .edit-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s; }
-  .edit-modal-overlay.show { opacity:1;pointer-events:all; }
-  .edit-modal { background:var(--bg);border-radius:12px 12px 0 0;padding:24px 20px 40px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.34,1.1,0.64,1); }
-  .edit-modal-overlay.show .edit-modal { transform:translateY(0); }
-  .edit-modal-title { font-family:DM Serif Display,serif;font-size:22px;font-weight:400;margin-bottom:16px; }
-  .edit-ex-block { border:1px solid var(--border);border-radius:10px;margin-bottom:18px;overflow:hidden;box-shadow:var(--card-shadow); }
-  .edit-ex-name { padding:10px 14px;background:var(--warm);font-size:13px;font-weight:500;border-bottom:1px solid var(--border); }
-  .edit-set-row { display:grid;grid-template-columns:24px 1fr 1fr 28px;gap:6px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--border); }
-  .edit-set-row:last-child { border-bottom:none; }
-  .edit-set-n { font-size:10px;color:var(--muted);text-align:center; }
-  .edit-set-inp { background:var(--warm);border:1px solid var(--border);border-radius:6px;padding:7px 8px;font-family:Geist Mono,monospace;font-size:12px;color:var(--text);width:100%;text-align:center; }
-  .edit-set-del { background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;text-align:center; }
+  /* ── Edit session full-page ── */
+  .edit-modal-overlay { position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transform:translateX(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);pointer-events:none; }
+  .edit-modal-overlay.show { transform:translateX(0);pointer-events:all; }
+  .edit-modal { display:none; }
+  .edit-modal-title { font-family:'DM Serif Display',serif;font-size:18px;font-weight:400; }
+  .edit-ex-block { background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--card-shadow);margin-bottom:12px; }
+  .edit-ex-head { display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface); }
+  .edit-ex-name-inp { flex:1;background:none;border:none;border-bottom:1.5px solid var(--border2);outline:none;font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);padding:2px 4px; }
+  .edit-ex-name-inp:focus { border-bottom-color:var(--accent); }
+  .edit-sets-head { display:grid;grid-template-columns:24px 1fr 1fr 32px;gap:6px;padding:7px 16px;background:var(--surface2);border-bottom:1px solid var(--border); }
+  .edit-set-row { display:grid;grid-template-columns:24px 1fr 1fr 32px;gap:6px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border); }
+  .edit-set-row:last-of-type { border-bottom:none; }
+  .edit-set-n { font-family:'DM Serif Display',serif;font-size:14px;color:var(--muted2);text-align:center; }
+  .edit-set-inp { background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:7px 6px;font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);width:100%;text-align:center;box-sizing:border-box; }
+  .edit-set-inp:focus { outline:none;border-color:var(--accent); }
+  .edit-set-del { background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;text-align:center;padding:4px; }
+  .edit-set-del:hover { color:var(--accent2); }
+  .edit-add-set-btn { width:100%;padding:10px;background:none;border:none;border-top:1px solid var(--border);font-size:10px;color:var(--muted);cursor:pointer;letter-spacing:2px;font-family:'Geist Mono',monospace;text-transform:uppercase;transition:all 0.15s; }
+  .edit-add-set-btn:hover { color:var(--accent);background:var(--accent-light); }
   /* ── Share modal ── */
   .share-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.2s; }
   .share-overlay.show { opacity:1;pointer-events:all; }
@@ -9898,38 +9905,46 @@
   function renderEditBody() {
     const body = document.getElementById('editSessionBody');
     if (!editSessionData) return;
-    body.innerHTML = editSessionData.exercises.map((ex, ei) => `
-      <div class="edit-ex-block">
-        <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--warm);border-bottom:1px solid var(--border)">
-          <div style="flex:1;position:relative">
-            <input class="edit-set-inp" id="editExName-${ei}" value="${ex.name.replace(/"/g,'&quot;')}" placeholder="Nom exercice"
-              style="width:100%;font-size:13px;font-weight:500;background:transparent;border:none;border-bottom:1px solid var(--border2);border-radius:0;padding:2px 4px"
-              oninput="editSessionData.exercises[${ei}].name=this.value;filterEditSessionExSug(${ei},this.value)"
-              onfocus="filterEditSessionExSug(${ei},this.value)"
-              onblur="setTimeout(()=>{const b=document.getElementById('editExSug-${ei}');if(b)b.classList.remove('show');},180)"
-              autocomplete="off"/>
-            <div class="ex-suggestions ex-add-suggestions" id="editExSug-${ei}"></div>
+    // Update title
+    const titleEl = document.getElementById('editSessionTitle');
+    if (titleEl) titleEl.textContent = editSessionData.routineName || 'Modifier la séance';
+
+    body.innerHTML = editSessionData.exercises.map((ex, ei) => {
+      const setsHtml = ex.sets.map((set, si) => `
+        <div class="edit-set-row">
+          <div class="edit-set-n">${si+1}</div>
+          <input class="edit-set-inp" type="number" placeholder="—" value="${set.w||set.weight||''}"
+            onchange="editSessionData.exercises[${ei}].sets[${si}].w=this.value" />
+          <input class="edit-set-inp" type="number" placeholder="—" value="${set.r||set.reps||''}"
+            onchange="editSessionData.exercises[${ei}].sets[${si}].r=this.value" />
+          <button class="edit-set-del" onclick="delEditSet(${ei},${si})">✕</button>
+        </div>`).join('');
+      const muscle = ex.muscle ? `<span style="font-size:10px;color:var(--terra);font-family:'Geist Mono',monospace;letter-spacing:0.5px">${ex.muscle}</span>` : '';
+      return `<div class="edit-ex-block">
+        <div class="edit-ex-head">
+          <div style="flex:1;min-width:0">
+            <div style="position:relative">
+              <input class="edit-ex-name-inp" id="editExName-${ei}" value="${ex.name.replace(/"/g,'&quot;')}" placeholder="Nom exercice"
+                oninput="editSessionData.exercises[${ei}].name=this.value;filterEditSessionExSug(${ei},this.value)"
+                onfocus="filterEditSessionExSug(${ei},this.value)"
+                onblur="setTimeout(()=>{const b=document.getElementById('editExSug-${ei}');if(b)b.classList.remove('show');},180)"
+                autocomplete="off"/>
+              <div class="ex-suggestions ex-add-suggestions" id="editExSug-${ei}"></div>
+            </div>
+            ${muscle ? `<div style="margin-top:4px">${muscle}</div>` : ''}
           </div>
-          <button onclick="delEditEx(${ei})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px" title="Supprimer l'exercice">✕</button>
+          <button onclick="delEditEx(${ei})" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:4px 6px;flex-shrink:0;line-height:1" title="Supprimer">✕</button>
         </div>
-        <div style="display:grid;grid-template-columns:22px 1fr 1fr 28px;gap:4px;padding:6px 12px 2px;border-bottom:1px solid var(--border)">
-          <div style="font-size:8px;letter-spacing:1px;color:var(--muted);text-align:center">#</div>
-          <div style="font-size:8px;letter-spacing:1px;color:var(--muted);text-align:center">KG</div>
-          <div style="font-size:8px;letter-spacing:1px;color:var(--muted);text-align:center">REPS</div>
+        <div class="edit-sets-head">
+          <div style="font-size:9px;letter-spacing:1px;color:var(--muted);text-align:center">#</div>
+          <div style="font-size:9px;letter-spacing:1px;color:var(--muted);text-align:center">KG</div>
+          <div style="font-size:9px;letter-spacing:1px;color:var(--muted);text-align:center">REPS</div>
           <div></div>
         </div>
-        ${ex.sets.map((set, si) => `
-          <div class="edit-set-row">
-            <div class="edit-set-n">${si+1}</div>
-            <input class="edit-set-inp" type="number" placeholder="kg" value="${set.w||set.weight||''}"
-              onchange="editSessionData.exercises[${ei}].sets[${si}].w=this.value" />
-            <input class="edit-set-inp" type="number" placeholder="reps" value="${set.r||set.reps||''}"
-              onchange="editSessionData.exercises[${ei}].sets[${si}].r=this.value" />
-            <button class="edit-set-del" onclick="delEditSet(${ei},${si})">✕</button>
-          </div>`).join('')}
-        <button onclick="addEditSet(${ei})" style="width:100%;padding:7px;background:none;border:none;border-top:1px solid var(--border);font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:1px;font-family:Geist Mono,monospace">+ série</button>
-      </div>`).join('') +
-      `<button onclick="addEditEx()" style="width:100%;padding:10px;background:none;border:1px dashed var(--border2);border-radius:4px;font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:1px;font-family:Geist Mono,monospace;margin-top:4px">+ exercice</button>`;
+        ${setsHtml}
+        <button class="edit-add-set-btn" onclick="addEditSet(${ei})">+ Série</button>
+      </div>`;
+    }).join('') + '<div style="height:8px"></div>';
   }
   function delEditSet(ei, si) {
     editSessionData.exercises[ei].sets.splice(si, 1);
@@ -9947,15 +9962,15 @@
     renderEditBody();
   }
   function addEditEx() {
-    editSessionData.exercises.push({ name: 'Exercice', muscle: '', sets: [{w:'',r:'',done:false}] });
-    renderEditBody();
-    // Focus the name input of the new exercise
-    setTimeout(() => {
-      const blocks = document.querySelectorAll('.edit-ex-block');
-      const last = blocks[blocks.length - 1];
-      last?.querySelector('input')?.focus();
-      last?.querySelector('input')?.select();
-    }, 50);
+    // Open picker in "editSession" mode
+    window._editSessionAddMode = true;
+    _exPickerSelected = null;
+    _exPickerConfig = { sets: 3, repsTarget: '8–12', restTime: 90, warmup: false };
+    document.getElementById('exPickerSearch').value = '';
+    document.querySelectorAll('.expicker-chip').forEach((c,i) => c.classList.toggle('on', i===0));
+    document.getElementById('exPickerConfig').classList.remove('open');
+    document.getElementById('exPickerModal').classList.add('open');
+    renderExPickerList();
   }
   function closeEditSession() {
     document.getElementById('editSessionOverlay').classList.remove('show');
@@ -10427,14 +10442,25 @@
     const { name, muscle } = _exPickerSelected;
     const { sets, repsTarget, restTime } = _exPickerConfig;
     const warmup = document.getElementById('exPickerWarmup').checked;
+
+    if (window._editSessionAddMode) {
+      // Mode ajout dans édition de séance passée
+      window._editSessionAddMode = false;
+      if (editSessionData) {
+        const newSets = Array.from({length: sets}, () => ({w:'',r:'',done:false}));
+        if (warmup) newSets.unshift({w:'',r:'',done:false,warmup:true});
+        editSessionData.exercises.push({ name, muscle, restTime, repsTarget, sets: newSets });
+        closeExPickerModal();
+        renderEditBody();
+        showToast('"' + name + '" ajouté ✓');
+      }
+      return;
+    }
+
     if (_fsExEditIdx !== null && exercises[_fsExEditIdx]) {
-      // Mode édition — mettre à jour l'exercice existant en conservant les séries déjà remplies
+      // Mode édition en séance en cours
       const ex = exercises[_fsExEditIdx];
-      ex.name = name;
-      ex.muscle = muscle;
-      ex.repsTarget = repsTarget;
-      ex.restTime = restTime;
-      // Ajuster le nombre de séries de travail
+      ex.name = name; ex.muscle = muscle; ex.repsTarget = repsTarget; ex.restTime = restTime;
       const workSets = ex.sets.filter(s => !s.warmup);
       const wuSets = warmup ? [ex.sets.find(s => s.warmup) || {w:'',r:'',done:false,warmup:true}] : [];
       while (workSets.length < sets) workSets.push({w:'',r:'',done:false});
@@ -10443,7 +10469,7 @@
       _fsExEditIdx = null;
       showToast('"' + name + '" modifié ✓');
     } else {
-      // Mode ajout
+      // Mode ajout en séance en cours
       const newSets = Array.from({length: sets}, () => ({w:'',r:'',done:false}));
       if (warmup) newSets.unshift({w:'',r:'',done:false,warmup:true});
       exercises.push({ id: Date.now() + Math.random(), name, muscle, restTime, repsTarget, sets: newSets });
@@ -11181,14 +11207,20 @@
 </script>
 
 <!-- ══ EDIT SESSION MODAL ══ -->
-<div class="edit-modal-overlay" id="editSessionOverlay" onclick="if(event.target===this)closeEditSession()">
-  <div class="edit-modal">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div class="edit-modal-title">Modifier la séance</div>
-      <button onclick="closeEditSession()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1">✕</button>
-    </div>
-    <div id="editSessionBody"></div>
-    <button onclick="saveEditSession()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:13px;font-family:Geist Mono,monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-top:8px;">Sauvegarder</button>
+<div class="edit-modal-overlay" id="editSessionOverlay">
+  <!-- Header -->
+  <div style="padding:calc(env(safe-area-inset-top)+12px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)">
+    <button onclick="closeEditSession()" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px;display:flex;align-items:center;flex-shrink:0">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="edit-modal-title" id="editSessionTitle">Modifier la séance</div>
+  </div>
+  <!-- Scrollable body -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 0" id="editSessionBody"></div>
+  <!-- Footer -->
+  <div style="padding:12px 16px calc(env(safe-area-inset-bottom)+16px);border-top:1px solid var(--border);flex-shrink:0;background:var(--bg);display:flex;gap:10px">
+    <button onclick="addEditEx()" style="flex:1;background:var(--surface);color:var(--accent);border:1.5px solid var(--accent);border-radius:12px;padding:13px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer">+ EXERCICE</button>
+    <button onclick="saveEditSession()" style="flex:2;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer">Sauvegarder</button>
   </div>
 </div>
 
