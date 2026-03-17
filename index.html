@@ -4084,9 +4084,11 @@
         const wuSets = ex.sets.filter(s => s.warmup);
         if (wuSets.length) {
           const pcts = [0.5, 0.7, 0.85];
+          const wuRepsAuto = [8, 5, 3];
           wuSets.forEach((s, wi) => {
-            const rounded = Math.round(w * (pcts[wi] || 0.5) * 2) / 2; // arrondi 0.5kg
+            const rounded = Math.round(w * (pcts[wi] || 0.5) * 2) / 2;
             s.w = rounded;
+            s.r = wuRepsAuto[wi] || 8;
           });
           _rerender();
           return;
