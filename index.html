@@ -11215,7 +11215,9 @@
           <div style="flex:1;min-width:0"><div class="ex-name">${ex.name}</div>
           <div class="ex-meta">${ex.muscle?`<span class="ex-muscle-tag">${ex.muscle}</span>`:''}${pr?`<span class="ex-pr-badge">🏆 PR ${pr.weight}kg × ${pr.reps}reps</span>`:''}${ex.sets.some(s=>s.warmup)?'<span class="warmup-badge">🔥 Échauff.</span>':''}</div></div>
           <div style="display:flex;gap:8px;align-items:center">
-            <button class="ex-del" onclick="delEx(${ei})">✕</button>
+            <button onclick="openExMenu(${ei})" style="width:32px;height:32px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--muted)"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
           </div>
         </div>
         <div class="sets-head"><div>#</div><div>Poids kg</div><div>Reps</div><div style="font-size:9px">${lastLabel ? lastLabel : 'Dernière'}</div><div>✓</div></div>
@@ -11223,7 +11225,6 @@
         <div class="ex-actions-row">
           <button class="add-set" onclick="addSet(${ei})">+ Série</button>
           <button class="add-set wu-btn${ex.sets.some(s=>s.warmup)?' wu-active':''}" onclick="toggleWarmup(${ei})">${ex.sets.some(s=>s.warmup)?'🔥 Retirer':'🔥 Échauff.'}</button>
-          <button class="add-set" onclick="openFsExEdit(${ei})" style="font-size:11px">✏️ Modifier</button>
           <button class="ex-note-toggle${ex.note ? ' wu-active' : ''}" onclick="toggleExNote(${ei})" id="ex-note-btn-fs-${ei}">📝 Notes</button>
         </div>
         <textarea class="ex-note-area" id="ex-note-fs-${ei}" placeholder="Note sur l'exercice..." style="display:${ex.note ? 'block' : 'none'}" oninput="exercises[${ei}].note=this.value;updExNote(${ei},this.value)">${ex.note||''}</textarea>
