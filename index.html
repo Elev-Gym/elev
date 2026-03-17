@@ -657,12 +657,14 @@
   .ex-card.ex-drag-over { border-color: var(--accent); border-style: dashed; }
 
   /* ── Exercise Picker Modal ── */
-  #exPickerModal { position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.5);display:none;flex-direction:column;align-items:flex-end;justify-content:center;overflow:hidden; }
+  #exPickerModal { position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.5);display:none;flex-direction:column;overflow:hidden;justify-content:flex-end;align-items:center; }
   #exPickerModal.open { display:flex; }
-  #exPickerModal > div { width:100%;max-width:480px;height:92vh;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:20px 20px 0 0;align-self:flex-end; }
+  #exPickerModal > * { flex-shrink:0; }
+  /* Inner wrapper ajouté via JS */
+  #exPickerInner { width:100%;max-width:480px;height:92vh;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:20px 20px 0 0; }
   @media (min-width:600px) {
-    #exPickerModal { align-items:center;justify-content:center; }
-    #exPickerModal > div { border-radius:16px;height:80vh;box-shadow:0 20px 60px rgba(0,0,0,0.3);align-self:auto; }
+    #exPickerModal { justify-content:center; }
+    #exPickerInner { border-radius:16px;height:80vh;box-shadow:0 20px 60px rgba(0,0,0,0.3); }
   }
   .expicker-header { padding:calc(env(safe-area-inset-top)+12px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg); }
   .expicker-search-wrap { flex:1;position:relative;display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 12px;gap:8px; }
@@ -11993,6 +11995,7 @@
 
 <!-- ══ EXERCISE PICKER MODAL ══ -->
 <div id="exPickerModal" onclick="if(event.target===this)closeExPickerModal()">
+  <div id="exPickerInner" onclick="event.stopPropagation()">
   <!-- Header -->
   <div class="expicker-header">
     <button onclick="closeExPickerModal()" style="background:none;border:none;cursor:pointer;color:var(--text);padding:4px;display:flex;align-items:center;flex-shrink:0">
@@ -12020,6 +12023,7 @@
   <!-- Liste exercices -->
   <div class="expicker-list" id="exPickerList"></div>
 
+  </div><!-- end exPickerInner -->
 </div><!-- end exPickerModal -->
 
 <!-- Step 2 — Configuration (bottom sheet indépendante) -->
