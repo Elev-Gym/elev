@@ -9810,6 +9810,7 @@
 
   function openMealPage(meal) {
     window._mealPageCurrent = meal;
+    window._mealPageDate = _nutriViewDate;
     document.getElementById('mealPageTitle').textContent = meal;
     renderMealPage();
     const overlay = document.getElementById('mealPageOverlay');
@@ -9890,8 +9891,8 @@
   function renderMealPage() {
     const meal = window._mealPageCurrent;
     if (!meal) return;
-    const today = new Date().toISOString().split('T')[0];
-    const items = nutriEntries.filter(e => e.date === today && e.meal === meal);
+    const viewDate = window._mealPageDate || _nutriViewDate;
+    const items = nutriEntries.filter(e => e.date === viewDate && e.meal === meal);
     const totKcal = items.reduce((s,e) => s + e.kcal, 0);
     const totProt = Math.round(items.reduce((s,e) => s + (e.prot||0), 0) * 10) / 10;
     const totGluc = Math.round(items.reduce((s,e) => s + (e.gluc||0), 0) * 10) / 10;
