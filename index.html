@@ -10681,8 +10681,8 @@
 
     el.innerHTML = draftRoutineExs.map((ex, i) => {
       const hasWarmup = (ex.warmupSets || 0) > 0;
-      const restOpts = [[60,'1 min'],[90,'1m30'],[120,'2 min'],[180,'3 min'],[240,'4 min'],[0,'Sans']];
       const curRest = parseInt(ex.restTime || 90);
+      const restLabel = curRest === 0 ? 'Sans' : curRest < 60 ? curRest+'s' : curRest % 60 === 0 ? (curRest/60)+'min' : Math.floor(curRest/60)+'m'+String(curRest%60).padStart(2,'0');
 
       const setsHtml = Array.from({length: ex.sets || 3}, (_, si) => `
         <div class="set-row">
@@ -10696,13 +10696,7 @@
               oninput="draftRoutineExs[${i}].repsTarget=this.value"/>
             <span style="font-size:9px;color:var(--muted)">reps</span>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-            ${si === 0 ? `<select class="set-inp" style="font-size:10px;text-align:center;padding:4px 2px"
-              onchange="draftRoutineExs[${i}].restTime=parseInt(this.value)">
-              ${restOpts.map(([v,l]) => `<option value="${v}" ${curRest===v?'selected':''}>${l}</option>`).join('')}
-            </select>
-            <span style="font-size:9px;color:var(--muted)">repos</span>` : ''}
-          </div>
+          <div></div>
         </div>`).join('');
 
       return `<div class="ex-card" id="reditor-card-${i}" style="margin-bottom:12px">
@@ -10716,14 +10710,49 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--muted)"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
           </button>
         </div>
-        <div class="sets-head"><div>#</div><div>Poids kg</div><div>Reps</div><div>Repos</div></div>
+        <div class="sets-head"><div>#</div><div>Poids kg</div><div>Reps</div><div></div></div>
         ${setsHtml}
         <div class="ex-actions-row">
           <button class="add-set" onclick="draftRoutineExs[${i}].sets=(draftRoutineExs[${i}].sets||3)+1;renderRoutineEditorExList()">+ Série</button>
           <button class="add-set wu-btn${hasWarmup?' wu-active':''}" onclick="draftRoutineExs[${i}].warmupSets=${hasWarmup?0:1};renderRoutineEditorExList()">${hasWarmup?'🔥 Retirer':'🔥 Échauff.'}</button>
+          <button class="add-set" onclick="openReditorRestPicker(${i})" style="display:flex;align-items:center;gap:4px">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ${restLabel}
+          </button>
         </div>
       </div>`;
     }).join('');
+  }
+
+  function openReditorRestPicker(idx) {
+    const ex = draftRoutineExs[idx];
+    const cur = parseInt(ex.restTime || 90);
+    const presets = [[30,'30s'],[45,'45s'],[60,'1 min'],[90,'1m30'],[120,'2 min'],[150,'2m30'],[180,'3 min'],[240,'4 min'],[0,'Sans']];
+    const sheet = `<div id="reditorRestPicker" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1100;display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.remove()">
+      <div style="background:var(--surface);width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:20px 20px 36px" onclick="event.stopPropagation()">
+        <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:16px">Temps de repos</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+          ${presets.map(([v,l]) => `<button onclick="setReditorRest(${idx},${v})"
+            style="padding:11px 4px;border-radius:10px;border:1.5px solid ${cur===v?'var(--accent)':'var(--border)'};background:${cur===v?'var(--accent-light)':'var(--warm)'};font-family:'Geist Mono',monospace;font-size:12px;color:${cur===v?'var(--accent)':'var(--text)'};cursor:pointer;font-weight:${cur===v?'600':'400'}">${l}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="reditorRestCustom" type="number" placeholder="Secondes (ex: 100)" min="10" max="600" value="${cur||''}"
+            style="flex:1;padding:11px 14px;border-radius:10px;border:0.5px solid var(--border);background:var(--warm);font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);outline:none"/>
+          <button onclick="setReditorRest(${idx},parseInt(document.getElementById('reditorRestCustom').value))"
+            style="padding:11px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer">OK</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', sheet);
+  }
+
+  function setReditorRest(idx, val) {
+    const v = parseInt(val);
+    if (isNaN(v) || (v !== 0 && v < 10)) { showToast('Entre une durée valide'); return; }
+    draftRoutineExs[idx].restTime = v;
+    document.getElementById('reditorRestPicker')?.remove();
+    renderRoutineEditorExList();
   }
 
   let _reditorMenuIdx = null;
