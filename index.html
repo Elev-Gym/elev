@@ -4320,6 +4320,7 @@
     document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
     document.getElementById('sessionNotes').value='';
     renderExercises(); renderRoutinePicker();
+    renderHome();
     // Show recap
     setTimeout(() => showRecap(newSession), 300);
   }
