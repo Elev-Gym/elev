@@ -9704,7 +9704,7 @@
     overlay.style.transform = 'translateX(0)';
     overlay.classList.remove('slide-out');
     overlay.style.display = 'flex';
-    overlay.style.flexDirection = 'column';
+    overlay.style.flexDirection = '';
     initMealPageSwipe(overlay);
   }
 
@@ -10747,17 +10747,68 @@
     const el = document.getElementById('createRoutineExList');
     if (!el) return;
     if (!_createRoutineExs.length) { el.innerHTML = ''; return; }
-    // Réutiliser le même rendu que l'éditeur
-    const saved = draftRoutineExs;
-    draftRoutineExs = _createRoutineExs;
-    el.id = 'routineEditorExList';
-    renderRoutineEditorExList();
-    el.id = 'createRoutineExList';
-    draftRoutineExs = saved;
-    // Rebinder les events — patch les onclick pour cibler _createRoutineExs
-    el.querySelectorAll('[onclick]').forEach(btn => {
-      btn.setAttribute('onclick', btn.getAttribute('onclick').replace(/draftRoutineExs/g, '_createRoutineExs'));
-    });
+    el.innerHTML = _createRoutineExs.map((ex, i) => {
+      const hasWarmup = (ex.warmupSets || 0) > 0;
+      const curRest = parseInt(ex.restTime || 90);
+      const restLabel = curRest === 0 ? 'Sans' : curRest < 60 ? curRest+'s' : curRest % 60 === 0 ? (curRest/60)+'min' : Math.floor(curRest/60)+'m'+String(curRest%60).padStart(2,'0');
+      const setsHtml = Array.from({length: ex.sets || 3}, (_, si) => `
+        <div class="set-row">
+          <div style="text-align:center;font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace">${si+1}</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <input class="set-inp" type="number" placeholder="—" style="width:100%;text-align:center"/>
+            <span style="font-size:9px;color:var(--muted)">kg</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <input class="set-inp" type="text" value="${ex.repsTarget||''}" placeholder="—" style="width:100%;text-align:center"
+              oninput="_createRoutineExs[${i}].repsTarget=this.value"/>
+            <span style="font-size:9px;color:var(--muted)">reps</span>
+          </div>
+          <div></div>
+        </div>`).join('');
+      return `<div class="ex-card" style="margin-bottom:12px">
+        <div class="ex-head">
+          <div style="flex:1;min-width:0">
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-meta">${ex.muscle?`<span class="ex-muscle-tag">${ex.muscle}</span>`:''}</div>
+          </div>
+          <button onclick="_createRoutineExs.splice(${i},1);renderCreateRoutineExList()"
+            style="width:32px;height:32px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);font-size:16px">✕</button>
+        </div>
+        <div class="sets-head"><div>#</div><div>Poids kg</div><div>Reps</div><div></div></div>
+        ${setsHtml}
+        <div class="ex-actions-row">
+          <button class="add-set" onclick="_createRoutineExs[${i}].sets=(_createRoutineExs[${i}].sets||3)+1;renderCreateRoutineExList()">+ Série</button>
+          <button class="add-set wu-btn${hasWarmup?' wu-active':''}" onclick="_createRoutineExs[${i}].warmupSets=${hasWarmup?0:1};renderCreateRoutineExList()">${hasWarmup?'🔥 Retirer':'🔥 Échauff.'}</button>
+          <button class="add-set" onclick="openCreateRestPicker(${i})" style="display:flex;align-items:center;gap:4px">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ${restLabel}
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function openCreateRestPicker(idx) {
+    const ex = _createRoutineExs[idx];
+    const cur = parseInt(ex.restTime || 90);
+    const presets = [[30,'30s'],[45,'45s'],[60,'1 min'],[90,'1m30'],[120,'2 min'],[150,'2m30'],[180,'3 min'],[240,'4 min'],[0,'Sans']];
+    const sheet = `<div id="createRestPicker" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1100;display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.remove()">
+      <div style="background:var(--surface);width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:20px 20px 36px" onclick="event.stopPropagation()">
+        <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:16px">Temps de repos</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+          ${presets.map(([v,l]) => `<button onclick="_createRoutineExs[${idx}].restTime=${v};document.getElementById('createRestPicker').remove();renderCreateRoutineExList()"
+            style="padding:11px 4px;border-radius:10px;border:1.5px solid ${cur===v?'var(--accent)':'var(--border)'};background:${cur===v?'var(--accent-light)':'var(--warm)'};font-family:'Geist Mono',monospace;font-size:12px;color:${cur===v?'var(--accent)':'var(--text)'};cursor:pointer">${l}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="createRestCustom" type="number" placeholder="Secondes" min="10" max="600" value="${cur||''}"
+            style="flex:1;padding:11px 14px;border-radius:10px;border:0.5px solid var(--border);background:var(--warm);font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);outline:none"/>
+          <button onclick="const v=parseInt(document.getElementById('createRestCustom').value);if(v>=10&&v<=600){_createRoutineExs[${idx}].restTime=v;document.getElementById('createRestPicker').remove();renderCreateRoutineExList();}else showToast('Durée invalide')"
+            style="padding:11px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Geist Mono',monospace;font-size:11px;cursor:pointer">OK</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', sheet);
   }
 
   function openExPickerForCreateRoutine() {
@@ -12248,7 +12299,7 @@
 </div>
 
 <!-- ══ PAGE REPAS DÉTAIL ══ -->
-<div id="mealPageOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:965;flex-direction:column;overflow:hidden">
+<div id="mealPageOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:965;align-items:center;justify-content:center"><div style="width:100%;max-width:600px;height:92vh;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
 
   <!-- Header -->
   <div style="padding:12px 16px 12px;background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;margin-top:env(safe-area-inset-top)">
@@ -12297,6 +12348,7 @@
     </div>
 
   </div>
+  </div><!-- end mealPageInner -->
 </div>
 
 <!-- ══ EXERCISE PICKER MODAL ══ -->
