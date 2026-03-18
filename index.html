@@ -1652,7 +1652,7 @@
         <div id="histPanelPoids2" style="padding:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap">
             <div style="display:flex;gap:6px">
-              <button onclick="weightHistoPrevWeek()" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted);cursor:pointer">← Semaine préc.</button>
+              <button onclick="weightHistoPrevWeek()" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted);cursor:pointer">← 7 jours</button>
               <button onclick="weightHistoToday()" id="weightHistoTodayBtn" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--accent);cursor:pointer">Aujourd'hui</button>
             </div>
             <div style="display:flex;gap:6px;align-items:center">
@@ -6695,16 +6695,16 @@
   }
 
   function _getWeekBounds(offset) {
+    // offset=0 → 7 derniers jours, offset=-1 → les 7 jours précédents, etc.
     const now = new Date();
-    const dow = now.getDay(); // 0=dim
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1) + offset * 7);
-    monday.setHours(0,0,0,0);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23,59,59,999);
+    const end = new Date(now);
+    end.setDate(now.getDate() + offset * 7);
+    end.setHours(23,59,59,999);
+    const start = new Date(end);
+    start.setDate(end.getDate() - 6);
+    start.setHours(0,0,0,0);
     const toStr = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    return { start: toStr(monday), end: toStr(sunday), mondayLabel: monday.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}), sundayLabel: sunday.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) };
+    return { start: toStr(start), end: toStr(end), mondayLabel: start.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}), sundayLabel: end.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) };
   }
 
   function renderWeightTab() {
@@ -6757,7 +6757,7 @@
       const { start, end, mondayLabel, sundayLabel } = _getWeekBounds(_weightHistoWeekOffset);
       displayWeights = displayWeights.filter(w => w.date >= start && w.date <= end);
       const isCurrentWeek = _weightHistoWeekOffset === 0;
-      if (weekLabel) weekLabel.textContent = isCurrentWeek ? `SEMAINE EN COURS · ${mondayLabel} – ${sundayLabel}` : `SEMAINE DU ${mondayLabel} AU ${sundayLabel}`;
+      if (weekLabel) weekLabel.textContent = isCurrentWeek ? `7 DERNIERS JOURS · ${mondayLabel} – ${sundayLabel}` : `${mondayLabel} – ${sundayLabel}`;
       // Bouton "Aujourd'hui" grisé si déjà sur la semaine courante
       const todayBtn = document.getElementById('weightHistoTodayBtn');
       if (todayBtn) todayBtn.style.opacity = isCurrentWeek ? '0.4' : '1';
