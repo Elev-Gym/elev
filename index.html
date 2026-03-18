@@ -1513,9 +1513,10 @@
   </div>
 
   <!-- ══ CREATE ROUTINE OVERLAY ══ -->
-  <div id="createRoutineOverlay" style="display:none;position:fixed;inset:0;z-index:1050;background:var(--bg);flex-direction:column;overflow:hidden">
+  <div id="createRoutineOverlay" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.45);flex-direction:row;align-items:center;justify-content:center">
+    <div style="width:100%;max-width:480px;height:90vh;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top)+14px) 16px 14px;border-bottom:0.5px solid var(--border);flex-shrink:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:0.5px solid var(--border);flex-shrink:0">
       <button onclick="closeCreateRoutineOverlay()" style="background:none;border:none;color:var(--accent);font-family:'Geist Mono',monospace;font-size:12px;cursor:pointer;padding:4px 0">Annuler</button>
       <input id="createRoutineName" placeholder="Titre de la séance" type="text"
         style="font-family:'DM Serif Display',serif;font-size:18px;font-style:italic;color:var(--text);background:none;border:none;outline:none;text-align:center;width:200px"
@@ -1531,6 +1532,7 @@
         Ajouter un exercice
       </button>
     </div>
+    </div><!-- end createRoutineInner -->
   </div>
 
   <!-- ══ ROUTINE EDITOR OVERLAY ══ -->
