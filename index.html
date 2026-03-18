@@ -9923,10 +9923,11 @@
     if (arcProt) { arcProt.setAttribute('stroke-dasharray', protDash + ' ' + circ); arcProt.setAttribute('stroke-dashoffset', protOffset); }
     if (arcLip)  { arcLip.setAttribute('stroke-dasharray',  lipDash  + ' ' + circ); arcLip.setAttribute('stroke-dashoffset', lipOffset); }
     // Barres
-    const profile = userProfile || {};
-    const goalGluc = profile.goalGluc || 300;
-    const goalProt = profile.goalProt || 150;
-    const goalLip  = profile.goalLip  || 60;
+    const ns = getNutriSettings();
+    const goalKcal = ns.kcal || 2000;
+    const goalGluc = Math.round(goalKcal * (ns.gluc / 100) / 4) || 300;
+    const goalProt = Math.round(goalKcal * (ns.prot / 100) / 4) || 150;
+    const goalLip  = Math.round(goalKcal * (ns.lip  / 100) / 9) || 60;
     const bg = document.getElementById('mpBarGluc'); if (bg) bg.style.width = Math.min(totGluc/goalGluc*100,100) + '%';
     const bp = document.getElementById('mpBarProt'); if (bp) bp.style.width = Math.min(totProt/goalProt*100,100) + '%';
     const bl = document.getElementById('mpBarLip');  if (bl) bl.style.width = Math.min(totLip/goalLip*100,100)  + '%';
