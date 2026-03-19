@@ -1665,9 +1665,16 @@
         </div>
         <!-- Panel histo calories -->
         <div id="histPanelCals2" style="padding:12px;display:none">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-            <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:140px;font-size:11px;padding:5px 8px" onchange="renderKcalHistory()" title="Filtrer par mois"/>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <button onclick="kcalHistoPrev()" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted);cursor:pointer">← 7 jours</button>
+            <button onclick="kcalHistoToday()" id="kcalHistoTodayBtn" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;font-family:'Geist Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--accent);cursor:pointer">Aujourd'hui</button>
+            <div style="flex:1"></div>
+            <input class="pr-search-inp" id="kcalSearchDate" type="month" style="width:110px;font-size:11px;padding:5px 8px" onchange="_kcalHistoOffset=0;renderKcalHistory()" title="Filtrer par mois"/>
+            <button onclick="openAddKcalModal()" style="background:var(--accent);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
           </div>
+          <div id="kcalHistWeekLabel" style="font-size:9px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-bottom:8px;text-align:center"></div>
           <div id="kcalHistList"></div>
         </div>
       </div>
@@ -6000,6 +6007,65 @@
     }
   }
 
+  let _kcalHistoOffset = 0;
+
+  function kcalHistoPrev() {
+    _kcalHistoOffset--;
+    document.getElementById('kcalSearchDate').value = '';
+    renderKcalHistory();
+  }
+  function kcalHistoToday() {
+    _kcalHistoOffset = 0;
+    document.getElementById('kcalSearchDate').value = '';
+    renderKcalHistory();
+  }
+
+  function openAddKcalModal() {
+    const today = new Date().toISOString().split('T')[0];
+    const existing = document.getElementById('addKcalModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'addKcalModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1050;display:flex;align-items:center;justify-content:center;padding:0 16px';
+    modal.onclick = e => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `<div style="background:var(--surface);border-radius:16px;padding:24px 20px;width:100%;max-width:360px;box-shadow:0 8px 40px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">
+      <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);margin-bottom:16px">Ajouter des calories</div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-bottom:6px">DATE</div>
+        <input type="date" id="addKcalDate" value="${today}" class="inp" style="width:100%;box-sizing:border-box"/>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-bottom:6px">CALORIES</div>
+        <input type="number" id="addKcalVal" placeholder="ex: 2400" class="inp" style="width:100%;box-sizing:border-box;font-family:'DM Serif Display',serif;font-size:20px"/>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('addKcalModal').remove()" style="flex:1;background:none;border:1px solid var(--border2);border-radius:10px;padding:12px;font-family:'Geist Mono',monospace;font-size:10px;color:var(--muted);cursor:pointer">Annuler</button>
+        <button onclick="confirmAddKcal()" style="flex:2;background:var(--accent);border:none;border-radius:10px;padding:12px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;cursor:pointer">Ajouter</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('addKcalVal')?.focus(), 200);
+  }
+
+  async function confirmAddKcal() {
+    const date = document.getElementById('addKcalDate')?.value;
+    const val = parseInt(document.getElementById('addKcalVal')?.value);
+    if (!date || !val || val < 100) { showToast('Valeur invalide'); return; }
+    // Ajouter comme une entrée nutrition unique pour ce jour
+    const entry = {
+      id: Date.now(), date, meal: 'Journée',
+      name: 'Calories manuelles', brand: null,
+      qty: 100, kcal: val, prot: 0, gluc: 0, lip: 0, fib: 0,
+      kcal100: val, prot100: 0, gluc100: 0, lip100: 0, fib100: 0,
+    };
+    nutriEntries.push(entry);
+    try { await sbSave('nutrition_entries', [entry]); } catch(e) {}
+    document.getElementById('addKcalModal')?.remove();
+    renderKcalHistory();
+    renderNutritionTab();
+    showToast('Calories ajoutées ✓');
+  }
+
   function renderKcalHistory() {
     const el = document.getElementById('kcalHistList');
     if (!el) return;
@@ -6017,8 +6083,19 @@
       .sort(([a],[b]) => b.localeCompare(a))
       .map(([date, kcal]) => ({ date, kcal: Math.round(kcal) }));
 
-    if (monthFilter) display = display.filter(e => e.date.startsWith(monthFilter));
-    else display = display.slice(0, 14);
+    const weekLabel = document.getElementById('kcalHistWeekLabel');
+    if (monthFilter) {
+      display = display.filter(e => e.date.startsWith(monthFilter));
+      if (weekLabel) weekLabel.textContent = '';
+    } else {
+      // Navigation 7 jours glissants
+      const { start, end, mondayLabel, sundayLabel } = _getWeekBounds(_kcalHistoOffset);
+      display = display.filter(e => e.date >= start && e.date <= end);
+      const isCurrent = _kcalHistoOffset === 0;
+      if (weekLabel) weekLabel.textContent = isCurrent ? `7 DERNIERS JOURS · ${mondayLabel} – ${sundayLabel}` : `${mondayLabel} – ${sundayLabel}`;
+      const todayBtn = document.getElementById('kcalHistoTodayBtn');
+      if (todayBtn) todayBtn.style.opacity = isCurrent ? '0.4' : '1';
+    }
 
     if (!display.length) {
       el.innerHTML = '<div style="padding:16px;font-size:11px;color:var(--muted2);text-align:center">Aucun enregistrement.</div>';
