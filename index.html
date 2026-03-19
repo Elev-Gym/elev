@@ -3516,10 +3516,71 @@
     if (sport === 'Autre…') {
       const custom = prompt('Nom du sport :');
       if (!custom) return;
-      startFreeSessionType(custom);
+      openOtherSportDurationModal(custom);
     } else {
-      startFreeSessionType(sport);
+      openOtherSportDurationModal(sport);
     }
+  }
+
+  function openOtherSportDurationModal(sport) {
+    const ex = document.getElementById('otherSportDurationModal'); if (ex) ex.remove();
+    const modal = document.createElement('div');
+    modal.id = 'otherSportDurationModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:990;display:flex;align-items:center;justify-content:center;padding:0 16px';
+    modal.onclick = e => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `<div style="background:var(--surface);border-radius:16px;padding:24px 20px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">
+      <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:4px">${sport}</div>
+      <div style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-bottom:20px">DURÉE DE LA SESSION</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-bottom:6px">HEURES</div>
+          <input type="number" id="sportDurH" min="0" max="12" value="0" class="inp" style="width:100%;box-sizing:border-box;text-align:center;font-family:'DM Serif Display',serif;font-size:24px"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-bottom:6px">MINUTES</div>
+          <input type="number" id="sportDurM" min="0" max="59" value="30" class="inp" style="width:100%;box-sizing:border-box;text-align:center;font-family:'DM Serif Display',serif;font-size:24px"/>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;color:var(--muted);font-family:'Geist Mono',monospace;letter-spacing:1px;margin-bottom:6px">NOTE (optionnel)</div>
+        <input type="text" id="sportNote" class="inp" placeholder="ex: 10km, cardio intensif..." style="width:100%;box-sizing:border-box"/>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('otherSportDurationModal').remove()" style="flex:1;background:none;border:1px solid var(--border2);border-radius:10px;padding:12px;font-family:'Geist Mono',monospace;font-size:10px;color:var(--muted);cursor:pointer">Annuler</button>
+        <button onclick="saveOtherSportSession('${sport.replace(/'/g,"\\'")}')" style="flex:2;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-family:'DM Serif Display',serif;font-size:16px;cursor:pointer">Enregistrer</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('sportDurM')?.focus(), 200);
+  }
+
+  async function saveOtherSportSession(sport) {
+    const h = parseInt(document.getElementById('sportDurH')?.value) || 0;
+    const m = parseInt(document.getElementById('sportDurM')?.value) || 0;
+    const note = document.getElementById('sportNote')?.value.trim() || '';
+    const totalSec = h * 3600 + m * 60;
+    if (totalSec < 60) { showToast('Durée trop courte'); return; }
+
+    const newSession = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      duration: totalSec,
+      muscles: [],
+      exercises: [],
+      notes: note,
+      routineName: sport,
+      _isSport: true,
+    };
+    sessions.unshift(newSession);
+    showSyncBadge('Sauvegarde...');
+    await sbSave('sessions', [newSession]);
+    showSyncBadge('✓ Sync', true);
+
+    document.getElementById('otherSportDurationModal')?.remove();
+    renderHome();
+    renderRoutinePicker();
+    const dur = h > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${m} min`;
+    showToast(`${sport} · ${dur} enregistré ✓`);
   }
 
   function toggleAddExForm() {
