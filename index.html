@@ -10647,9 +10647,10 @@
 
   function nutriCardSwipeMove(e) {
     if (_nutriSwipeStartX === null) return;
+    // Ne pas interférer si le touch est sur un item de repas swipeable
+    if (e.target.closest('[id^="ncard-"]') || e.target.closest('[id^="ndel-"]')) return;
     const dx = e.touches[0].clientX - _nutriSwipeStartX;
     const dy = e.touches[0].clientY - _nutriSwipeStartY;
-    // Déterminer la direction dominante au premier mouvement significatif
     if (!_nutriSwipeDir && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       _nutriSwipeDir = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
     }
