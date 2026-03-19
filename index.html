@@ -10696,17 +10696,16 @@
   function nutriSwipeMove(e, id) {
     const s = nutriSwipeSessions[id];
     if (!s) return;
+    // dx > 0 = doigt va vers la gauche = ouvrir
     const dx = s.startX - e.touches[0].clientX;
     s.swiping = true;
     const card = document.getElementById('ncard-' + id);
     const del  = document.getElementById('ndel-' + id);
     if (!card) return;
-    // dx > 0 = gauche (ouvrir), dx < 0 = droite (fermer)
-    const currentOffset = s.isOpen ? 72 : 0;
-    const newOffset = Math.max(0, Math.min(72, currentOffset + dx * -Math.sign(dx < 0 ? -1 : 1) + (dx < 0 ? currentOffset + dx : dx)));
-    const clamped = Math.max(0, Math.min(72, currentOffset - dx));
-    card.style.transform = clamped > 0 ? `translateX(-${clamped}px)` : '';
-    if (del) del.style.opacity = Math.min(clamped / 56, 1);
+    const base = s.isOpen ? 72 : 0;
+    const offset = Math.max(0, Math.min(72, base + dx));
+    card.style.transform = offset > 0 ? `translateX(-${offset}px)` : '';
+    if (del) del.style.opacity = String(Math.min(offset / 56, 1));
     e.preventDefault();
   }
   function nutriSwipeEnd(e, id) {
@@ -10715,15 +10714,13 @@
     const dx = s.startX - e.changedTouches[0].clientX;
     const card = document.getElementById('ncard-' + id);
     const del  = document.getElementById('ndel-' + id);
-    const currentOffset = s.isOpen ? 72 : 0;
-    const finalOffset = currentOffset - dx;
+    const base = s.isOpen ? 72 : 0;
+    const finalOffset = base + dx;
     if (finalOffset > 36) {
-      // Maintenir ouvert
       if (card) { card.style.transition = 'transform 0.2s'; card.style.transform = 'translateX(-72px)'; setTimeout(() => card.style.transition = '', 200); }
       if (del)  { del.style.opacity = '1'; del.style.pointerEvents = 'all'; }
       nutriSwipeSessions[id] = { ...s, isOpen: true, swiping: false };
     } else {
-      // Fermer
       if (card) { card.style.transition = 'transform 0.2s'; card.style.transform = ''; setTimeout(() => card.style.transition = '', 200); }
       if (del)  { del.style.opacity = '0'; del.style.pointerEvents = 'none'; }
       nutriSwipeSessions[id] = null;
