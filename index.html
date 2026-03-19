@@ -58,6 +58,25 @@
     --warm: #1c1c1e;
     --card-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
   }
+  html.dark #nutriSummaryCard {
+    background: #2a2a2c !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+  html.dark #nutriSummaryCard .nutri-nav-btn {
+    background: rgba(122,184,147,0.1) !important;
+  }
+  html.dark #nutriSummaryCard [style*="color:#2C2C2A"],
+  html.dark #nutriSummaryCard [style*="color: #2C2C2A"] {
+    color: #EDEAE4 !important;
+  }
+  html.dark #nutriSummaryCard [style*="color:#5F5E5A"],
+  html.dark #nutriSummaryCard [style*="color: #5F5E5A"] {
+    color: #8e8e93 !important;
+  }
+  html.dark #nutriJournal {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+  }
   html.dark header svg text { fill: var(--text); }
   html.dark header svg line { stroke: var(--text); }
   html.dark body { color: var(--text); }
@@ -9931,6 +9950,23 @@
       : diffDays > 1 ? `Dans ${diffDays} jours · ` + baseDateLabel
       : baseDateLabel;
 
+    // Adapter la card résumé au mode sombre/clair
+    const summaryCard = document.getElementById('nutriSummaryCard');
+    if (summaryCard) {
+      const isDark = document.documentElement.classList.contains('dark');
+      summaryCard.style.background = isDark ? '#2a2a2c' : '#F7F3ED';
+      summaryCard.style.borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(136,135,128,0.25)';
+      // Adapter les textes dans la card
+      const dateLabel = document.getElementById('nutri-date-label-hero');
+      if (dateLabel) dateLabel.style.color = isDark ? '#EDEAE4' : '#2C2C2A';
+      // Points et barres macros restent #7AB893 — déjà visible en dark
+      // Labels "/ Xg"
+      summaryCard.querySelectorAll('span').forEach(s => {
+        if (s.style.color === 'rgb(95, 94, 90)' || s.getAttribute('data-muted')) {
+          s.style.color = isDark ? '#8e8e93' : '#5F5E5A';
+        }
+      });
+    }
     const el = document.getElementById('nutri-date-label');
     if (el) el.textContent = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
@@ -11938,6 +11974,7 @@
   function toggleDark() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('elev_dark', isDark ? '1' : '0');
+    renderNutritionTab();
     const bg = isDark ? '#0D0D0D' : '#F0EAE1';
     const btn = document.getElementById('darkToggleBtn');
     if (btn) btn.textContent = isDark ? '☀' : '☽';
