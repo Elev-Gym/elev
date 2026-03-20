@@ -12405,7 +12405,7 @@
           <div class="set-n wu-n">W${wi+1}</div>
           <div><input class="set-inp wu-inp" type="number" value="${s.w}" placeholder="—" data-ei="${ei}" data-f="w" onchange="updWU(${ei},${wi},'w',this.value)" onkeydown="if(event.key==='Enter')this.blur()"/></div>
           <div><input class="set-inp wu-inp" type="number" value="${s.r}" placeholder="—" data-ei="${ei}" data-f="r" onchange="updWU(${ei},${wi},'r',this.value)" onkeydown="if(event.key==='Enter')this.blur()"/></div>
-          <div class="set-prev wu-prev">${pctLabels[wi]||''}<span>× ${s.r||'?'}</span></div>
+          <div class="set-prev wu-prev">${pctLabels[wi]||''}<span>× ${s.r||['8','5','3'][wi]||'?'}</span></div>
           <div><button class="set-tick wu-tick ${s.done?'done':''}" onclick="tickWU(${ei},${wi})">${s.done?'✓':'·'}</button></div>
           <span></span>
         </div>`).join('');
