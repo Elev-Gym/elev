@@ -3966,24 +3966,62 @@
   function openReplaceModal(ei) {
     replaceTargetIdx = ei;
     _replaceMuscleFilter = '';
+    _replaceEquipFilter = '';
     document.getElementById('exReplaceSearch').value = '';
-    // Filtres muscle
-    const muscles = ['Tout','Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Abdos','Fessiers'];
-    document.getElementById('replaceMuscleFilters').innerHTML = muscles.map((m,i) =>
-      `<div onclick="setReplaceMuscleFilter('${m}',this)"
-        style="flex-shrink:0;padding:5px 14px;border-radius:20px;font-size:10px;letter-spacing:1px;font-family:'Geist Mono',monospace;cursor:pointer;border:1px solid var(--border2);background:${i===0?'var(--accent)':'var(--surface)'};color:${i===0?'#fff':'var(--muted)'};white-space:nowrap">${m}</div>`
-    ).join('');
+    // Reset les labels des dropdowns
+    const muscleLabel = document.getElementById('replaceMuscleLabel');
+    const equipLabel = document.getElementById('replaceEquipLabel');
+    if (muscleLabel) muscleLabel.textContent = 'Tous les muscles';
+    if (equipLabel) equipLabel.textContent = 'Tous les équipements';
+    // Remplir les dropdowns
+    if (typeof initReplaceDropdowns === 'function') initReplaceDropdowns();
     document.getElementById('exReplaceModal').style.display = 'flex';
     renderReplaceList();
     setTimeout(() => document.getElementById('exReplaceSearch')?.focus(), 200);
   }
 
+  let _replaceEquipFilter = '';
+
+  function initReplaceDropdowns() {
+    const muscles = ['', 'Pectoraux','Dos','Épaules','Biceps','Triceps','Quadriceps','Ischio-jambiers','Fessiers','Abdos','Mollets','Adducteurs'];
+    const equips  = ['', 'Haltères','Barre','Machine','Câble / Poulie','Poids du corps','Kettlebell'];
+    const mDrop = document.getElementById('replaceMuscleDropdown');
+    const eDrop = document.getElementById('replaceEquipDropdown');
+    if (mDrop) mDrop.innerHTML = muscles.map(m =>
+      `<div onclick="setReplaceFilter('muscle','${m}','${m||'Tous les muscles}'}"
+        style="padding:11px 16px;font-family:'Geist Mono',monospace;font-size:12px;color:var(--text);cursor:pointer;border-bottom:0.5px solid var(--border)">${m||'Tous les muscles'}</div>`
+    ).join('');
+    if (eDrop) eDrop.innerHTML = equips.map(e =>
+      `<div onclick="setReplaceFilter('equip','${e}','${e||'Tous les équipements}'}"
+        style="padding:11px 16px;font-family:'Geist Mono',monospace;font-size:12px;color:var(--text);cursor:pointer;border-bottom:0.5px solid var(--border)">${e||'Tous les équipements'}</div>`
+    ).join('');
+  }
+
+  function toggleReplaceDropdown(type) {
+    const drop = document.getElementById('replace' + (type==='muscle'?'Muscle':'Equip') + 'Dropdown');
+    if (!drop) return;
+    const isOpen = drop.style.display !== 'none';
+    document.querySelectorAll('#replaceMuscleDropdown,#replaceEquipDropdown').forEach(d => d.style.display = 'none');
+    if (!isOpen) drop.style.display = 'block';
+  }
+
+  function setReplaceFilter(type, val, label) {
+    if (type === 'muscle') {
+      _replaceMuscleFilter = val;
+      const el = document.getElementById('replaceMuscleLabel');
+      if (el) el.textContent = label;
+      document.getElementById('replaceMuscleDropdown').style.display = 'none';
+    } else {
+      _replaceEquipFilter = val;
+      const el = document.getElementById('replaceEquipLabel');
+      if (el) el.textContent = label;
+      document.getElementById('replaceEquipDropdown').style.display = 'none';
+    }
+    renderReplaceList();
+  }
+
   function setReplaceMuscleFilter(muscle, el) {
     _replaceMuscleFilter = muscle === 'Tout' ? '' : muscle;
-    document.querySelectorAll('#replaceMuscleFilters div').forEach(d => {
-      d.style.background = 'var(--surface)'; d.style.color = 'var(--muted)';
-    });
-    el.style.background = 'var(--accent)'; el.style.color = '#fff';
     renderReplaceList();
   }
 
@@ -3996,6 +4034,7 @@
 
     let filtered = all;
     if (_replaceMuscleFilter) filtered = filtered.filter(e => e.muscle === _replaceMuscleFilter);
+    if (_replaceEquipFilter) filtered = filtered.filter(e => guessEquipment(e.name) === _replaceEquipFilter);
 
     if (q) {
       // Recherche live
