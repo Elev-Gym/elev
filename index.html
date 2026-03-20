@@ -10811,13 +10811,28 @@
   function nutriSwipeStart(e, id) {
     const card = document.getElementById('ncard-' + id);
     const currentX = card ? parseFloat(card.style.transform?.replace('translateX(-','')?.replace('px)','') || '0') : 0;
-    nutriSwipeSessions[id] = { startX: e.touches[0].clientX, swiping: false, isOpen: currentX >= 60 };
+    nutriSwipeSessions[id] = {
+      startX: e.touches[0].clientX,
+      startY: e.touches[0].clientY,
+      dir: null, // 'h' | 'v' | null
+      swiping: false,
+      isOpen: currentX >= 60
+    };
   }
   function nutriSwipeMove(e, id) {
     const s = nutriSwipeSessions[id];
     if (!s) return;
-    // dx > 0 = doigt va vers la gauche = ouvrir
     const dx = s.startX - e.touches[0].clientX;
+    const dy = s.startY - e.touches[0].clientY;
+    // Déterminer la direction au premier mouvement significatif
+    if (!s.dir && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      s.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    }
+    // Si direction verticale → laisser scroller
+    if (s.dir === 'v') return;
+    // Si direction pas encore déterminée → attendre
+    if (!s.dir) return;
+    // Direction horizontale confirmée
     s.swiping = true;
     const card = document.getElementById('ncard-' + id);
     const del  = document.getElementById('ndel-' + id);
